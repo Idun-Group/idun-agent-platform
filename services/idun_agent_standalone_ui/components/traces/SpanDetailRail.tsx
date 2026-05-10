@@ -107,6 +107,22 @@ function CopyAllButton({
   className?: string;
 }) {
   const [copied, setCopied] = React.useState(false);
+  // Track the "Copied" timer so we can cancel it on a fresh click or
+  // on unmount. Without this, a rapid re-click leaks a timer and the
+  // .then() callback can land setState() on an unmounted component
+  // (React 19 logs a warning and the timer keeps the closure alive
+  // until it fires).
+  const copiedTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  React.useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current !== null) {
+        clearTimeout(copiedTimerRef.current);
+        copiedTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const handleClick = React.useCallback(() => {
     const text =
@@ -116,7 +132,13 @@ function CopyAllButton({
         .writeText(text)
         .then(() => {
           setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
+          if (copiedTimerRef.current !== null) {
+            clearTimeout(copiedTimerRef.current);
+          }
+          copiedTimerRef.current = setTimeout(() => {
+            setCopied(false);
+            copiedTimerRef.current = null;
+          }, 1500);
         })
         .catch(() => {
           // Swallow — surfaced as no-state-change rather than a toast
@@ -456,14 +478,12 @@ function PayloadViewer({
           >
             <TabsTrigger
               value="pretty"
-              aria-pressed={mode === "pretty"}
               className="h-6 px-2 text-[11px]"
             >
               Pretty
             </TabsTrigger>
             <TabsTrigger
               value="raw"
-              aria-pressed={mode === "raw"}
               className="h-6 px-2 text-[11px]"
             >
               Raw

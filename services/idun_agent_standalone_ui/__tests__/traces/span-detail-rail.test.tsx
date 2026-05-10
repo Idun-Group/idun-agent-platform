@@ -93,15 +93,17 @@ describe("SpanDetailRail", () => {
       screen.getByText("You are a helpful assistant."),
     ).toBeInTheDocument();
     expect(screen.getByText("Hello!")).toBeInTheDocument();
-    // Pretty/Raw is now a Tabs segmented control. The active variant
-    // is reflected through aria-pressed on the trigger.
+    // Pretty/Raw is now a Tabs segmented control. Radix tabs expose
+    // their active state via ``data-state="active"`` and
+    // ``aria-selected`` — the previous ``aria-pressed`` was a Radix-vs-
+    // ARIA conflict (UI-002) and was removed.
     expect(screen.getByRole("tab", { name: "Pretty" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
+      "data-state",
+      "active",
     );
     expect(screen.getByRole("tab", { name: "Raw" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
+      "data-state",
+      "inactive",
     );
   });
 
@@ -112,8 +114,8 @@ describe("SpanDetailRail", () => {
 
     await user.click(screen.getByRole("tab", { name: "Raw" }));
     expect(screen.getByRole("tab", { name: "Raw" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
+      "data-state",
+      "active",
     );
     // After flipping to Raw, the chat-bubbles container is no longer
     // mounted — the JSON tree viewer renders instead.
@@ -121,8 +123,8 @@ describe("SpanDetailRail", () => {
 
     await user.click(screen.getByRole("tab", { name: "Pretty" }));
     expect(screen.getByRole("tab", { name: "Pretty" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
+      "data-state",
+      "active",
     );
     // Pretty is back — chat-bubbles container is mounted again.
     expect(screen.getByTestId("chat-bubbles")).toBeInTheDocument();
