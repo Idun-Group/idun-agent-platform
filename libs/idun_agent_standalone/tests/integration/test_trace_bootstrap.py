@@ -1,0 +1,151 @@
+"""Integration tests for ``attach_trace_pipeline`` (T7 bootstrap).
+
+Drives the post_configure callback directly without spinning up the
+whole engine — the callback is the only thing this test cares about.
+A minimal FastAPI app is built with ``app.state.sessionmaker`` set,
+the callback is awaited, and the resulting state on ``app.state`` is
+asserted.
+
+The reload-twice scenario verifies idempotency: the callback must
+stop the previous writer + retention before respawning, and it must
+not leak duplicate exporters or BatchSpanProcessors.
+"""
+
+from __future__ import annotations
+
+import pytest
+from fastapi import FastAPI
+from idun_agent_engine.observability import otel_lifecycle
+from idun_agent_standalone.infrastructure.db.session import Base
+from idun_agent_standalone.infrastructure.traces.bootstrap import (
+    attach_trace_pipeline,
+)
+from idun_agent_standalone.infrastructure.traces.exporter import (
+    StandaloneSpanExporter,
+)
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+
+@pytest.fixture
+async def sessionmaker_factory(tmp_path):
+    """Real aiosqlite sessionmaker so the writer's first drain has somewhere
+    to land — a bare MagicMock would crash the writer's _drain_once loop."""
+    url = f"sqlite+aiosqlite:///{tmp_path / 'bootstrap.db'}"
+    setup_engine = create_async_engine(url)
+    async with setup_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    await setup_engine.dispose()
+    engine = create_async_engine(url)
+    sm = async_sessionmaker(engine, expire_on_commit=False)
+    yield sm
+    await engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def _reset_otel_after_test():
+    """Drain otel_lifecycle module state between tests.
+
+    The helper holds module-level singletons (TracerProvider, processor
+    list). Without this, a test that left a TracerProvider installed
+    would taint the next test's idempotency check.
+    """
+    yield
+    try:
+        otel_lifecycle.shutdown_otel()
+    except Exception:
+        pass
+
+
+@pytest.mark.asyncio
+async def test_attach_trace_pipeline_sets_state_on_first_boot(sessionmaker_factory):
+    """First boot installs exporter + spawns writer + retention tasks."""
+    app = FastAPI()
+    app.state.sessionmaker = sessionmaker_factory
+    app.state.engine_config = None  # no provider → self-install path
+
+    try:
+        await attach_trace_pipeline(app)
+
+        assert isinstance(app.state.trace_exporter, StandaloneSpanExporter)
+        assert app.state.trace_writer_task is not None
+        assert app.state.trace_retention_task is not None
+        # The writer's underlying asyncio task must be live.
+        underlying = app.state.trace_writer_task._task
+        assert underlying is not None
+        assert not underlying.done()
+    finally:
+        # Clean up writer + retention tasks so the test loop teardown
+        # doesn't see orphan asyncio tasks.
+        if getattr(app.state, "trace_writer_task", None) is not None:
+            await app.state.trace_writer_task.stop()
+        if getattr(app.state, "trace_retention_task", None) is not None:
+            await app.state.trace_retention_task.stop()
+
+
+@pytest.mark.asyncio
+async def test_attach_trace_pipeline_is_idempotent_on_reload(sessionmaker_factory):
+    """Second invocation stops the previous writer/retention before respawning.
+
+    Acceptance: the prior writer is stopped (its underlying task is
+    done) and a new one is in place. The exporter may be a fresh
+    instance (the engine's shutdown_otel drained the prior processor's
+    queue indirectly via cleanup_agent in production) — what matters
+    is that no duplicate background tasks linger.
+    """
+    app = FastAPI()
+    app.state.sessionmaker = sessionmaker_factory
+    app.state.engine_config = None
+
+    try:
+        await attach_trace_pipeline(app)
+        first_writer = app.state.trace_writer_task
+        first_retention = app.state.trace_retention_task
+        first_underlying = first_writer._task
+
+        # Simulate a reload — engine cleanup drains otel_lifecycle.
+        otel_lifecycle.shutdown_otel()
+
+        await attach_trace_pipeline(app)
+
+        second_writer = app.state.trace_writer_task
+        second_retention = app.state.trace_retention_task
+
+        # The prior writer must have been stopped (its asyncio.Task
+        # object is None after stop() or completed). The instance
+        # itself must be a different one — otherwise we'd be sharing a
+        # cancelled task.
+        assert second_writer is not first_writer
+        assert second_retention is not first_retention
+        # The first writer's underlying asyncio task is now finished.
+        assert first_writer._task is None or first_underlying.done()
+        # The second writer is live.
+        assert second_writer._task is not None
+        assert not second_writer._task.done()
+    finally:
+        if getattr(app.state, "trace_writer_task", None) is not None:
+            await app.state.trace_writer_task.stop()
+        if getattr(app.state, "trace_retention_task", None) is not None:
+            await app.state.trace_retention_task.stop()
+
+
+@pytest.mark.asyncio
+async def test_attach_trace_pipeline_failopen_when_sessionmaker_missing():
+    """Missing app.state.sessionmaker must log and continue — never raise.
+
+    Telemetry must never alter command/runtime semantics. A bootstrap
+    callback exception would otherwise propagate up into the engine's
+    configure_app → reload pipeline and surface as a reload failure
+    even though the agent itself is fine.
+    """
+    app = FastAPI()
+    # Intentionally NOT setting app.state.sessionmaker.
+    app.state.engine_config = None
+
+    # The callback must NOT raise.
+    await attach_trace_pipeline(app)
+
+    # Writer/retention should not have been spawned without a session
+    # factory — but the absence of those attrs is the signal, not an
+    # exception.
+    assert getattr(app.state, "trace_writer_task", None) is None
+    assert getattr(app.state, "trace_retention_task", None) is None

@@ -41,6 +41,9 @@ from idun_agent_standalone.infrastructure.db.session import (
     create_db_engine,
     create_sessionmaker,
 )
+from idun_agent_standalone.infrastructure.traces.bootstrap import (
+    attach_trace_pipeline,
+)
 from idun_agent_standalone.services import auth as auth_service
 from idun_agent_standalone.services.engine_config import (
     AssemblyError,
@@ -226,6 +229,15 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         app.state.post_configure_callbacks.append(_keep_ui_mount_last)
     else:
         logger.info("boot ui not mounted, no built SPA found")
+
+    # Wire the trace pipeline into the engine's OTel pipeline. This
+    # callback fires on every configure_app — boot AND reload — and
+    # is responsible for attaching the SpanExporter, spawning the
+    # writer + retention tasks, and self-installing the LangChain
+    # instrumentor when the user picked a non-OTel provider.
+    if not hasattr(app.state, "post_configure_callbacks"):
+        app.state.post_configure_callbacks = []
+    app.state.post_configure_callbacks.append(attach_trace_pipeline)
 
     logger.info("boot complete")
     return app
