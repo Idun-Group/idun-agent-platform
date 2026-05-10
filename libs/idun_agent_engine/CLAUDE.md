@@ -248,6 +248,22 @@ Config values support env var references: `${LANGFUSE_HOST}` syntax in YAML, res
 
 The `observability/otel_lifecycle.py` helper exposes `init_otel`, `attach_span_processor`, `attach_instrumentor`, `reload_otel`, and `shutdown_otel` for managing the engine's TracerProvider lifecycle. The standalone runtime's local trace pipeline (`libs/idun_agent_standalone/src/idun_agent_standalone/infrastructure/traces/`) is the canonical consumer of `attach_span_processor`: it registers its own `SpanExporter` from a `post_configure_callbacks` entry on every (re)load, so the local trace store captures alongside whatever provider the user has configured. External consumers may attach their own SpanProcessors via the same helper.
 
+### Attribute projection (ADK → OpenInference)
+
+`observability/projection.py` exposes a pure-function helper that maps Google ADK's native span attributes (`gen_ai.*` semantic conventions plus `gcp.vertex.agent.*` extensions) onto the OpenInference attribute schema the rest of the platform consumes:
+
+```python
+from idun_agent_engine.observability.projection import project_to_openinference
+
+projected = project_to_openinference(span_attrs, span_name=span.name)
+```
+
+Returns a new dict containing the union of source keys and projected keys. LangGraph spans (already OpenInference-shaped) pass through bit-identical via the `openinference.span.kind` early-return guard. ADK `call_llm` spans get `llm.model_name`, `llm.token_count.{prompt,completion,total}`, `llm.provider`, `input.value`, `output.value`. ADK `invoke_agent <X>` and `execute_tool <X>` spans get `openinference.span.kind` flipped from the OTel `INTERNAL` to `AGENT` / `TOOL`.
+
+Why a pure function rather than a SpanProcessor: OTel `ReadableSpan` attributes are frozen at `on_end`, so SpanProcessor-level mutation requires private-API access that's brittle to SDK upgrades. The helper-function approach lets each consumer (standalone writer, future Langfuse extension, Phoenix exporter) call the projection at its own normalisation step. The standalone writer composes it inside `_span_to_row` between attribute truncation and the kind read.
+
+Source-of-truth design: `~/Documents/GitHub/idun-dev/tasks/engine-adk-openinference-projection-10-05-2026/`.
+
 ## Prompts
 
 `idun_agent_engine.prompts` provides helpers for loading `PromptConfig` entries from YAML files or the Manager API.
