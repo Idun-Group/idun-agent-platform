@@ -12,7 +12,7 @@ This page covers what the trace store captures, how to read the trace UI, and wh
 
 The trace store consumes OpenTelemetry spans emitted by the engine's existing instrumentation (LangChain, ADK, MCP, guardrails). The standalone runtime attaches its own `SpanExporter` to the engine's TracerProvider on boot, so spans flow:
 
-```
+```text
 Agent run -> Engine OTel TracerProvider -> Standalone SpanExporter
           -> bounded queue -> asyncio writer -> standalone_trace + standalone_span tables
           -> /admin/api/v1/traces -> trace UI
@@ -28,38 +28,38 @@ The list view at **Traces** shows one row per agent run.
 
 Default columns:
 
-- **Name** — the root span name (typically the agent or graph entry point).
-- **Started at** — wall-clock timestamp.
-- **Latency** — end-to-end duration of the trace.
-- **Total tokens** — sum across every LLM span in the trace.
-- **Total cost** — sum across every LLM span, computed from the LiteLLM model-price snapshot.
-- **Model(s)** — distinct models touched in the run.
-- **Status** — `ok`, `error`, or `unset`.
+- **Name**: the root span name (typically the agent or graph entry point).
+- **Started at**: wall-clock timestamp.
+- **Latency**: end-to-end duration of the trace.
+- **Total tokens**: sum across every LLM span in the trace.
+- **Total cost**: sum across every LLM span, computed from the LiteLLM model-price snapshot.
+- **Model(s)**: distinct models touched in the run.
+- **Status**: `ok`, `error`, or `unset`.
 
 Hidden by default, toggleable from the column menu:
 
-- **User ID** — `user.id` projected onto spans by the engine's `using_user(...)` wrapper.
-- **Session ID** — `session.id`, auto-promoted from LangGraph's `configurable.thread_id`.
-- **Tags** — operator-defined trace metadata.
+- **User ID**: `user.id` projected onto spans by the engine's `using_user(...)` wrapper.
+- **Session ID**: `session.id`, auto-promoted from LangGraph's `configurable.thread_id`.
+- **Tags**: operator-defined trace metadata.
 
 ### Filter shortcuts
 
 Above the list, you can filter by:
 
-- **Time range** — last 1 hour, 24 hours, 7 days, custom.
-- **Model** — array-contains match against the trace's denormalised `models` column.
-- **Status** — `ok` / `error` / `unset`.
-- **User** — exact match on `user.id`.
-- **Session** — exact match on `session.id`.
-- **Free-text search** — searches span names. Postgres uses `pg_trgm`; SQLite uses prefix `LIKE`. Document character cap: 256.
+- **Time range**: last 1 hour, 24 hours, 7 days, custom.
+- **Model**: array-contains match against the trace's denormalised `models` column.
+- **Status**: `ok` / `error` / `unset`.
+- **User**: exact match on `user.id`.
+- **Session**: exact match on `session.id`.
+- **Free-text search**: searches span names. Postgres uses `pg_trgm`; SQLite uses prefix `LIKE`. Document character cap: 256.
 
 ## Trace detail view
 
 Click a row to open the trace detail. The layout has three panels:
 
-1. **Span tree** (left) — collapsible hierarchical view, one row per span, with kind icon, latency, token, and cost badges.
-2. **Waterfall** (top-right) — horizontal duration bars, percentage-positioned, with the critical path highlighted.
-3. **Right rail** (bottom-right) — the selected span's detail with five tabs: **Info**, **Input**, **Output**, **Attributes**, **Events**.
+1. **Span tree** (left): collapsible hierarchical view, one row per span, with kind icon, latency, token, and cost badges.
+2. **Waterfall** (top-right): horizontal duration bars, percentage-positioned, with the critical path highlighted.
+3. **Right rail** (bottom-right): the selected span's detail with five tabs: **Info**, **Input**, **Output**, **Attributes**, **Events**.
 
 The **Input** and **Output** tabs render chat messages as bubbles by default with a Pretty/Raw JSON toggle. Tool calls appear as structured cards. The **Attributes** tab shows the raw OpenInference attribute map.
 
@@ -93,8 +93,8 @@ Long `input.value` / `output.value` strings are truncated at 64 KB by default. T
 
 The admin UI exposes a small panel showing the trace pipeline's runtime health: queue depth and dropped-span count.
 
-- **Queue depth** — number of spans buffered between the engine's `BatchSpanProcessor` and the asyncio writer task. Normal values stay near zero. A non-trivial steady-state queue depth means the writer is falling behind.
-- **Drop count** — number of spans dropped by the bounded queue under sustained backpressure (drop-oldest policy). A non-zero count means input span rate exceeds the writer's drain rate.
+- **Queue depth**: number of spans buffered between the engine's `BatchSpanProcessor` and the asyncio writer task. Normal values stay near zero. A non-trivial steady-state queue depth means the writer is falling behind.
+- **Drop count**: number of spans dropped by the bounded queue under sustained backpressure (drop-oldest policy). A non-zero count means input span rate exceeds the writer's drain rate.
 
 Sustained drops or a climbing queue depth on Postgres point at one of:
 
@@ -108,8 +108,8 @@ On SQLite, sustained drops past a few thousand traces typically mean it is time 
 
 Traces are kept for 14 days by default and dropped automatically beyond that. Tune via `IDUN_TRACE_RETENTION_DAYS`.
 
-- **Postgres** — monthly partition rotation. Expired partitions are detached concurrently and dropped. The runtime pre-creates the next two months of partitions on boot.
-- **SQLite** — a scheduled `DELETE` runs daily.
+- **Postgres**: monthly partition rotation. Expired partitions are detached and dropped, and the runtime pre-creates the next two months of partitions on boot.
+- **SQLite**: a scheduled `DELETE` runs daily.
 
 ## Switching to Postgres
 
@@ -121,9 +121,9 @@ See [Switching to Postgres](/quickstart#switching-to-postgres) for the full proc
 
 The local trace store is the default floor. If you want richer dashboards, hosted retention, evaluation tooling, or team-shared traces, configure an additional observability provider in the engine's [observability config](/observability/overview):
 
-- [Langfuse](/observability/langfuse) — open-source observability with per-LLM analytics.
-- [Arize Phoenix](/observability/arize-phoenix) — OpenInference-native trace viewer and evaluation suite.
-- [LangSmith](/observability/langsmith) — LangChain-native debugging and monitoring.
-- [Google Cloud Trace](/observability/gcp-trace) — distributed tracing inside Google Cloud.
+- [Langfuse](/observability/langfuse): open-source observability with per-LLM analytics.
+- [Arize Phoenix](/observability/arize-phoenix): OpenInference-native trace viewer and evaluation suite.
+- [LangSmith](/observability/langsmith): LangChain-native debugging and monitoring.
+- [Google Cloud Trace](/observability/gcp-trace): distributed tracing inside Google Cloud.
 
 These stack on top of the local store. You always keep the local copy.

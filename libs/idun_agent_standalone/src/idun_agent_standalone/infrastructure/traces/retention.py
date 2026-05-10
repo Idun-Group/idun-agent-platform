@@ -8,8 +8,15 @@ PG branch:
       ``now - <retention_days>`` (sourced from
       ``StandaloneSettings.trace_retention_days`` →
       ``IDUN_TRACE_RETENTION_DAYS``) for both ``standalone_trace``
-      and ``standalone_span``. Uses ``DETACH CONCURRENTLY`` then
-      ``DROP TABLE`` to avoid an ACCESS EXCLUSIVE lock on the parent.
+      and ``standalone_span``. Uses ``ALTER TABLE ... DETACH
+      PARTITION`` followed by ``DROP TABLE``. The detach takes a
+      short ACCESS EXCLUSIVE lock on the parent; the daily 03:00 UTC
+      schedule keeps that window away from peak write traffic.
+      TODO(traces): switch to ``DETACH PARTITION ... CONCURRENTLY``
+      once we have a multi-worker stress test that exercises
+      retention under sustained ingest. The concurrent path requires
+      not running inside an open txn block, so it needs careful
+      session handling.
     - Pre-creates the next-next-month partition for both tables so
       the writer never inserts into the ``DEFAULT`` catch-all.
     - Releases the advisory lock with ``pg_advisory_unlock``.
@@ -157,11 +164,16 @@ class RetentionScheduler:
     async def _drop_expired_partitions(
         self, session: Any, parent: str, cutoff: datetime
     ) -> None:
-        """DETACH CONCURRENTLY then DROP TABLE for partitions older than cutoff.
+        """``ALTER TABLE ... DETACH PARTITION`` then ``DROP TABLE`` for partitions older than cutoff.
 
         Partition naming follows T1's migration pattern: ``<parent>_<YYYYMM>``.
         We discover them from ``pg_inherits`` rather than name-matching to
         survive any future rename.
+
+        TODO(traces): switch to ``DETACH PARTITION ... CONCURRENTLY``
+        (PG 14+) once we have a multi-worker retention stress test.
+        Concurrent detach avoids the ACCESS EXCLUSIVE lock on the
+        parent but can only run outside a transaction block.
         """
         rows = (
             await session.execute(
@@ -193,10 +205,11 @@ class RetentionScheduler:
                 end_year, end_month = year, month + 1
             partition_end = datetime(end_year, end_month, 1, tzinfo=UTC)
             if partition_end < cutoff:
-                # DETACH CONCURRENTLY cannot run inside a txn block; we
-                # rely on SQLAlchemy's autocommit-friendly ``text`` exec
-                # under the writer's session. If the dialect rejects it
-                # in a txn, the failure is caught at _run_once.
+                # Plain ``DETACH PARTITION`` (no CONCURRENTLY) takes a
+                # short ACCESS EXCLUSIVE lock on the parent. Daily
+                # 03:00 UTC schedule keeps the window away from peak
+                # write traffic. See class docstring for the deferred
+                # CONCURRENTLY upgrade.
                 await session.execute(
                     text(f'ALTER TABLE {parent} DETACH PARTITION "{short_name}"')
                 )

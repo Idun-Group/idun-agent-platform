@@ -31,15 +31,19 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
-async def sessionmaker_factory(tmp_path):
+async def sessionmaker_factory():
     """Real aiosqlite sessionmaker so the writer's first drain has somewhere
-    to land — a bare MagicMock would crash the writer's _drain_once loop."""
-    url = f"sqlite+aiosqlite:///{tmp_path / 'bootstrap.db'}"
-    setup_engine = create_async_engine(url)
-    async with setup_engine.begin() as conn:
+    to land -- a bare MagicMock would crash the writer's _drain_once loop.
+
+    Repo guideline (services/idun_agent_standalone_ui CLAUDE.md and
+    libs/idun_agent_standalone/CLAUDE.md): integration tests use
+    in-memory SQLite. We share a single engine across the schema
+    setup and the sessionmaker so the in-memory DB is the same one
+    the writer's session opens against.
+    """
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    await setup_engine.dispose()
-    engine = create_async_engine(url)
     sm = async_sessionmaker(engine, expire_on_commit=False)
     yield sm
     await engine.dispose()

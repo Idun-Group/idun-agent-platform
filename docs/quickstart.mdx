@@ -153,7 +153,7 @@ graph.set_finish_point("chatbot")
 
 ## Switching to Postgres
 
-The standalone runtime ships with SQLite as the default database for quickstart and demo. For production, switch to Postgres. SQLite's trace-storage ceiling is around 10k traces before the list view starts to lag. The trace UI shows a permanent banner reminding operators of this when SQLite is the active backend.
+The standalone runtime ships with SQLite as the default database for quickstart and demo. For production, switch to Postgres. SQLite's trace-storage ceiling is around 10k traces before the list view starts to lag. <!-- VERIFY: 10k trace ceiling sourced from tasks/trace-feature-08-05-2026/13-sizing-perf.md and 18-postgres-throughput-probe.md; rerun probe before each release. --> The trace UI shows a permanent banner reminding operators of this when SQLite is the active backend.
 
 To switch:
 
@@ -180,7 +180,7 @@ To switch:
   </Step>
 </Steps>
 
-Postgres unlocks 5–8k spans/sec sustained write (Linux production floor) versus 1k spans/sec on SQLite, plus richer free-text search and bounded read latency at scale.
+Postgres unlocks 5–8k spans/sec sustained write (Linux production floor) versus 1k spans/sec on SQLite, plus richer free-text search and bounded read latency at scale. <!-- VERIFY: span/sec figures sourced from tasks/trace-feature-08-05-2026/18-postgres-throughput-probe.md (asyncpg copy_records_to_table benchmark); rerun probe before each release. -->
 
 ### Trace-store environment variables
 

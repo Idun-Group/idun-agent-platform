@@ -17,10 +17,14 @@
 //      window.location -- there is nothing trace-id-specific in the
 //      generated HTML.
 //
-// Until the SPA rewrite ships in the standalone backend, deep links
-// to specific trace ids are best driven by the in-app Link from the
-// trace list -- those traverse Next.js client-side routing and render
-// the same component without a fresh document load.
+// SPA-rewrite status: live. The standalone backend's
+// ``GET /admin/traces/{trace_id}`` route at
+// ``libs/idun_agent_standalone/src/idun_agent_standalone/app.py`` maps
+// any deep link to the static placeholder shell, and FastAPI's
+// default ``redirect_slashes=True`` covers the trailing-slash
+// variant. The client reads the real id off ``window.location`` via
+// ``useParams()`` inside the client component -- a fresh document
+// load and an in-app Link both render identically.
 
 import TraceDetailClient from "./TraceDetailClient";
 
