@@ -1,6 +1,6 @@
 import { getJson, postJson, patchJson, deleteRequest } from '../utils/api';
 
-export type IntegrationProvider = 'WHATSAPP' | 'DISCORD' | 'SLACK' | 'GOOGLE_CHAT';
+export type IntegrationProvider = 'WHATSAPP' | 'DISCORD' | 'SLACK' | 'GOOGLE_CHAT' | 'TEAMS';
 
 export interface WhatsAppIntegrationConfig {
     access_token: string;
