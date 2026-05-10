@@ -246,6 +246,8 @@ Top-level config. Multiple providers can be active simultaneously. All are lazy-
 
 Config values support env var references: `${LANGFUSE_HOST}` syntax in YAML, resolved at load time.
 
+The `observability/otel_lifecycle.py` helper exposes `init_otel`, `attach_span_processor`, `attach_instrumentor`, `reload_otel`, and `shutdown_otel` for managing the engine's TracerProvider lifecycle. The standalone runtime's local trace pipeline (`libs/idun_agent_standalone/src/idun_agent_standalone/infrastructure/traces/`) is the canonical consumer of `attach_span_processor`: it registers its own `SpanExporter` from a `post_configure_callbacks` entry on every (re)load, so the local trace store captures alongside whatever provider the user has configured. External consumers may attach their own SpanProcessors via the same helper.
+
 ## Prompts
 
 `idun_agent_engine.prompts` provides helpers for loading `PromptConfig` entries from YAML files or the Manager API.

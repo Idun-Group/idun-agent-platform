@@ -30,6 +30,7 @@ dependencies = [
     "apscheduler>=3.10",
     "rfc8785>=0.1",
     "sentencepiece>=0.2.1",
+    "python-dateutil>=2.9",
 ]
 
 [tool.hatch.build.targets.sdist]

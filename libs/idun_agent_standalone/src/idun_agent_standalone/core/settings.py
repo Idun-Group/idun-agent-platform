@@ -46,6 +46,27 @@ class StandaloneSettings(BaseSettings):
     )
     ui_dir: Path | None = Field(default=None, alias="IDUN_UI_DIR")
 
+    # Trace pipeline knobs. ENV-001: these used to be read directly via
+    # ``os.getenv`` from ``infrastructure/traces/`` modules, which made
+    # the configuration surface invisible in this single source of
+    # truth. Rolled into ``StandaloneSettings`` so misconfigured deploys
+    # surface as a Pydantic validation error instead of silent defaults.
+    trace_retention_days: int = Field(
+        default=14,
+        ge=1,
+        le=365,
+        alias="IDUN_TRACE_RETENTION_DAYS",
+    )
+    traces_input_value_max_bytes: int = Field(
+        default=65536,
+        ge=1024,
+        alias="IDUN_TRACES_INPUT_VALUE_MAX_BYTES",
+    )
+    prices_refresh_enabled: bool = Field(
+        default=False,
+        alias="IDUN_PRICES_REFRESH",
+    )
+
     @field_validator("admin_password_hash", "session_secret", mode="before")
     @classmethod
     def _strip_secret(cls, v: str) -> str:

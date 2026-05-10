@@ -72,6 +72,45 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
 - [Govern MCP tools](/tool-governance/overview): per-agent tool access control
 - [Deploy](/deployment/overview): Cloud Run, Kubernetes, or any single-container host
 
+## Switching to Postgres
+
+The standalone runtime ships with SQLite as the default database for quickstart and demo. For production, switch to Postgres. SQLite's trace-storage ceiling is around 10k traces before the list view starts to lag. <!-- VERIFY: 10k trace ceiling sourced from tasks/trace-feature-08-05-2026/13-sizing-perf.md and 18-postgres-throughput-probe.md; rerun probe before each release. --> The trace UI shows a permanent banner reminding operators of this when SQLite is the active backend.
+
+To switch:
+
+<Steps>
+  <Step title="Provision Postgres 15+">
+    Provision a Postgres 15 or newer database. Make sure the `pg_trgm` extension is available, used for free-text trace search.
+  </Step>
+  <Step title="Set DATABASE_URL">
+    ```bash
+    export DATABASE_URL="postgresql+asyncpg://user:pass@host:5432/dbname"
+    ```
+  </Step>
+  <Step title="Run migrations">
+    ```bash
+    idun setup
+    ```
+
+    Alembic creates the trace tables with monthly partitioning, plus the standard standalone admin tables.
+  </Step>
+  <Step title="Restart the standalone runtime">
+    ```bash
+    idun serve
+    ```
+  </Step>
+</Steps>
+
+Postgres unlocks 5–8k spans/sec sustained write (Linux production floor) versus 1k spans/sec on SQLite, plus richer free-text search and bounded read latency at scale. <!-- VERIFY: span/sec figures sourced from tasks/trace-feature-08-05-2026/18-postgres-throughput-probe.md (asyncpg copy_records_to_table benchmark); rerun probe before each release. -->
+
+### Trace-store environment variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `IDUN_TRACE_RETENTION_DAYS` | `14` | How many days of traces to keep before dropping. On Postgres, expired monthly partitions are detached and dropped. On SQLite, a scheduled `DELETE` runs. |
+| `IDUN_TRACES_INPUT_VALUE_MAX_BYTES` | `65536` | Per-attribute byte cap before truncation. Lower this on heavy-payload deployments to recover throughput, or raise it to keep more raw input/output. |
+| `IDUN_PRICES_REFRESH` | `false` | When `true`, the cost calculator fetches the LiteLLM model-prices snapshot at boot (5-second timeout, snapshot fallback). Default uses the vendored monthly snapshot. |
+
 <Note>
   The original `docker-compose` and Manager UI quickstart paths were retired in v0.6. If you're upgrading from a pre-v0.6 install, file a [GitHub issue](https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=docs%2Cmigration) and we'll publish a migration note.
 </Note>

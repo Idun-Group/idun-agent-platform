@@ -39,6 +39,13 @@ OPENAPI_TAGS: list[dict[str, str]] = [
         "name": "Observability",
         "description": "Tracing/logging provider configuration.",
     },
+    {
+        "name": "Traces",
+        "description": (
+            "Trace and span storage admin endpoints — list, detail, "
+            "delete, and pipeline-health for the standalone trace store."
+        ),
+    },
 ]
 """Ordered tag groups exposed in /docs. Order = display order."""
 

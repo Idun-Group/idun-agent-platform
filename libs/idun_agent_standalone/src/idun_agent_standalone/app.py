@@ -41,6 +41,9 @@ from idun_agent_standalone.infrastructure.db.session import (
     create_db_engine,
     create_sessionmaker,
 )
+from idun_agent_standalone.infrastructure.traces.bootstrap import (
+    attach_trace_pipeline,
+)
 from idun_agent_standalone.services import auth as auth_service
 from idun_agent_standalone.services.engine_config import (
     AssemblyError,
@@ -198,6 +201,29 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
                 await asyncio.sleep(0)
                 yield
         finally:
+            # Stop the trace pipeline tasks before disposing the engine,
+            # otherwise the writer's next ``_drain_once`` (which opens a
+            # session against the disposed pool) and the retention
+            # scheduler's daily job race against a closed AsyncEngine
+            # and surface as noise in the shutdown logs.
+            #
+            # ``getattr`` with a default keeps shutdown idempotent: if
+            # the bootstrap callback never fired (admin-only mode, no
+            # post_configure pass), the attrs simply don't exist.
+            writer = getattr(app.state, "trace_writer_task", None)
+            if writer is not None:
+                try:
+                    await writer.stop()
+                except Exception:
+                    logger.exception("shutdown trace writer stop failed")
+                app.state.trace_writer_task = None
+            retention = getattr(app.state, "trace_retention_task", None)
+            if retention is not None:
+                try:
+                    await retention.stop()
+                except Exception:
+                    logger.exception("shutdown trace retention stop failed")
+                app.state.trace_retention_task = None
             await db_engine.dispose()
 
     app.router.lifespan_context = standalone_lifespan
@@ -218,6 +244,32 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
             for r in app.router.routes
             if not (isinstance(r, APIRoute) and r.path == "/" and "GET" in r.methods)
         ]
+
+        # SPA rewrite for the trace-detail dynamic route. Next.js static
+        # export emits the placeholder shell at admin/traces/__trace__/;
+        # arbitrary trace ids in the URL path won't resolve against
+        # StaticFiles because each id is a different filesystem path.
+        # Serve the placeholder for any /admin/traces/<id> request and
+        # let the client read the real id from window.location.
+        # FastAPI's default ``redirect_slashes=True`` handles the
+        # trailing-slash variant, so a single route covers both.
+        from fastapi.responses import FileResponse
+
+        # Resolve the SPA shell path once at boot — the file layout cannot
+        # change at runtime and the request handler is on the async hot
+        # path, so the per-request ``Path.is_file()`` syscall is wasteful
+        # (ASYNC-001). Falls back to the root ``index.html`` when the
+        # static export is older than the trace-detail route.
+        _trace_shell = ui_dir / "admin" / "traces" / "__trace__" / "index.html"
+        _spa_root_shell = ui_dir / "index.html"
+        _selected_trace_shell = (
+            _trace_shell if _trace_shell.is_file() else _spa_root_shell
+        )
+
+        @app.get("/admin/traces/{trace_id}", include_in_schema=False)
+        async def _trace_detail_spa_shell(trace_id: str) -> FileResponse:
+            return FileResponse(_selected_trace_shell)
+
         app.mount("/", StaticFiles(directory=str(ui_dir), html=True), name="ui")
         logger.info("boot ui mounted from=%s", ui_dir)
 
@@ -226,6 +278,15 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         app.state.post_configure_callbacks.append(_keep_ui_mount_last)
     else:
         logger.info("boot ui not mounted, no built SPA found")
+
+    # Wire the trace pipeline into the engine's OTel pipeline. This
+    # callback fires on every configure_app — boot AND reload — and
+    # is responsible for attaching the SpanExporter, spawning the
+    # writer + retention tasks, and self-installing the LangChain
+    # instrumentor when the user picked a non-OTel provider.
+    if not hasattr(app.state, "post_configure_callbacks"):
+        app.state.post_configure_callbacks = []
+    app.state.post_configure_callbacks.append(attach_trace_pipeline)
 
     logger.info("boot complete")
     return app

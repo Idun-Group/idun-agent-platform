@@ -94,7 +94,7 @@
           {
             "group": "Observability",
             "icon": "chart-line",
-            "pages": ["observability/overview", "observability/langfuse", "observability/arize-phoenix", "observability/langsmith", "observability/gcp-trace", "observability/gcp-logging"]
+            "pages": ["observability/overview", "observability/traces", "observability/langfuse", "observability/arize-phoenix", "observability/langsmith", "observability/gcp-trace", "observability/gcp-logging"]
           },
           {
             "group": "Tool governance",
