@@ -131,6 +131,17 @@ export type StandaloneTraceHealth = {
   overflowCount: number;
   writerRunning: boolean;
   databaseDialect: string;
+  // ``instrumentorStatus = "ok"`` means the OpenInference instrumentor
+  // is active and emitting spans. ``"dependency_conflict"`` flags an
+  // upstream package-metadata refusal (most commonly a pre-release
+  // ``langchain-core`` rejected by
+  // ``openinference-instrumentation-langchain``); the pipeline says
+  // "attached" but no spans flow until the operator pins back to a
+  // stable version. ``"attach_failed"`` covers the rare other
+  // instrumentor-init crashes. The PipelineHealthPanel surfaces a red
+  // pill on any non-``"ok"`` value.
+  instrumentorStatus?: "ok" | "dependency_conflict" | "attach_failed";
+  instrumentorMessage?: string | null;
 };
 
 /**

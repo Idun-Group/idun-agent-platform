@@ -247,6 +247,8 @@ async def test_health_endpoint_returns_zero_when_pipeline_absent(admin_app) -> N
         "overflowCount": 0,
         "writerRunning": False,
         "databaseDialect": "unknown",
+        "instrumentorStatus": "ok",
+        "instrumentorMessage": None,
     }
 
 

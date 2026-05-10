@@ -140,6 +140,18 @@ class StandaloneTraceHealth(_CamelModel):
     overflow_count: int
     writer_running: bool
     database_dialect: str = "unknown"
+    # ``instrumentor_status`` surfaces dependency-conflict detection from
+    # the trace bootstrap. ``"ok"`` → instrumentor active and emitting
+    # spans. ``"dependency_conflict"`` → an OpenInference instrumentor's
+    # package-metadata constraint refused the installed dep set (most
+    # commonly a pre-release ``langchain-core`` rejected by
+    # ``openinference-instrumentation-langchain``); spans are silently
+    # not emitted unless the operator pins to a stable version.
+    # ``"attach_failed"`` → ``BaseInstrumentor.instrument()`` raised
+    # for a non-conflict reason. The UI panel surfaces a red pill on
+    # any non-``"ok"`` value.
+    instrumentor_status: str = "ok"
+    instrumentor_message: str | None = None
 
 
 class StandaloneTraceDeleteResult(_CamelModel):

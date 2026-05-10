@@ -282,6 +282,12 @@ async def trace_pipeline_health(request: Request) -> StandaloneTraceHealth:
     exporter = getattr(request.app.state, "trace_exporter", None)
     writer = getattr(request.app.state, "trace_writer_task", None)
     database_dialect = _read_database_dialect(request)
+    instrumentor_status = getattr(
+        request.app.state, "trace_instrumentor_status", "ok"
+    )
+    instrumentor_message = getattr(
+        request.app.state, "trace_instrumentor_message", None
+    )
     if exporter is None:
         return StandaloneTraceHealth(
             queue_depth=0,
@@ -289,6 +295,8 @@ async def trace_pipeline_health(request: Request) -> StandaloneTraceHealth:
             overflow_count=0,
             writer_running=False,
             database_dialect=database_dialect,
+            instrumentor_status=instrumentor_status,
+            instrumentor_message=instrumentor_message,
         )
 
     return StandaloneTraceHealth(
@@ -297,6 +305,8 @@ async def trace_pipeline_health(request: Request) -> StandaloneTraceHealth:
         overflow_count=getattr(exporter, "overflow_count", 0),
         writer_running=bool(writer is not None and getattr(writer, "running", False)),
         database_dialect=database_dialect,
+        instrumentor_status=instrumentor_status,
+        instrumentor_message=instrumentor_message,
     )
 
 
