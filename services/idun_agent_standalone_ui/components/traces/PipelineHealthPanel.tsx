@@ -125,6 +125,42 @@ export function PipelineHealthPanel({ className }: PipelineHealthPanelProps) {
     return null;
   }
 
+  // Instrumentor dependency conflict / attach failure surfaces a red
+  // pill that overrides the healthy/degraded display. This is the
+  // signal that PR #609's follow-up adds: a pre-release langchain-core
+  // (or similar) silently disables the OpenInference instrumentor, so
+  // the pipeline appears healthy (writer running, queue empty) while
+  // no spans actually flow. Surfaced ABOVE everything else because it
+  // is the most upstream failure.
+  if (
+    data.instrumentorStatus &&
+    data.instrumentorStatus !== "ok"
+  ) {
+    return (
+      <div
+        role="status"
+        aria-label="Trace pipeline instrumentor error"
+        data-testid="pipeline-health-instrumentor-error"
+        className={cn(
+          "flex flex-wrap items-center gap-2 rounded-md border border-red-300/60 bg-red-50 px-3 py-1.5 text-xs dark:border-red-700/60 dark:bg-red-950/30",
+          className,
+        )}
+      >
+        <ShieldAlertIcon className="size-3.5 text-red-700 dark:text-red-300" />
+        <span className="font-medium text-foreground">
+          Trace instrumentor inactive
+        </span>
+        <span className="text-muted-foreground">
+          —{" "}
+          {data.instrumentorStatus === "dependency_conflict"
+            ? "dependency conflict"
+            : "attach failed"}
+          {data.instrumentorMessage ? `: ${data.instrumentorMessage}` : ""}
+        </span>
+      </div>
+    );
+  }
+
   // Healthy + collapsed (default unless operator un-collapsed). Renders
   // a one-line indicator. Click expands locally; clicking Hide on the
   // expanded panel returns to this collapsed state.

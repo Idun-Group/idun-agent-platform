@@ -50,7 +50,14 @@ dependencies = [
     "langgraph-checkpoint-postgres>=3.0.0,<4.0.0",
     "google-adk>=1.19.0,<2.0.0",
     "langchain>=1.0.0,<2.0.0",
-    "langchain-core>=1.0.0,<2.0.0",
+    # Cap below 1.4 — openinference-instrumentation-langchain declares
+    # ``langchain_core >= 0.1.0`` in its package metadata, and pip's
+    # ``--pre`` flag (used on TestPyPI installs) propagates to ALL
+    # packages, so the resolver picks up 1.4.0aN alphas which the
+    # instrumentor's pre-release-rejecting constraint refuses,
+    # silently disabling the entire trace pipeline. Bump this cap once
+    # langchain-core 1.4.0 final ships.
+    "langchain-core>=1.0.0,<1.4",
     "langchain-google-vertexai>=2.0.27,<4.0.0",
     # AG-UI and interactive interfaces
     "ag-ui-protocol==0.1.13",

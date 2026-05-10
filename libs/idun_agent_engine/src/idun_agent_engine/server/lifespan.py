@@ -5,9 +5,27 @@ Initializes the agent at startup and cleans up resources on shutdown.
 
 import inspect
 import logging
+import warnings
 from collections.abc import Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+
+# ag_ui.core.types declares pydantic field aliases on type-aliased
+# union members; pydantic v2 flags this with
+# UnsupportedFieldAttributeWarning, ~30 lines per boot. The aliases
+# still work at runtime — filter the noise so the boot log isn't
+# dominated by upstream-library complaints. Track upstream and remove
+# this filter once ag_ui migrates to ``Annotated[..., Field(...)]``.
+try:
+    from pydantic import UnsupportedFieldAttributeWarning
+
+    warnings.filterwarnings(
+        "ignore",
+        category=UnsupportedFieldAttributeWarning,
+        module=r"ag_ui\.core\..*",
+    )
+except ImportError:
+    pass
 
 from fastapi import FastAPI
 from idun_agent_schema.engine.guardrails import Guardrails

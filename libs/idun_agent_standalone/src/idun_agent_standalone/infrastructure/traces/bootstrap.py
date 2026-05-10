@@ -118,21 +118,59 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
 
     # 4. Self-install LangChainInstrumentor when no provider OR all
     #    enabled providers bypass OTel.
+    #
+    # ``BaseInstrumentor.instrument()`` does NOT raise when the
+    # OpenInference dep-conflict check fails — it logs ERROR via the
+    # ``opentelemetry.instrumentation.instrumentor`` logger and skips
+    # silently, leaving the pipeline ostensibly attached but with no
+    # spans flowing. We pre-check ``_check_dependency_conflicts()`` so
+    # we can surface the failure on ``/_health`` instead of leaving
+    # the operator chasing an empty trace store. The unprefixed
+    # name is the public-but-stable hook OpenInference uses; if a
+    # future SDK release renames it, the detection silently downgrades
+    # to "looks ok" and the operator hits the existing silent failure.
+    instrumentor_status = "ok"
+    instrumentor_message: str | None = None
     if not providers or all(p in _OTEL_BYPASSING_PROVIDERS for p in providers):
         try:
             from openinference.instrumentation.langchain import (
                 LangChainInstrumentor,
             )
 
-            otel_lifecycle.attach_instrumentor(LangChainInstrumentor())
-            logger.info("trace pipeline: self-installed LangChainInstrumentor")
+            instrumentor = LangChainInstrumentor()
+            conflict_check = getattr(instrumentor, "_check_dependency_conflicts", None)
+            conflict = conflict_check() if callable(conflict_check) else None
+            if conflict is not None:
+                instrumentor_status = "dependency_conflict"
+                instrumentor_message = str(conflict)
+                logger.error(
+                    "trace pipeline: LangChainInstrumentor dependency conflict — "
+                    "spans will NOT be captured: %s",
+                    conflict,
+                )
+            else:
+                otel_lifecycle.attach_instrumentor(instrumentor)
+                logger.info("trace pipeline: self-installed LangChainInstrumentor")
         except ImportError:
+            instrumentor_status = "attach_failed"
+            instrumentor_message = (
+                "openinference.instrumentation.langchain not installed"
+            )
             logger.warning(
                 "trace pipeline: openinference.instrumentation.langchain not "
                 "installed; LangChain spans will not be captured"
             )
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 — telemetry must never block
+            instrumentor_status = "attach_failed"
+            instrumentor_message = str(exc) or exc.__class__.__name__
             logger.exception("trace pipeline: LangChainInstrumentor install failed")
+
+    # Persist the result on app.state so the /_health route can surface
+    # it. Always set BOTH fields (they default to "ok" / None on the
+    # happy path) so a re-attach on reload overwrites a prior failure
+    # cleanly.
+    app.state.trace_instrumentor_status = instrumentor_status
+    app.state.trace_instrumentor_message = instrumentor_message
 
     # 5. Reuse the previously-built exporter when present so its
     #    bounded queue (and any buffered spans) survive reload.

@@ -200,4 +200,74 @@ describe("PipelineHealthPanel", () => {
       screen.queryByTestId("pipeline-health-auth-pill"),
     ).not.toBeInTheDocument();
   });
+
+  it("surfaces a red pill when the instrumentor failed with a dependency conflict", async () => {
+    // Even with a writer-running, drops-zero pipeline, an inactive
+    // instrumentor means zero spans are being captured. The red pill
+    // must override the healthy/degraded display so the operator
+    // doesn't trust an empty trace store.
+    vi.spyOn(tracesApi, "getTraceHealth").mockResolvedValue({
+      queueDepth: 0,
+      maxQueueSize: 8192,
+      overflowCount: 0,
+      writerRunning: true,
+      databaseDialect: "sqlite",
+      instrumentorStatus: "dependency_conflict",
+      instrumentorMessage:
+        'requested: "langchain_core >= 0.1.0" but found: "langchain_core 1.4.0a2"',
+    });
+
+    render(withQuery(<PipelineHealthPanel />));
+
+    const pill = await screen.findByTestId(
+      "pipeline-health-instrumentor-error",
+    );
+    expect(pill).toHaveTextContent(/Trace instrumentor inactive/);
+    expect(pill).toHaveTextContent(/dependency conflict/);
+    expect(pill).toHaveTextContent(/langchain_core/);
+    // Must NOT render the healthy collapsed pill alongside.
+    expect(
+      screen.queryByTestId("pipeline-health-collapsed"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("surfaces a red pill when the instrumentor attach failed for a non-conflict reason", async () => {
+    vi.spyOn(tracesApi, "getTraceHealth").mockResolvedValue({
+      queueDepth: 0,
+      maxQueueSize: 8192,
+      overflowCount: 0,
+      writerRunning: true,
+      databaseDialect: "sqlite",
+      instrumentorStatus: "attach_failed",
+      instrumentorMessage: "boom",
+    });
+
+    render(withQuery(<PipelineHealthPanel />));
+
+    const pill = await screen.findByTestId(
+      "pipeline-health-instrumentor-error",
+    );
+    expect(pill).toHaveTextContent(/attach failed/);
+    expect(pill).toHaveTextContent(/boom/);
+  });
+
+  it("renders the healthy collapsed pill when instrumentorStatus is omitted (back-compat)", async () => {
+    // Older backend payloads don't carry instrumentorStatus; the panel
+    // should fall back to the prior healthy/degraded path without the
+    // red pill being false-positive.
+    vi.spyOn(tracesApi, "getTraceHealth").mockResolvedValue({
+      queueDepth: 0,
+      maxQueueSize: 8192,
+      overflowCount: 0,
+      writerRunning: true,
+      databaseDialect: "sqlite",
+    });
+
+    render(withQuery(<PipelineHealthPanel />));
+
+    await screen.findByTestId("pipeline-health-collapsed");
+    expect(
+      screen.queryByTestId("pipeline-health-instrumentor-error"),
+    ).not.toBeInTheDocument();
+  });
 });

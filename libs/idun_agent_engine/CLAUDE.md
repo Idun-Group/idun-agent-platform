@@ -192,6 +192,30 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 - **`graph_definition`**: Format `path/to/file.py:variable_name`. Tries file path first, falls back to Python module import.
 - **Checkpointers**: `InMemorySaver`, `AsyncSqliteSaver`, `AsyncPostgresSaver` — configured via YAML.
 - **Streaming**: Maps LangGraph `astream_events(v2)` to AG-UI events (RunStarted, StepStarted, TextMessageStart/Content/End, ToolCallStart/Args/End, ThinkingStart/End, RunFinished).
+- **Capability discovery (input/output schemas)**: the adapter reads `graph.input_schema` and `graph.output_schema` from the compiled `StateGraph` to populate `AgentCapabilities.input.mode` / `output.mode`. Operators are encouraged to declare these explicitly:
+
+  ```python
+  class InputState(TypedDict):
+      messages: list[BaseMessage]
+
+  class OutputState(TypedDict):
+      response: str
+
+  class OverallState(TypedDict, total=False):
+      messages: list[BaseMessage]
+      intent: str  # internal carry
+      draft: str   # internal carry
+
+  builder = StateGraph(
+      OverallState,
+      input_schema=InputState,
+      output_schema=OutputState,
+  )
+  ```
+
+  When `input_schema` is supplied and contains only `messages`, the adapter sets `input.mode = "chat"`. With multi-field input schemas (no messages, or messages plus public fields), it sets `input.mode = "structured"` and exposes a JSON Schema; the chat surface then requires `messages[-1].content` to be valid JSON matching that schema (see `langgraph.py:1102` validation gate).
+
+  **Implicit-state default**: when no explicit `input_schema=` is supplied (`StateGraph(OverallState)` only), LangGraph defaults the input schema to OverallState. If OverallState has a `messages` field plus other internal scalars, the adapter resolves to `input.mode = "chat"` and treats messages as the canonical chat surface — the scalars are runtime-internal, not user-facing inputs. Operators who want a strict typed structured input contract opt in via the explicit-schema idiom above. Reference: [LangGraph input/output schema how-to](https://langchain-ai.github.io/langgraph/how-tos/input_output_schema/).
 
 ### ADK: Key Details
 

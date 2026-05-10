@@ -140,6 +140,70 @@ async def test_attach_trace_pipeline_is_idempotent_on_reload(sessionmaker_factor
 
 
 @pytest.mark.asyncio
+async def test_attach_trace_pipeline_surfaces_instrumentor_dependency_conflict(
+    sessionmaker_factory, monkeypatch
+):
+    """Dep conflict must flip ``trace_instrumentor_status`` and skip attach.
+
+    Simulates the production failure where a pre-release ``langchain-core``
+    fails the OpenInference instrumentor's metadata constraint. The
+    bootstrap must:
+
+      * read the conflict via ``_check_dependency_conflicts``,
+      * NOT call ``attach_instrumentor`` (which would silently no-op),
+      * persist the status + message on ``app.state`` so ``/_health``
+        can surface it.
+    """
+    from openinference.instrumentation.langchain import LangChainInstrumentor
+
+    fake_conflict = "requested: langchain_core>=0.1.0 but found: langchain_core 1.4.0a2"
+
+    def _fake_conflict_check(self):  # noqa: ANN001 — bound method shape
+        return fake_conflict
+
+    monkeypatch.setattr(
+        LangChainInstrumentor,
+        "_check_dependency_conflicts",
+        _fake_conflict_check,
+        raising=False,
+    )
+
+    # Track whether attach_instrumentor would be called (it must NOT).
+    from idun_agent_engine.observability import otel_lifecycle as _ol
+
+    attach_calls: list[object] = []
+    original_attach = _ol.attach_instrumentor
+    monkeypatch.setattr(
+        _ol,
+        "attach_instrumentor",
+        lambda inst: attach_calls.append(inst),
+    )
+
+    app = FastAPI()
+    app.state.sessionmaker = sessionmaker_factory
+    app.state.engine_config = None
+
+    try:
+        await attach_trace_pipeline(app)
+
+        assert app.state.trace_instrumentor_status == "dependency_conflict"
+        assert "langchain_core" in (app.state.trace_instrumentor_message or "")
+        # The bootstrap must skip attach entirely on conflict.
+        assert attach_calls == []
+        # Writer + exporter still spawn — the failure is per-instrumentor,
+        # not per-pipeline. (Some operator paths run alternative
+        # instrumentors via env or observability provider; the writer
+        # stays alive to capture whatever lands on the TracerProvider.)
+        assert isinstance(app.state.trace_exporter, StandaloneSpanExporter)
+    finally:
+        monkeypatch.setattr(_ol, "attach_instrumentor", original_attach)
+        if getattr(app.state, "trace_writer_task", None) is not None:
+            await app.state.trace_writer_task.stop()
+        if getattr(app.state, "trace_retention_task", None) is not None:
+            await app.state.trace_retention_task.stop()
+
+
+@pytest.mark.asyncio
 async def test_attach_trace_pipeline_failopen_when_sessionmaker_missing():
     """Missing app.state.sessionmaker must log and continue — never raise.
 
