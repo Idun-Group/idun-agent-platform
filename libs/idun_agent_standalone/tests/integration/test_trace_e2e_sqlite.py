@@ -12,6 +12,14 @@ that the unit-level writer tests do not is that the same dialect dispatch
 the writer takes against an aiosqlite URL also writes through to the
 SQLite file on disk and that the rows come back through the admin
 list-traces handler in a shape the React UI can render.
+
+Schema is materialized via the packaged Alembic migrations, not
+``Base.metadata.create_all``. Production runs alembic; the SQLite branch
+of the migration must agree with the ORM column types it backs. A
+previous iteration of this test used ``create_all`` and silently passed
+while the migration shipped ``latency_ms TEXT`` (TEXT affinity stores
+``Decimal`` as a string and crashes the read path with
+``TypeError: must be real number, not str`` on every list response).
 """
 
 from __future__ import annotations
@@ -19,6 +27,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from alembic import command
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from idun_agent_standalone.api.v1.deps import get_session
@@ -27,9 +36,9 @@ from idun_agent_standalone.api.v1.errors import (
 )
 from idun_agent_standalone.api.v1.routers.traces import router as traces_router
 from idun_agent_standalone.core.settings import AuthMode, StandaloneSettings
+from idun_agent_standalone.db.migrate import _alembic_config, downgrade_base
 from idun_agent_standalone.infrastructure.db.models.span import StandaloneSpanRow
 from idun_agent_standalone.infrastructure.db.models.trace import StandaloneTraceRow
-from idun_agent_standalone.infrastructure.db.session import Base
 from idun_agent_standalone.infrastructure.traces.exporter import (
     StandaloneSpanExporter,
 )
@@ -43,20 +52,25 @@ _DRAIN_TIMEOUT_S = 3.0
 _DRAIN_TICK_S = 0.05
 
 
-async def _make_sqlite_pipeline(tmp_path):
-    """Materialize the standalone ORMs against an aiosqlite DB on disk.
+async def _make_sqlite_pipeline(tmp_path, monkeypatch):
+    """Materialize the standalone schema by running the packaged Alembic
+    migrations against an aiosqlite DB on disk.
+
+    Driving alembic (not ``Base.metadata.create_all``) is load-bearing:
+    the read path goes through SQLAlchemy's ``Numeric`` decoder and only
+    accepts real numbers, so the migration's SQLite column affinity has
+    to match the ORM declaration. This setup ran ``create_all`` until
+    2026-05-10 and silently masked the ``latency_ms TEXT`` regression.
+
+    The standalone alembic env runs its async upgrade via ``asyncio.run``;
+    calling it from a running event loop would nest loops, so we hop
+    through ``asyncio.to_thread`` to give it a dedicated worker thread.
 
     Returns the engine + sessionmaker; caller owns disposal.
     """
     url = f"sqlite+aiosqlite:///{tmp_path / 'e2e.db'}"
-    setup_engine = create_async_engine(url)
-    async with setup_engine.begin() as conn:
-        # Standalone integration-test convention — Base.metadata.create_all
-        # is the tested shape for SQLite (alembic adds GENERATED columns
-        # only on PG; the writer stamps total_tokens explicitly so a plain
-        # create_all is correct here).
-        await conn.run_sync(Base.metadata.create_all)
-    await setup_engine.dispose()
+    monkeypatch.setenv("DATABASE_URL", url)
+    await asyncio.to_thread(command.upgrade, _alembic_config(), "head")
     engine = create_async_engine(url)
     sm = async_sessionmaker(engine, expire_on_commit=False)
     return engine, sm
@@ -73,7 +87,7 @@ async def _wait_for(predicate, *, timeout_s: float = _DRAIN_TIMEOUT_S) -> bool:
 
 
 @pytest.mark.asyncio
-async def test_e2e_sqlite_span_emit_to_list(tmp_path):
+async def test_e2e_sqlite_span_emit_to_list(tmp_path, monkeypatch):
     """Push 3 spans through the exporter, drain via writer, list via admin API.
 
     Asserts:
@@ -83,9 +97,11 @@ async def test_e2e_sqlite_span_emit_to_list(tmp_path):
         * The trace row's aggregates (name, models, status) reflect the
           locked finalizer behaviour.
         * ``GET /admin/api/v1/traces`` returns the trace through the
-          public read path.
+          public read path — the assertion exercises ``latency_ms`` and
+          ``total_cost_usd`` as real numbers, which only round-trips when
+          the migration declares the columns with NUMERIC affinity.
     """
-    engine, sm = await _make_sqlite_pipeline(tmp_path)
+    engine, sm = await _make_sqlite_pipeline(tmp_path, monkeypatch)
     exporter = StandaloneSpanExporter(max_queue_size=100)
     writer = TraceWriter(
         exporter=exporter,
@@ -211,7 +227,12 @@ async def test_e2e_sqlite_span_emit_to_list(tmp_path):
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get("/admin/api/v1/traces?limit=10")
 
-        assert response.status_code == 200
+        assert response.status_code == 200, (
+            "If this is 500 with TypeError 'must be real number, not str' in "
+            "the server log, the SQLite trace migration is using TEXT "
+            "affinity for a Numeric column again — see the notes in "
+            "_make_sqlite_pipeline."
+        )
         body = response.json()
         assert len(body["items"]) == 1
         item = body["items"][0]
@@ -220,6 +241,18 @@ async def test_e2e_sqlite_span_emit_to_list(tmp_path):
         assert item["name"] == "agent.run"
         assert sorted(item["models"]) == ["gpt-4o", "gpt-4o-mini"]
         assert item["status"] == "OK"
+        # Force the Numeric round-trip on the read path. If
+        # ``standalone_trace.latency_ms`` is declared TEXT in the migration,
+        # SQLAlchemy's Numeric decoder rejects the stored string and the
+        # whole list response 500s — this assertion is the regression
+        # tripwire for that bug.
+        assert item["latencyMs"] is not None
+        assert isinstance(item["latencyMs"], float)
+        assert item["latencyMs"] == pytest.approx(5000.0)
     finally:
         await writer.stop()
         await engine.dispose()
+        # Roll back the on-disk Alembic version so a fresh tmp_path on the
+        # next test is not surprised by a stamped DB. ``downgrade_base``
+        # uses the env-var DATABASE_URL we set in _make_sqlite_pipeline.
+        await asyncio.to_thread(downgrade_base)

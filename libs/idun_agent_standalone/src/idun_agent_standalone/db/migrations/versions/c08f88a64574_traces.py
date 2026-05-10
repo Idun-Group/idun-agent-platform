@@ -170,6 +170,13 @@ def _pg_downgrade() -> None:
 
 
 def _sqlite_upgrade() -> None:
+    # Numeric columns (latency_ms, total_cost_usd, cost_usd) MUST be declared
+    # with NUMERIC affinity, not TEXT. SQLite stores values verbatim into
+    # TEXT-affinity columns, so the writer's ``Decimal(...)`` parameters land
+    # as strings; SQLAlchemy's Numeric result processor then errors with
+    # ``TypeError: must be real number, not str`` on every read. NUMERIC
+    # affinity coerces numeric inputs to REAL/INTEGER on store so the
+    # round-trip lines up with the ORM's ``Numeric`` declaration.
     op.execute(
         """
         CREATE TABLE standalone_trace (
@@ -180,9 +187,9 @@ def _sqlite_upgrade() -> None:
             session_id      TEXT,
             ended_at        TEXT,
             status          TEXT,
-            latency_ms      TEXT,
+            latency_ms      NUMERIC,
             total_tokens    INTEGER,
-            total_cost_usd  TEXT,
+            total_cost_usd  NUMERIC,
             models          TEXT,
             tags            TEXT,
             metadata        TEXT,
@@ -200,7 +207,7 @@ def _sqlite_upgrade() -> None:
             name               TEXT    NOT NULL,
             kind               TEXT    NOT NULL,
             ended_at           TEXT,
-            latency_ms         TEXT,
+            latency_ms         NUMERIC,
             model              TEXT,
             provider           TEXT,
             prompt_tokens      INTEGER,
@@ -208,7 +215,7 @@ def _sqlite_upgrade() -> None:
             cache_read_tokens  INTEGER,
             cache_write_tokens INTEGER,
             total_tokens       INTEGER,
-            cost_usd           TEXT,
+            cost_usd           NUMERIC,
             cost_breakdown     TEXT,
             cost_source        TEXT,
             status             TEXT,
