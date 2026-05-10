@@ -33,9 +33,8 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon, GitBranchIcon, ListTreeIcon, Trash2Icon } from "lucide-react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { SpanDetailRail } from "@/components/traces/SpanDetailRail";
@@ -89,6 +88,22 @@ function anyPartialCost(nodes: StandaloneSpanTreeNode[]): boolean {
   return false;
 }
 
+/** Count every span in the tree (used to label the delete dialog). */
+function countSpans(nodes: StandaloneSpanTreeNode[]): number {
+  let total = 0;
+  for (const node of nodes) {
+    total += 1 + countSpans(node.children);
+  }
+  return total;
+}
+
+/** Allowed view-mode values; anything else collapses to "tree". */
+type ViewMode = "tree" | "waterfall";
+
+function isViewMode(value: string | null): value is ViewMode {
+  return value === "tree" || value === "waterfall";
+}
+
 function formatTokens(n: number | null): string {
   if (n == null) return "—";
   return n.toLocaleString();
@@ -112,10 +127,56 @@ function StatusBadge({ status }: { status: string | null }) {
 export default function TraceDetailClient() {
   const params = useParams<{ traceId: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const traceId = params?.traceId ?? "";
 
-  const [selectedSpanId, setSelectedSpanId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"tree" | "waterfall">("tree");
+  // ── URL-stateful view + selection (AUDIT.md #19, #33) ────────────────
+  //
+  // Both view-mode and selected span id live in the query string so a
+  // refresh or shared link round-trips the operator's exact viewport.
+  // The empty case must default to Tree + the root span without a flicker
+  // of state — we read from `useSearchParams` once, fall back to the
+  // root span id once data is loaded, and never write a default into
+  // the URL (saves a back-button noise step). All writes go through
+  // `router.replace` so the back arrow returns to the list, not to a
+  // synthetic in-page intermediate state.
+  const viewMode: ViewMode = isViewMode(searchParams?.get("view") ?? null)
+    ? (searchParams!.get("view") as ViewMode)
+    : "tree";
+
+  const urlSpanId = searchParams?.get("span") ?? null;
+
+  const writeUrlState = useCallback(
+    (next: { view?: ViewMode; span?: string | null }) => {
+      const qp = new URLSearchParams(searchParams?.toString() ?? "");
+      if (next.view !== undefined) {
+        if (next.view === "tree") qp.delete("view");
+        else qp.set("view", next.view);
+      }
+      if (next.span !== undefined) {
+        if (next.span === null || next.span.length === 0) qp.delete("span");
+        else qp.set("span", next.span);
+      }
+      const qs = qp.toString();
+      router.replace(qs.length > 0 ? `?${qs}` : "?", { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  const setViewMode = useCallback(
+    (next: ViewMode) => {
+      writeUrlState({ view: next });
+    },
+    [writeUrlState],
+  );
+
+  const setSelectedSpanId = useCallback(
+    (next: string | null) => {
+      writeUrlState({ span: next });
+    },
+    [writeUrlState],
+  );
+
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data, isLoading, isError, error } = useQuery({
@@ -132,11 +193,18 @@ export default function TraceDetailClient() {
 
   // Default-select the root span once the trace loads so the rail
   // shows something meaningful instead of the empty state on first
-  // paint. The user can clear/change it freely after that.
+  // paint. URL-stateful selection wins; we fall back to the root span
+  // when ?span= is unset OR points at an id no longer in the tree
+  // (deleted span, mismatched share link).
+  const urlSpanInTree = useMemo(() => {
+    if (!urlSpanId) return null;
+    return findSpan(tree, urlSpanId) ? urlSpanId : null;
+  }, [urlSpanId, tree]);
+
   const effectiveSelection = useMemo(() => {
-    if (selectedSpanId) return selectedSpanId;
+    if (urlSpanInTree) return urlSpanInTree;
     return tree[0]?.span.otelSpanId ?? null;
-  }, [selectedSpanId, tree]);
+  }, [urlSpanInTree, tree]);
 
   const selectedSpan = useMemo(
     () => findSpan(tree, effectiveSelection),
@@ -144,6 +212,7 @@ export default function TraceDetailClient() {
   );
 
   const partial = useMemo(() => anyPartialCost(tree), [tree]);
+  const totalSpanCount = useMemo(() => countSpans(tree), [tree]);
 
   const del = useMutation({
     mutationFn: () => deleteTrace(traceId),
@@ -168,16 +237,33 @@ export default function TraceDetailClient() {
 
   // ── Render branches ───────────────────────────────────────────────
 
+  // ── "Back to traces" — preserves list filter state via history ─────
+  // AUDIT.md #24: a hardcoded `<Link href="/admin/traces" />` strips
+  // `?model=...` and friends from the list URL. `router.back()` walks
+  // the history stack, so the operator returns to whatever filter
+  // state they came from. If the user landed here via a deep link
+  // (no list-page entry in history), we fall back to the bare list.
+  const goBackToList = useCallback(() => {
+    // `window.history.length > 1` is the standard SPA heuristic; in
+    // the freshly-loaded-no-history case we still want a usable Back.
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/admin/traces");
+    }
+  }, [router]);
+
   if (isError) {
     const status = error instanceof ApiError ? error.status : 0;
     return (
       <div className="flex flex-col gap-4 p-6 max-w-3xl">
-        <Link
-          href="/admin/traces"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        <button
+          type="button"
+          onClick={goBackToList}
+          className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeftIcon size={14} /> Back to traces
-        </Link>
+        </button>
         <div
           className="rounded-md border bg-muted/20 p-6 text-sm"
           data-testid="trace-detail-error"
@@ -204,20 +290,32 @@ export default function TraceDetailClient() {
     );
   }
 
+  const userId = data?.trace.userId ?? null;
+  const sessionId = data?.trace.sessionId ?? null;
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col">
-      {/* Header */}
+      {/*
+        Header — AUDIT.md #12: the previous flex-wrap row let the metric
+        strip wrap UNDER the Delete button at 1280px viewports, leaving
+        Delete reading like the headline metric. The grid below pins
+        Delete flush right at every viewport (auto column on the right)
+        and lets the title-block + metric strip flow in the 1fr column,
+        so the strip wraps under the title rather than under Delete.
+      */}
       <header
-        className="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-4"
+        className="grid items-start gap-3 border-b px-6 py-4 lg:grid-cols-[1fr_auto] lg:items-center"
         data-testid="trace-detail-header"
       >
-        <div className="flex min-w-0 flex-col gap-1">
-          <Link
-            href="/admin/traces"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        <div className="flex min-w-0 flex-col gap-2">
+          <button
+            type="button"
+            onClick={goBackToList}
+            className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            data-testid="trace-back-link"
           >
             <ArrowLeftIcon size={12} /> Back to traces
-          </Link>
+          </button>
           {isLoading ? (
             <Skeleton className="h-6 w-64" />
           ) : (
@@ -231,10 +329,13 @@ export default function TraceDetailClient() {
           <p className="font-mono text-[11px] text-muted-foreground">
             {traceId}
           </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {/*
+            Metric strip — flex-wrap under the title block. AUDIT.md #20
+            adds User and Session here (conditional render — skip the
+            row entirely when both are null so the chrome doesn't read
+            "User: — / Session: —" on traces lacking the metadata).
+          */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span data-testid="trace-summary-latency">
               <span className="text-foreground/70">Latency:</span>{" "}
               <span className="font-mono text-foreground">
@@ -253,8 +354,33 @@ export default function TraceDetailClient() {
                 {formatCostUSD(data?.trace.totalCostUsd ?? null, { partial })}
               </span>
             </span>
+            {userId ? (
+              <span data-testid="trace-summary-user">
+                <span className="text-foreground/70">User:</span>{" "}
+                <span
+                  className="font-mono text-foreground"
+                  title={userId}
+                >
+                  {userId}
+                </span>
+              </span>
+            ) : null}
+            {sessionId ? (
+              <span data-testid="trace-summary-session">
+                <span className="text-foreground/70">Session:</span>{" "}
+                <span
+                  className="font-mono text-foreground"
+                  title={sessionId}
+                >
+                  {sessionId}
+                </span>
+              </span>
+            ) : null}
             <StatusBadge status={data?.trace.status ?? null} />
           </div>
+        </div>
+
+        <div className="flex justify-start lg:justify-end">
           <Button
             variant="outline"
             size="sm"
@@ -342,10 +468,31 @@ export default function TraceDetailClient() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this trace?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes the trace and all of its spans. The
-              underlying agent invocation is unaffected — only the captured
-              trace data is purged.
+            {/*
+              AUDIT.md #25 — show the actual span count instead of a
+              vague "all of its spans". `tree` is already loaded at the
+              moment the dialog opens, so the count is free. We
+              fall back to a generic phrasing only when the tree is
+              empty (orphaned trace row, edge case).
+            */}
+            <AlertDialogDescription data-testid="trace-delete-description">
+              {totalSpanCount > 0 ? (
+                <>
+                  This permanently removes the trace and its{" "}
+                  <span className="font-medium text-foreground">
+                    {totalSpanCount}
+                  </span>{" "}
+                  span{totalSpanCount === 1 ? "" : "s"}. The underlying agent
+                  invocation is unaffected — only the captured trace data is
+                  purged.
+                </>
+              ) : (
+                <>
+                  This permanently removes the trace. The underlying agent
+                  invocation is unaffected — only the captured trace data is
+                  purged.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

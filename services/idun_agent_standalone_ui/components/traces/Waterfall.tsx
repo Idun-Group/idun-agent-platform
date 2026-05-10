@@ -88,23 +88,76 @@ function flattenForWaterfall(nodes: StandaloneSpanTreeNode[]): FlatSpan[] {
 }
 
 /**
- * Compute the set of span ids on the critical path: the longest-
- * duration span at each depth. Stored as a Set for O(1) lookup at
- * render time. Memoised at the trace level — recomputing per row
+ * Compute the set of span ids on the critical path.
+ *
+ * Definition (AUDIT.md #16): the critical path is a chain from each
+ * root to a leaf where every step picks the longest-duration child of
+ * the current node. Walks top-down recursively: root → longest child →
+ * recurse. The set of all visited span ids is the critical path.
+ *
+ * The previous implementation grouped spans by tree depth and picked
+ * the longest at each depth — but those longest-per-depth spans are
+ * frequently in different subtrees, so the highlighted "path" was not
+ * a connected chain at all. The conceptual definition of a critical
+ * path requires connectedness from root to leaf.
+ *
+ * Memoised at the trace level by the caller — recomputing per row
  * would be quadratic.
+ *
+ * Takes the tree (for child-walking) and the flat list (only used to
+ * fall back to {} when empty); the flat list also encodes the parsed
+ * `durationMs` we use to break ties between siblings.
  */
-function criticalPathIds(spans: FlatSpan[]): Set<string> {
-  const longestPerDepth = new Map<number, FlatSpan>();
-  for (const s of spans) {
-    const current = longestPerDepth.get(s.depth);
-    if (!current || s.durationMs > current.durationMs) {
-      longestPerDepth.set(s.depth, s);
-    }
-  }
+function criticalPathIds(
+  nodes: StandaloneSpanTreeNode[],
+  flat: FlatSpan[],
+): Set<string> {
   const out = new Set<string>();
-  for (const s of longestPerDepth.values()) out.add(s.span.otelSpanId);
+  if (flat.length === 0) return out;
+
+  // Build an id → durationMs lookup so child comparisons reuse the
+  // already-parsed timestamps from `flattenForWaterfall`. Missing ids
+  // (shouldn't happen — flat is built from the tree) fall back to the
+  // span's `latencyMs`, then 0.
+  const durationByid = new Map<string, number>();
+  for (const f of flat) {
+    durationByid.set(f.span.otelSpanId, f.durationMs);
+  }
+
+  function nodeDuration(node: StandaloneSpanTreeNode): number {
+    const fromFlat = durationByid.get(node.span.otelSpanId);
+    if (fromFlat !== undefined) return fromFlat;
+    return node.span.latencyMs ?? 0;
+  }
+
+  function walk(node: StandaloneSpanTreeNode): void {
+    out.add(node.span.otelSpanId);
+    if (node.children.length === 0) return;
+    let longest = node.children[0];
+    let longestDur = nodeDuration(longest);
+    for (let i = 1; i < node.children.length; i += 1) {
+      const candidate = node.children[i];
+      const dur = nodeDuration(candidate);
+      if (dur > longestDur) {
+        longest = candidate;
+        longestDur = dur;
+      }
+    }
+    walk(longest);
+  }
+
+  for (const root of nodes) walk(root);
   return out;
 }
+
+/**
+ * Test-only re-exports. Vitest imports these to assert the helpers
+ * directly without rendering the React component. Prefixed with `__`
+ * to discourage non-test consumers; the public API remains the
+ * `Waterfall` component below.
+ */
+export { criticalPathIds as __computeCriticalPathIds };
+export { flattenForWaterfall as __flattenForWaterfall };
 
 export function Waterfall({
   nodes,
@@ -129,8 +182,8 @@ export function Waterfall({
   }, [flatSpans]);
 
   const critical = React.useMemo(
-    () => criticalPathIds(flatSpans),
-    [flatSpans],
+    () => criticalPathIds(nodes, flatSpans),
+    [nodes, flatSpans],
   );
 
   if (!bounds || flatSpans.length === 0) {
