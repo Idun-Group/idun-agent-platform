@@ -23,7 +23,13 @@ import { test, expect, type Route, type Page } from "@playwright/test";
  * backend has no SPA-rewrite. Catching that wiring is a follow-up.
  */
 
-const PLACEHOLDER_ID = "__trace__";
+// Use an arbitrary 32-hex string instead of the build-time placeholder
+// ``__trace__``. The standalone backend now returns HTTP 410 on the
+// literal placeholder path (P1 BLOCK-fix in commit 65ecd62d) so the
+// e2e shell never loads if we reuse the build artifact's path. Any
+// 32-hex id round-trips through the SPA-rewrite onto the same shell;
+// the API mocks intercept the calls regardless of the value.
+const PLACEHOLDER_ID = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
 const MOCK_TRACES = [
   {
@@ -230,7 +236,12 @@ test("trace list — SqliteBanner + PipelineHealthPanel + rows", async ({
     page.getByText(/SQLite mode — for local demo only\./),
   ).toBeVisible();
 
-  // PipelineHealthPanel — Running writer + 0 drops.
+  // PipelineHealthPanel — when healthy (the mocked state), collapses
+  // to a one-line OK pill by default (P2 / audit #29). Click to
+  // expand and assert the full Running-writer / 0-drops surface.
+  const collapsed = page.getByTestId("pipeline-health-collapsed");
+  await expect(collapsed).toBeVisible();
+  await collapsed.click();
   const healthPanel = page.getByTestId("pipeline-health-panel");
   await expect(healthPanel).toBeVisible();
   await expect(healthPanel.getByTestId("pipeline-writer")).toContainText(

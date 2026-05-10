@@ -252,71 +252,7 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         # Serve the placeholder for any /admin/traces/<id> request and
         # let the client read the real id from window.location.
         #
-        # Both URL forms (``/admin/traces/<id>`` and
-        # ``/admin/traces/<id>/``) need explicit route declarations.
-        # FastAPI's ``redirect_slashes=True`` only redirects ``/foo/``
-        # back to ``/foo`` for routes declared without the trailing
-        # slash, *not* the inverse — and once ``StaticFiles(html=True)``
-        # is mounted at ``/``, the slashed form is consumed by the
-        # static handler before the dynamic route sees it, yielding
-        # ``404`` on every link-share / Slack-unfurl form. Declaring
-        # the slashed sibling route fixes that.
-        from fastapi import HTTPException
-        from fastapi.responses import FileResponse
-
-        # Resolve the SPA shell path once at boot — the file layout cannot
-        # change at runtime and the request handler is on the async hot
-        # path, so the per-request ``Path.is_file()`` syscall is wasteful
-        # (ASYNC-001). Prefers the renamed ``_shell/`` directory shipped
-        # by the ``build-standalone-ui`` Make target; falls back to the
-        # legacy ``__trace__/`` directory when the static export was
-        # produced by ``pnpm build`` directly (no rename pass), and to
-        # the root ``index.html`` when neither directory exists. The
-        # legacy ``__trace__`` fallback exists so the boot harness
-        # (``e2e/boot-standalone.sh``) and direct ``pnpm build``
-        # workflows keep working until they run through the rename.
-        # TODO(#608): drop the ``__trace__`` legacy fallback once every
-        # active install has rebuilt with the renamed Make target. Track
-        # at one release cycle past v0.6 — the fallback exists only so
-        # ``e2e/boot-standalone.sh`` and direct ``pnpm build`` workflows
-        # keep booting without running through ``make build-standalone-ui``.
-        _trace_shell_renamed = ui_dir / "admin" / "traces" / "_shell" / "index.html"
-        _trace_shell_legacy = ui_dir / "admin" / "traces" / "__trace__" / "index.html"
-        _spa_root_shell = ui_dir / "index.html"
-        if _trace_shell_renamed.is_file():
-            _selected_trace_shell = _trace_shell_renamed
-        elif _trace_shell_legacy.is_file():
-            _selected_trace_shell = _trace_shell_legacy
-        else:
-            _selected_trace_shell = _spa_root_shell
-
-        # The legacy ``__trace__`` segment is the build-time placeholder
-        # path that ships into the static export when ``pnpm build`` runs
-        # without the rename pass. Even after the rename pass it remains
-        # reachable via the dynamic SPA-rewrite below if a stale link
-        # leaks into the wild — surface a 410 Gone so operators clicking
-        # an old bookmark see a clear "this isn't a real trace id"
-        # signal instead of the SPA's softer client-side 404.
-        _placeholder_trace_id = "__trace__"
-
-        @app.get("/admin/traces/{trace_id}", include_in_schema=False)
-        async def _trace_detail_spa_shell(trace_id: str) -> FileResponse:
-            if trace_id == _placeholder_trace_id:
-                raise HTTPException(
-                    status_code=410, detail="trace placeholder is not a real id"
-                )
-            return FileResponse(_selected_trace_shell)
-
-        @app.get("/admin/traces/{trace_id}/", include_in_schema=False)
-        async def _trace_detail_spa_shell_slashed(
-            trace_id: str,
-        ) -> FileResponse:
-            if trace_id == _placeholder_trace_id:
-                raise HTTPException(
-                    status_code=410, detail="trace placeholder is not a real id"
-                )
-            return FileResponse(_selected_trace_shell)
-
+        _register_trace_detail_routes(app, ui_dir)
         app.mount("/", StaticFiles(directory=str(ui_dir), html=True), name="ui")
         logger.info("boot ui mounted from=%s", ui_dir)
 
@@ -337,6 +273,70 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
 
     logger.info("boot complete")
     return app
+
+
+def _register_trace_detail_routes(app: FastAPI, ui_dir: Path) -> None:
+    """Wire the SPA-rewrite routes for ``/admin/traces/{trace_id}``.
+
+    Both URL forms (``/admin/traces/<id>`` and ``/admin/traces/<id>/``)
+    need explicit route declarations. FastAPI's ``redirect_slashes=True``
+    only redirects ``/foo/`` back to ``/foo`` for routes declared
+    without the trailing slash, *not* the inverse — and once
+    ``StaticFiles(html=True)`` is mounted at ``/``, the slashed form is
+    consumed by the static handler before the dynamic route sees it,
+    yielding ``404`` on every link-share / Slack-unfurl form. Declaring
+    the slashed sibling route fixes that.
+
+    The selected SPA shell is resolved once at boot (the file layout
+    cannot change at runtime and the request handler is on the async
+    hot path, so per-request ``Path.is_file()`` syscalls are wasteful
+    per ASYNC-001). The resolver prefers the renamed ``_shell/``
+    directory shipped by the ``build-standalone-ui`` Make target,
+    falls back to the legacy ``__trace__/`` directory when the static
+    export was produced by ``pnpm build`` directly (no rename pass),
+    and falls back to the root ``index.html`` when neither exists.
+
+    The literal ``__trace__`` segment is the build-time placeholder
+    path. Even after the rename it remains reachable via the dynamic
+    SPA-rewrite if a stale link leaks into the wild — return ``410
+    Gone`` so operators see a clear "this isn't a real trace id"
+    signal instead of the SPA's softer client-side 404.
+
+    .. todo:: drop the ``__trace__`` legacy fallback once every active
+       install has rebuilt with the renamed Make target. Track at one
+       release cycle past v0.6 (#608) — the fallback exists only so
+       ``e2e/boot-standalone.sh`` and direct ``pnpm build`` workflows
+       keep booting without running through ``make build-standalone-ui``.
+    """
+    from fastapi import HTTPException
+    from fastapi.responses import FileResponse
+
+    trace_shell_renamed = ui_dir / "admin" / "traces" / "_shell" / "index.html"
+    trace_shell_legacy = ui_dir / "admin" / "traces" / "__trace__" / "index.html"
+    spa_root_shell = ui_dir / "index.html"
+    if trace_shell_renamed.is_file():
+        selected_trace_shell = trace_shell_renamed
+    elif trace_shell_legacy.is_file():
+        selected_trace_shell = trace_shell_legacy
+    else:
+        selected_trace_shell = spa_root_shell
+
+    placeholder_trace_id = "__trace__"
+
+    def _serve_or_410(trace_id: str) -> FileResponse:
+        if trace_id == placeholder_trace_id:
+            raise HTTPException(
+                status_code=410, detail="trace placeholder is not a real id"
+            )
+        return FileResponse(selected_trace_shell)
+
+    @app.get("/admin/traces/{trace_id}", include_in_schema=False)
+    async def _trace_detail_spa_shell(trace_id: str) -> FileResponse:
+        return _serve_or_410(trace_id)
+
+    @app.get("/admin/traces/{trace_id}/", include_in_schema=False)
+    async def _trace_detail_spa_shell_slashed(trace_id: str) -> FileResponse:
+        return _serve_or_410(trace_id)
 
 
 async def _keep_ui_mount_last(app: FastAPI) -> None:

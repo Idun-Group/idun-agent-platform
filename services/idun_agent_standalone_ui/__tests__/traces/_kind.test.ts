@@ -25,7 +25,6 @@ function makeSpan(
     otelSpanId: "0000000000000000",
     otelTraceId: "00000000",
     parentSpanId: null,
-    name: overrides.name,
     kind: "INTERNAL",
     startedAt: "2026-05-09T12:00:00Z",
     endedAt: "2026-05-09T12:00:01Z",
