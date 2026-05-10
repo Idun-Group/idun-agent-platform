@@ -107,8 +107,12 @@ class TraceWriter:
             self._task.cancel()
             try:
                 await self._task
-            except (asyncio.CancelledError, Exception):
-                pass
+            except asyncio.CancelledError:
+                pass  # clean cancel — expected shape after .cancel()
+            except Exception:
+                logger.exception(
+                    "trace writer task raised during cancel; continuing"
+                )
         except asyncio.CancelledError:
             pass
         finally:
