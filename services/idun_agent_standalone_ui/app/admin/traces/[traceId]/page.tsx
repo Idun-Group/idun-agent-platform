@@ -26,6 +26,8 @@
 // ``useParams()`` inside the client component -- a fresh document
 // load and an in-app Link both render identically.
 
+import { Suspense } from "react";
+
 import TraceDetailClient from "./TraceDetailClient";
 
 export const dynamicParams = false;
@@ -38,5 +40,16 @@ export function generateStaticParams(): Array<{ traceId: string }> {
 }
 
 export default function TraceDetailPage() {
-  return <TraceDetailClient />;
+  // ``TraceDetailClient`` calls ``useSearchParams`` for URL-stateful
+  // ``?view=`` and ``?span=`` (P3 audit findings #19, #33). Next.js 15
+  // requires that hook to be wrapped in a Suspense boundary in static-
+  // export mode, otherwise the entire route bails out to client-side
+  // rendering and silently renders nothing on the first paint —
+  // exactly the "click a trace, see no detail" symptom this page hit
+  // until this wrapper landed.
+  return (
+    <Suspense fallback={null}>
+      <TraceDetailClient />
+    </Suspense>
+  );
 }

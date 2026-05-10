@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import * as React from "react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -84,10 +85,45 @@ const TRACE_DETAIL: tracesApi.StandaloneTraceDetail = {
 };
 
 const pushMock = vi.fn();
+const backMock = vi.fn();
+// `useSearchParams` is read-only in App Router; the production code
+// reaches the URL via `router.replace`. The fake replace mutates a
+// shared `URLSearchParams` instance and notifies React via a counter
+// so consumers re-render with the new params on the next tick. This
+// mirrors Next.js's actual behaviour closely enough for unit tests.
+let mockSearchParams = new URLSearchParams();
+const searchParamsListeners = new Set<() => void>();
+
+function setSearchParams(qs: string): void {
+  mockSearchParams = new URLSearchParams(qs);
+  for (const fn of searchParamsListeners) fn();
+}
+
+const replaceMock = vi.fn((url: string) => {
+  // Accept "?foo=bar", "?", or a relative URL — extract the query.
+  const qIndex = url.indexOf("?");
+  const qs = qIndex >= 0 ? url.slice(qIndex + 1) : "";
+  setSearchParams(qs);
+});
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ traceId: TRACE_ID }),
-  useRouter: () => ({ push: pushMock, replace: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({
+    push: pushMock,
+    replace: replaceMock,
+    back: backMock,
+  }),
+  useSearchParams: () => {
+    const [, force] = React.useReducer((n: number) => n + 1, 0);
+    React.useEffect(() => {
+      const listener = () => force();
+      searchParamsListeners.add(listener);
+      return () => {
+        searchParamsListeners.delete(listener);
+      };
+    }, []);
+    return mockSearchParams;
+  },
 }));
 
 vi.mock("next/link", () => ({
@@ -116,7 +152,16 @@ function withQuery(children: ReactNode) {
 
 describe("TraceDetailPage", () => {
   beforeEach(() => {
-    pushMock.mockReset();
+    // Use mockClear(), not mockReset(). mockReset() drops the
+    // implementation we registered in `vi.fn(impl)`, which means
+    // `replaceMock` records the call but never updates
+    // `mockSearchParams` — and the URL state never propagates back
+    // to the consumer hook. mockClear keeps the impl, just resets
+    // the call-history.
+    pushMock.mockClear();
+    replaceMock.mockClear();
+    backMock.mockClear();
+    setSearchParams("");
   });
 
   afterEach(() => {
@@ -152,7 +197,7 @@ describe("TraceDetailPage", () => {
     expect(rail).toHaveTextContent("root.span");
   });
 
-  it("clicking a child span in the tree updates the detail rail", async () => {
+  it("clicking a child span in the tree updates the detail rail (URL-stateful selection)", async () => {
     vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
 
     render(withQuery(<TraceDetailPage />));
@@ -166,6 +211,14 @@ describe("TraceDetailPage", () => {
       .find((row) => row.getAttribute("data-span-id") === "child-llm");
     expect(llmRow).toBeDefined();
     fireEvent.click(llmRow!);
+
+    // Click writes ?span=<id> through router.replace; the mock fans
+    // out the change to subscribers so the next render reads the new
+    // URL state and the rail flips to the clicked span.
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalled();
+    });
+    expect(replaceMock.mock.calls.at(-1)?.[0]).toContain("span=child-llm");
 
     await waitFor(() => {
       const rail = screen.getByTestId("span-detail-rail");
@@ -255,5 +308,216 @@ describe("TraceDetailPage", () => {
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith("/admin/traces");
     });
+  });
+
+  // ── P3 Sub-A coverage ────────────────────────────────────────────────
+
+  it("respects ?view=waterfall on initial render (URL-stateful view)", async () => {
+    setSearchParams("view=waterfall");
+    vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+
+    render(withQuery(<TraceDetailPage />));
+
+    // Waterfall renders span buttons; tree role disappears.
+    await waitFor(() => {
+      const group = screen.getByRole("group", { name: /span waterfall/i });
+      expect(
+        group.querySelectorAll('[role="button"][data-span-id]'),
+      ).toHaveLength(3);
+    });
+    expect(screen.queryAllByRole("treeitem")).toHaveLength(0);
+  });
+
+  it("respects ?span=<id> on initial render (URL-stateful selection)", async () => {
+    setSearchParams("span=child-tool");
+    vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+
+    render(withQuery(<TraceDetailPage />));
+
+    await waitFor(() => {
+      const rail = screen.getByTestId("span-detail-rail");
+      expect(rail).toHaveTextContent("tool.search");
+    });
+  });
+
+  it("falls back to root span when ?span=<id> points at a missing id", async () => {
+    setSearchParams("span=does-not-exist");
+    vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+
+    render(withQuery(<TraceDetailPage />));
+
+    await waitFor(() => {
+      const rail = screen.getByTestId("span-detail-rail");
+      expect(rail).toHaveTextContent("root.span");
+    });
+  });
+
+  it("renders the User/Session metric strip when present and skips when null", async () => {
+    vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+    render(withQuery(<TraceDetailPage />));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("trace-summary-user")).toHaveTextContent(
+        /User:\s*geoffrey/,
+      );
+    });
+    expect(screen.getByTestId("trace-summary-session")).toHaveTextContent(
+      /Session:\s*sess-1/,
+    );
+  });
+
+  it("hides User/Session metrics when both are null", async () => {
+    vi.spyOn(tracesApi, "getTrace").mockResolvedValue({
+      ...TRACE_DETAIL,
+      trace: { ...TRACE_DETAIL.trace, userId: null, sessionId: null },
+    });
+
+    render(withQuery(<TraceDetailPage />));
+
+    await waitFor(() => {
+      expect(screen.getByText("agent.run")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("trace-summary-user")).toBeNull();
+    expect(screen.queryByTestId("trace-summary-session")).toBeNull();
+  });
+
+  it("Back to traces button calls router.back() when history is available", async () => {
+    vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+    render(withQuery(<TraceDetailPage />));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("trace-back-link")).toBeEnabled();
+    });
+    // jsdom's window.history starts with length 1; our heuristic
+    // bumps it before clicking so the back path is exercised.
+    window.history.pushState({}, "", "/admin/traces?model=gpt-4o");
+    window.history.pushState({}, "", "/admin/traces/abc");
+    expect(window.history.length).toBeGreaterThan(1);
+
+    fireEvent.click(screen.getByTestId("trace-back-link"));
+    expect(backMock).toHaveBeenCalled();
+  });
+
+  it("delete dialog shows the actual span count in the description", async () => {
+    vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+    render(withQuery(<TraceDetailPage />));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("trace-delete-button")).toBeEnabled();
+    });
+    fireEvent.click(screen.getByTestId("trace-delete-button"));
+
+    const description = await screen.findByTestId("trace-delete-description");
+    // Tree has 3 spans (root + 2 children); copy must read "and its 3 spans".
+    expect(description).toHaveTextContent(/its\s*3\s*spans/);
+  });
+
+  it("clicking a span writes ?span=<id> and the click is reflected via the URL", async () => {
+    vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+    render(withQuery(<TraceDetailPage />));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("treeitem")).toHaveLength(3);
+    });
+
+    const llmRow = screen
+      .getAllByRole("treeitem")
+      .find((row) => row.getAttribute("data-span-id") === "child-llm");
+    fireEvent.click(llmRow!);
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalled();
+    });
+    const lastCall = replaceMock.mock.calls.at(-1)?.[0] as string;
+    expect(lastCall).toContain("span=child-llm");
+    // The `tree` view is the default — we don't write `view=tree`
+    // to keep the URL clean (see writeUrlState).
+    expect(lastCall).not.toContain("view=tree");
+  });
+
+  it("switching to Waterfall writes ?view=waterfall to the URL", async () => {
+    vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+    render(withQuery(<TraceDetailPage />));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("treeitem")).toHaveLength(3);
+    });
+
+    await userEvent.setup().click(screen.getByRole("tab", { name: /waterfall/i }));
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalled();
+    });
+    const allCalls = replaceMock.mock.calls
+      .map((c) => c[0] as string)
+      .join("\n");
+    expect(allCalls).toContain("view=waterfall");
+  });
+
+  // ── P3 Sub-C coverage: mobile rail Sheet ─────────────────────────────
+
+  it("opens the mobile rail Sheet when a span is clicked on a narrow viewport", async () => {
+    // Stub matchMedia to flag a narrow viewport BEFORE rendering.
+    const originalMatchMedia = window.matchMedia;
+    type Listener = (event: MediaQueryListEvent) => void;
+    const listeners = new Set<Listener>();
+    window.matchMedia = vi.fn().mockImplementation(() => ({
+      matches: true,
+      media: "",
+      onchange: null,
+      addEventListener: (_: string, fn: Listener) => listeners.add(fn),
+      removeEventListener: (_: string, fn: Listener) => listeners.delete(fn),
+      addListener: (fn: Listener) => listeners.add(fn),
+      removeListener: (fn: Listener) => listeners.delete(fn),
+      dispatchEvent: () => true,
+    })) as typeof window.matchMedia;
+
+    try {
+      vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+      render(withQuery(<TraceDetailPage />));
+
+      await waitFor(() => {
+        expect(screen.getAllByRole("treeitem")).toHaveLength(3);
+      });
+
+      // No sheet open initially — landing on the trace overview should
+      // NOT auto-pop the rail (operator should see the structure first).
+      expect(screen.queryByTestId("mobile-rail-sheet")).toBeNull();
+
+      const llmRow = screen
+        .getAllByRole("treeitem")
+        .find((row) => row.getAttribute("data-span-id") === "child-llm");
+      fireEvent.click(llmRow!);
+
+      // After click → URL updates → effect detects user-driven span
+      // change on a narrow viewport → Sheet opens.
+      await waitFor(() => {
+        expect(screen.queryByTestId("mobile-rail-sheet")).toBeInTheDocument();
+      });
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
+
+  it("does NOT open the mobile rail Sheet on a wide viewport (inline rail wins)", async () => {
+    // Default jsdom matchMedia returns matches=false — wide viewport.
+    vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+    render(withQuery(<TraceDetailPage />));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("treeitem")).toHaveLength(3);
+    });
+
+    const llmRow = screen
+      .getAllByRole("treeitem")
+      .find((row) => row.getAttribute("data-span-id") === "child-llm");
+    fireEvent.click(llmRow!);
+
+    // The URL still updates and the rail still re-renders inline,
+    // but the Sheet is NOT mounted on wide viewports.
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalled();
+    });
+    expect(screen.queryByTestId("mobile-rail-sheet")).toBeNull();
   });
 });

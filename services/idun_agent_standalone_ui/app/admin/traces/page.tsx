@@ -14,10 +14,10 @@
  * the dialect via the traces health endpoint).
  */
 
-import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Columns, Search } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown, Columns, RefreshCw, Search } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { PipelineHealthPanel } from "@/components/traces/PipelineHealthPanel";
 import { SqliteBanner } from "@/components/traces/SqliteBanner";
@@ -35,7 +35,9 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -53,6 +55,9 @@ import {
   type StandaloneTraceListItem,
   listTraces,
 } from "@/lib/api/traces";
+import { formatDuration } from "@/lib/format/duration";
+import { formatCostUSD } from "@/lib/format/money";
+import { cn } from "@/lib/utils";
 
 type ToggleableKey = "userId" | "sessionId" | "tags";
 
@@ -82,34 +87,45 @@ const EMPTY_FILTERS: FilterState = {
 };
 
 function toApiFilters(state: FilterState): StandaloneTraceListFilters {
+  // Trim every string field so a stray space (typed and deleted) doesn't
+  // flow to the API as `WHERE x = ' '` and silently zero the result set
+  // (#35). The filter `<Select>`s already produce trimmed values; the
+  // search input never bypasses `onApplySearch` which trims on read.
   const out: StandaloneTraceListFilters = { limit: PAGE_SIZE };
-  if (state.model) out.model = state.model;
-  if (state.status) out.status = state.status;
-  if (state.userId) out.userId = state.userId;
-  if (state.sessionId) out.sessionId = state.sessionId;
-  if (state.nameContains) out.nameContains = state.nameContains;
+  const model = state.model.trim();
+  const status = state.status.trim();
+  const userId = state.userId.trim();
+  const sessionId = state.sessionId.trim();
+  const nameContains = state.nameContains.trim();
+  if (model) out.model = model;
+  if (status) out.status = status;
+  if (userId) out.userId = userId;
+  if (sessionId) out.sessionId = sessionId;
+  if (nameContains) out.nameContains = nameContains;
   return out;
 }
 
+// Format a UTC timestamp into the operator's local time with a short
+// timezone label (e.g. "5/10/2026, 10:51:12 AM PDT") so a trace from a
+// remote server isn't ambiguous (#36). `dateStyle`/`timeStyle` cannot
+// be combined with `timeZoneName` per the ECMA-402 spec — explicit
+// fields it is.
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  second: "2-digit",
+  timeZoneName: "short",
+});
+
 function formatDateTime(value: string): string {
   try {
-    return new Date(value).toLocaleString();
+    return DATE_TIME_FORMATTER.format(new Date(value));
   } catch {
     return value;
   }
-}
-
-function formatLatency(ms: number | null): string {
-  if (ms == null) return "—";
-  if (ms < 1000) return `${ms.toFixed(0)} ms`;
-  return `${(ms / 1000).toFixed(2)} s`;
-}
-
-function formatCost(usd: number | null): string {
-  if (usd == null) return "—";
-  if (usd === 0) return "$0";
-  if (usd < 0.01) return `<$0.01`;
-  return `$${usd.toFixed(usd < 1 ? 4 : 2)}`;
 }
 
 function formatTokens(n: number | null): string {
@@ -154,6 +170,8 @@ export default function TracesPage() {
   const [visibleColumns, setVisibleColumns] = useState<
     Record<ToggleableKey, boolean>
   >({ userId: false, sessionId: false, tags: false });
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const queryClient = useQueryClient();
 
   // Wire the active page to the cursor; the accumulator merges pages.
   const apiFilters = useMemo(() => toApiFilters(filters), [filters]);
@@ -193,11 +211,39 @@ export default function TracesPage() {
 
   const items = useMemo(() => pages.flatMap((bucket) => bucket.items), [pages]);
 
-  // Build the model dropdown from the loaded set so the user picks
-  // from observed values. (No dedicated "list models" endpoint yet.)
+  // Build the filter dropdowns from the loaded set so the operator picks
+  // from observed values. No dedicated "list distinct" endpoint yet —
+  // the deferred-from-#606 anchor (#7 in the audit) lives on the page
+  // because the API would have to grow per-column-distinct routes to
+  // populate cross-page values. The "(observed in this page)" caption
+  // on the dropdowns sets the right expectation.
   const modelOptions = useMemo(() => {
     const set = new Set<string>();
     items.forEach((row) => row.models.forEach((m) => set.add(m)));
+    return Array.from(set).sort();
+  }, [items]);
+
+  const statusOptions = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((row) => {
+      if (row.status) set.add(row.status);
+    });
+    return Array.from(set).sort();
+  }, [items]);
+
+  const userOptions = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((row) => {
+      if (row.userId) set.add(row.userId);
+    });
+    return Array.from(set).sort();
+  }, [items]);
+
+  const sessionOptions = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((row) => {
+      if (row.sessionId) set.add(row.sessionId);
+    });
     return Array.from(set).sort();
   }, [items]);
 
@@ -205,9 +251,18 @@ export default function TracesPage() {
     updateFilters((prev) => ({ ...prev, nameContains: searchInput.trim() }));
   };
 
+  // Order matters: clear the search input *first* so the operator never
+  // sees a one-frame flash of "filters reset but search box still has
+  // my old text" (#9). Blur to release any focus ring on the now-empty
+  // input.
   const onResetFilters = () => {
-    updateFilters(() => EMPTY_FILTERS);
     setSearchInput("");
+    searchInputRef.current?.blur();
+    updateFilters(() => EMPTY_FILTERS);
+  };
+
+  const onRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["traces", "list"] });
   };
 
   const onLoadMore = () => {
@@ -254,8 +309,9 @@ export default function TracesPage() {
             <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="trace-search"
+              ref={searchInputRef}
               value={searchInput}
-              placeholder="agent.run, my-graph…"
+              placeholder="Search by name prefix"
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") onApplySearch();
@@ -275,7 +331,7 @@ export default function TracesPage() {
               updateFilters((prev) => ({ ...prev, model: v === ANY_VALUE ? "" : v }))
             }
           >
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-44" data-testid="filter-model">
               <SelectValue placeholder="Any model" />
             </SelectTrigger>
             <SelectContent>
@@ -296,15 +352,31 @@ export default function TracesPage() {
           >
             Status
           </label>
-          <Input
-            id="trace-status"
-            value={filters.status}
-            placeholder="OK / ERROR"
-            className="w-32"
-            onChange={(e) =>
-              updateFilters((prev) => ({ ...prev, status: e.target.value }))
+          <Select
+            value={filters.status || ANY_VALUE}
+            onValueChange={(v) =>
+              updateFilters((prev) => ({
+                ...prev,
+                status: v === ANY_VALUE ? "" : v,
+              }))
             }
-          />
+          >
+            <SelectTrigger
+              id="trace-status"
+              className="w-36"
+              data-testid="filter-status"
+            >
+              <SelectValue placeholder="Any status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY_VALUE}>Any status</SelectItem>
+              {statusOptions.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex flex-col gap-1">
@@ -314,15 +386,42 @@ export default function TracesPage() {
           >
             User
           </label>
-          <Input
-            id="trace-user"
-            value={filters.userId}
-            placeholder="user@host"
-            className="w-40"
-            onChange={(e) =>
-              updateFilters((prev) => ({ ...prev, userId: e.target.value }))
+          <Select
+            value={filters.userId || ANY_VALUE}
+            onValueChange={(v) =>
+              updateFilters((prev) => ({
+                ...prev,
+                userId: v === ANY_VALUE ? "" : v,
+              }))
             }
-          />
+          >
+            <SelectTrigger
+              id="trace-user"
+              className="w-44"
+              data-testid="filter-user"
+            >
+              <SelectValue placeholder="Any user" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY_VALUE}>Any user</SelectItem>
+              <SelectGroup>
+                <SelectLabel className="px-2 py-1 text-[10px] font-normal text-muted-foreground">
+                  (observed in this page)
+                </SelectLabel>
+                {userOptions.length === 0 ? (
+                  <span className="block px-2 py-1.5 text-xs text-muted-foreground">
+                    No users on this page
+                  </span>
+                ) : (
+                  userOptions.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {u}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex flex-col gap-1">
@@ -332,27 +431,74 @@ export default function TracesPage() {
           >
             Session
           </label>
-          <Input
-            id="trace-session"
-            value={filters.sessionId}
-            placeholder="session id"
-            className="w-40"
-            onChange={(e) =>
-              updateFilters((prev) => ({ ...prev, sessionId: e.target.value }))
+          <Select
+            value={filters.sessionId || ANY_VALUE}
+            onValueChange={(v) =>
+              updateFilters((prev) => ({
+                ...prev,
+                sessionId: v === ANY_VALUE ? "" : v,
+              }))
             }
-          />
+          >
+            <SelectTrigger
+              id="trace-session"
+              className="w-44"
+              data-testid="filter-session"
+            >
+              <SelectValue placeholder="Any session" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY_VALUE}>Any session</SelectItem>
+              <SelectGroup>
+                <SelectLabel className="px-2 py-1 text-[10px] font-normal text-muted-foreground">
+                  (observed in this page)
+                </SelectLabel>
+                {sessionOptions.length === 0 ? (
+                  <span className="block px-2 py-1.5 text-xs text-muted-foreground">
+                    No sessions on this page
+                  </span>
+                ) : (
+                  sessionOptions.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex items-center gap-2 pl-1">
           <Button onClick={onApplySearch} variant="default" size="sm">
             Apply
           </Button>
+          <Button
+            onClick={onRefresh}
+            variant="outline"
+            size="sm"
+            disabled={isFetching}
+            aria-label="Refresh traces"
+            data-testid="refresh-button"
+          >
+            <RefreshCw
+              className={cn(
+                "size-4",
+                isFetching && "animate-spin",
+              )}
+            />
+          </Button>
           <Button onClick={onResetFilters} variant="outline" size="sm">
             Reset
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" data-testid="columns-toggle">
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="columns-toggle"
+                disabled={isFetching}
+              >
                 <Columns className="mr-1 size-4" /> Columns{" "}
                 <ChevronDown className="ml-1 size-3" />
               </Button>
@@ -376,7 +522,11 @@ export default function TracesPage() {
         </div>
       </div>
 
-      <div className="rounded-md border" data-testid="trace-table-wrapper">
+      <div
+        className="rounded-md border"
+        data-testid="trace-table-wrapper"
+        aria-busy={isLoading}
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -432,19 +582,29 @@ export default function TracesPage() {
               items.map((row) => (
                 <TableRow key={row.otelTraceId} data-testid="trace-row">
                   <TableCell className="font-medium">
-                    <Link
-                      href={`/admin/traces/${row.otelTraceId}`}
-                      className="hover:underline"
-                    >
-                      {row.name}
-                    </Link>
+                    <div className="flex flex-col gap-0.5">
+                      <Link
+                        href={`/admin/traces/${row.otelTraceId}`}
+                        className="hover:underline"
+                      >
+                        {row.name}
+                      </Link>
+                      {row.models.length > 0 ? (
+                        <span
+                          className="font-mono text-[11px] text-muted-foreground"
+                          data-testid="trace-row-model-subtitle"
+                        >
+                          {row.models[0]}
+                        </span>
+                      ) : null}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDateTime(row.startedAt)}
                   </TableCell>
-                  <TableCell>{formatLatency(row.latencyMs)}</TableCell>
+                  <TableCell>{formatDuration(row.latencyMs)}</TableCell>
                   <TableCell>{formatTokens(row.totalTokens)}</TableCell>
-                  <TableCell>{formatCost(row.totalCostUsd)}</TableCell>
+                  <TableCell>{formatCostUSD(row.totalCostUsd)}</TableCell>
                   <TableCell>
                     <ModelChips models={row.models} />
                   </TableCell>
@@ -494,8 +654,12 @@ export default function TracesPage() {
             {isFetching ? "Loading…" : "Load more"}
           </Button>
         ) : items.length > 0 ? (
-          <span className="text-xs text-muted-foreground">
-            End of results.
+          <span
+            className="text-xs text-muted-foreground"
+            data-testid="end-of-results"
+          >
+            Showing {items.length.toLocaleString()} trace
+            {items.length === 1 ? "" : "s"} · End of results.
           </span>
         ) : null}
       </div>

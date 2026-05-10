@@ -8,6 +8,8 @@ trace + span ORMs through ``Base.metadata.create_all``.
 
 from __future__ import annotations
 
+import json
+import os
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -21,6 +23,8 @@ from idun_agent_standalone.api.v1.routers.traces import router as traces_router
 from idun_agent_standalone.core.settings import AuthMode, StandaloneSettings
 from idun_agent_standalone.infrastructure.db.models.span import StandaloneSpanRow
 from idun_agent_standalone.infrastructure.db.models.trace import StandaloneTraceRow
+from idun_agent_standalone.infrastructure.db.session import Base
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
 def _trace_id(byte_value: int) -> bytes:
@@ -372,9 +376,7 @@ async def test_get_trace_detail_404_when_unknown(admin_app) -> None:
     assert response.json()["error"]["code"] == "not_found"
 
 
-async def test_get_trace_detail_depth_capped_at_32(
-    admin_app, async_session
-) -> None:
+async def test_get_trace_detail_depth_capped_at_32(admin_app, async_session) -> None:
     """35-deep linear chain → returned tree depth is at most 32."""
     base = datetime(2026, 5, 9, 12, 0, 0, tzinfo=UTC)
     trace_id = _trace_id(0xCD)
@@ -413,9 +415,7 @@ async def test_get_trace_detail_depth_capped_at_32(
     assert depth <= 32
 
 
-async def test_delete_trace_by_id_removes_spans_too(
-    admin_app, async_session
-) -> None:
+async def test_delete_trace_by_id_removes_spans_too(admin_app, async_session) -> None:
     """Single-id DELETE cascades to spans for that trace."""
     base = datetime(2026, 5, 9, 12, 0, 0, tzinfo=UTC)
     trace_id = _trace_id(0xDD)
@@ -448,11 +448,11 @@ async def test_delete_trace_by_id_removes_spans_too(
     from sqlalchemy import select as _select  # local import to avoid module-level
 
     remaining_traces = (
-        await async_session.execute(_select(StandaloneTraceRow))
-    ).scalars().all()
+        (await async_session.execute(_select(StandaloneTraceRow))).scalars().all()
+    )
     remaining_spans = (
-        await async_session.execute(_select(StandaloneSpanRow))
-    ).scalars().all()
+        (await async_session.execute(_select(StandaloneSpanRow))).scalars().all()
+    )
     assert remaining_traces == []
     assert remaining_spans == []
 
@@ -516,8 +516,8 @@ async def test_bulk_delete_with_model_filter(admin_app, async_session) -> None:
     from sqlalchemy import select as _select
 
     remaining_traces = (
-        await async_session.execute(_select(StandaloneTraceRow))
-    ).scalars().all()
+        (await async_session.execute(_select(StandaloneTraceRow))).scalars().all()
+    )
     assert len(remaining_traces) == 1
     assert remaining_traces[0].otel_trace_id == keep_id
 
@@ -541,3 +541,191 @@ async def test_traces_routes_require_auth_when_password_mode(
     ]:
         response = await client_password_mode_no_session.request(method, path)
         assert response.status_code == 401, f"{method} {path} should require auth"
+
+
+# Sample non-trivial JSON shapes — exercise the dict / list-of-dict paths
+# Pydantic enforces on ``StandaloneSpanRead.attributes`` /
+# ``cost_breakdown`` / ``events`` so a regression in JSON-decoding shows
+# up as a 500 (Pydantic ``ValidationError`` swallowed by the handler).
+_SAMPLE_ATTRIBUTES = {
+    "openinference.span.kind": "LLM",
+    "llm.token_count.prompt": 17,
+    "llm.token_count.completion": 42,
+    "gen_ai.usage.input_tokens": 17,
+    "gen_ai.usage.output_tokens": 42,
+}
+_SAMPLE_EVENTS = [
+    {"name": "exception", "attributes": {"exception.type": "RuntimeError"}},
+    {"name": "first_token", "timestamp": "2026-05-09T12:00:00Z"},
+]
+_SAMPLE_COST_BREAKDOWN = {
+    "input_usd": 0.001,
+    "output_usd": 0.004,
+    "source": "litellm",
+}
+
+
+async def test_get_trace_detail_decodes_sqlite_json_columns(
+    admin_app, async_session
+) -> None:
+    """SQLite stores ``attributes`` / ``events`` / ``cost_breakdown`` as
+    TEXT; the recursive-CTE read path uses raw ``text(...)`` SQL which
+    bypasses SQLAlchemy's ``JSON`` ``result_processor``, so columns
+    come back as ``str``. Without the JSON-decode helper in
+    ``_row_mapping_to_span_read`` the route 500s with a Pydantic
+    ``ValidationError`` (str where dict / list[dict] was expected).
+    """
+    base = datetime(2026, 5, 9, 12, 0, 0, tzinfo=UTC)
+    trace_id = _trace_id(0x4D)
+    await _seed_trace(async_session, trace_id=trace_id, started_at=base)
+    trace_id_8 = trace_id[8:]
+
+    span = StandaloneSpanRow(
+        started_at=base,
+        otel_span_id=_span_id(0x55),
+        otel_trace_id=trace_id_8,
+        parent_span_id=None,
+        name="root",
+        kind="LLM",
+        attributes=_SAMPLE_ATTRIBUTES,
+        events=_SAMPLE_EVENTS,
+        cost_breakdown=_SAMPLE_COST_BREAKDOWN,
+    )
+    async_session.add(span)
+    await async_session.commit()
+
+    transport = ASGITransport(app=admin_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(f"/admin/api/v1/traces/{trace_id.hex()}")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    tree = body["tree"]
+    assert len(tree) == 1
+    span_payload = tree[0]["span"]
+    # The wire shape must be decoded objects, not JSON strings.
+    assert isinstance(span_payload["attributes"], dict)
+    assert span_payload["attributes"]["openinference.span.kind"] == "LLM"
+    assert isinstance(span_payload["events"], list)
+    assert span_payload["events"][0]["name"] == "exception"
+    assert isinstance(span_payload["costBreakdown"], dict)
+    assert span_payload["costBreakdown"]["source"] == "litellm"
+
+
+async def test_get_trace_detail_handles_already_decoded_json_columns(
+    admin_app, async_session
+) -> None:
+    """Postgres jsonb returns dicts directly via the recursive CTE; the
+    decode helper must be a no-op there. Simulate by feeding
+    ``_row_mapping_to_span_read`` a row whose JSON columns are already
+    decoded — the route must not double-decode or stringify them.
+    """
+    from idun_agent_standalone.api.v1.routers import traces as traces_module
+
+    decoded_mapping = {
+        "otel_span_id": _span_id(0x77),
+        "otel_trace_id": _trace_id(0x77)[8:],
+        "parent_span_id": None,
+        "name": "root",
+        "kind": "LLM",
+        "started_at": datetime(2026, 5, 9, 12, 0, 0, tzinfo=UTC),
+        "ended_at": None,
+        "latency_ms": None,
+        "model": None,
+        "provider": None,
+        "prompt_tokens": None,
+        "completion_tokens": None,
+        "cache_read_tokens": None,
+        "cache_write_tokens": None,
+        "total_tokens": None,
+        "cost_usd": None,
+        "cost_breakdown": _SAMPLE_COST_BREAKDOWN,
+        "cost_source": None,
+        "status": None,
+        "attributes": _SAMPLE_ATTRIBUTES,
+        "events": _SAMPLE_EVENTS,
+    }
+    span_read = traces_module._row_mapping_to_span_read(decoded_mapping)
+    assert span_read.attributes == _SAMPLE_ATTRIBUTES
+    assert span_read.events == _SAMPLE_EVENTS
+    assert span_read.cost_breakdown == _SAMPLE_COST_BREAKDOWN
+
+
+@pytest.mark.skipif(
+    not os.getenv("STANDALONE_TEST_POSTGRES_URL"),
+    reason="STANDALONE_TEST_POSTGRES_URL not set; PG decode no-op skipped",
+)
+async def test_get_trace_detail_decodes_json_columns_postgres(
+    monkeypatch,
+) -> None:
+    """End-to-end PG variant of the SQLite JSON-decode regression.
+
+    Postgres jsonb returns ``dict`` / ``list[dict]`` directly out of
+    the recursive CTE so the decode helper must remain a no-op. Asserts
+    the same wire shape as the SQLite variant.
+    """
+    url = os.environ["STANDALONE_TEST_POSTGRES_URL"]
+    engine = create_async_engine(url)
+    sm = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(Base.metadata.create_all)
+
+        base = datetime(2026, 5, 9, 12, 0, 0, tzinfo=UTC)
+        trace_id = _trace_id(0x6E)
+        async with sm() as session:
+            session.add(
+                StandaloneTraceRow(
+                    started_at=base,
+                    otel_trace_id=trace_id,
+                    name="agent.run",
+                    models=["openai/gpt-4o"],
+                    status="OK",
+                )
+            )
+            session.add(
+                StandaloneSpanRow(
+                    started_at=base,
+                    otel_span_id=_span_id(0x6F),
+                    otel_trace_id=trace_id[8:],
+                    parent_span_id=None,
+                    name="root",
+                    kind="LLM",
+                    attributes=_SAMPLE_ATTRIBUTES,
+                    events=_SAMPLE_EVENTS,
+                    cost_breakdown=_SAMPLE_COST_BREAKDOWN,
+                )
+            )
+            await session.commit()
+
+        app = FastAPI()
+        register_admin_exception_handlers(app)
+        app.state.settings = StandaloneSettings(auth_mode=AuthMode.NONE)
+        app.include_router(traces_router)
+
+        async def override_session():
+            async with sm() as s:
+                yield s
+
+        app.dependency_overrides[get_session] = override_session
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get(f"/admin/api/v1/traces/{trace_id.hex()}")
+        assert response.status_code == 200, response.text
+        body = response.json()
+        span_payload = body["tree"][0]["span"]
+        assert isinstance(span_payload["attributes"], dict)
+        assert isinstance(span_payload["events"], list)
+        assert isinstance(span_payload["costBreakdown"], dict)
+        # Sanity: contents survived the round-trip (no double-encoding).
+        assert span_payload["attributes"]["openinference.span.kind"] == "LLM"
+        assert span_payload["costBreakdown"]["source"] == "litellm"
+        # Belt-and-braces: explicitly demonstrate that a JSON-text
+        # round-trip would have lost type. The wire really must carry
+        # decoded objects.
+        assert json.dumps(span_payload["attributes"])  # serialisable
+    finally:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+        await engine.dispose()

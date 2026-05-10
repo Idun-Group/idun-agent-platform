@@ -154,10 +154,35 @@ export type StandaloneTraceBulkDeleteResult = {
 
 const BASE = "/admin/api/v1/traces";
 
-function buildQuery(params: Record<string, string | number | undefined>): string {
-  const usp = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
+/**
+ * Shared TanStack Query cache key for `getTraceHealth`. Both the
+ * `SqliteBanner` and the `PipelineHealthPanel` mount their own
+ * `useQuery` with this key so the two consumers de-duplicate to a
+ * single in-flight request and a single cache entry — addresses the
+ * "two polls per 5s for the same endpoint" finding (#39).
+ */
+export const TRACE_HEALTH_QUERY_KEY = ["traces", "health"] as const;
+
+/**
+ * Strip undefined / null / empty-string entries from a record so a
+ * downstream `URLSearchParams` doesn't leak `?model=&status=` to the
+ * API. Centralised so future filter fields can't reintroduce the leak.
+ */
+export function pickDefined<T extends Record<string, unknown>>(
+  params: T,
+): Partial<T> {
+  const out: Partial<T> = {};
+  for (const [key, value] of Object.entries(params) as [keyof T, unknown][]) {
     if (value === undefined || value === null || value === "") continue;
+    out[key] = value as T[keyof T];
+  }
+  return out;
+}
+
+function buildQuery(params: Record<string, string | number | undefined>): string {
+  const filtered = pickDefined(params);
+  const usp = new URLSearchParams();
+  for (const [key, value] of Object.entries(filtered)) {
     usp.set(key, String(value));
   }
   const qs = usp.toString();

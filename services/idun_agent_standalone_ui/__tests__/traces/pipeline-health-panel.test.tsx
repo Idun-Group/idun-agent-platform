@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,7 +25,7 @@ describe("PipelineHealthPanel", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders queue depth, drop count, and Running writer when healthy", async () => {
+  it("collapses to a one-line OK indicator when healthy", async () => {
     vi.spyOn(tracesApi, "getTraceHealth").mockResolvedValue({
       queueDepth: 5,
       maxQueueSize: 8192,
@@ -35,20 +36,19 @@ describe("PipelineHealthPanel", () => {
 
     render(withQuery(<PipelineHealthPanel />));
 
-    await waitFor(() => {
-      expect(screen.getByTestId("pipeline-health-panel")).toBeInTheDocument();
-    });
-
-    expect(screen.getByTestId("pipeline-queue-depth")).toHaveTextContent(
-      "5 / 8,192",
+    // Healthy state should render the collapsed indicator (#29) and
+    // NOT the full three-metric strip.
+    const collapsed = await screen.findByTestId(
+      "pipeline-health-collapsed",
     );
-    expect(screen.getByTestId("pipeline-drop-count")).toHaveTextContent(
-      /Drops:\s*0/,
-    );
-    expect(screen.getByTestId("pipeline-writer")).toHaveTextContent("Running");
-    // Healthy → CircleCheck visible.
+    expect(collapsed).toHaveTextContent(/Trace pipeline.*OK/);
     expect(screen.getByTestId("pipeline-health-ok")).toBeInTheDocument();
-    expect(screen.queryByTestId("pipeline-health-warn")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pipeline-health-panel"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pipeline-queue-depth"),
+    ).not.toBeInTheDocument();
   });
 
   it("highlights drops in red when overflowCount > 0", async () => {
@@ -93,19 +93,92 @@ describe("PipelineHealthPanel", () => {
     expect(screen.getByTestId("pipeline-health-warn")).toBeInTheDocument();
   });
 
-  it("renders nothing on a 401 (silent degrade)", async () => {
+  it("shows a 'Session expired' pill on 401 (#30)", async () => {
     vi.spyOn(tracesApi, "getTraceHealth").mockRejectedValue(
       new ApiError(401, null),
     );
 
-    const { container } = render(withQuery(<PipelineHealthPanel />));
+    render(withQuery(<PipelineHealthPanel />));
 
+    const pill = await screen.findByTestId("pipeline-health-auth-pill");
+    expect(pill).toHaveTextContent(/Session expired/);
+    // Sign-in link is rendered.
+    expect(screen.getByRole("link", { name: /sign in/i })).toHaveAttribute(
+      "href",
+      "/login",
+    );
+    // The healthy / degraded surfaces stay hidden.
+    expect(
+      screen.queryByTestId("pipeline-health-panel"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pipeline-health-collapsed"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("resets manual-expand state on a degraded transition (degraded ALWAYS wins)", async () => {
+    // Operator clicks the collapsed pill while healthy → expanded.
+    // Pipeline goes degraded → expanded panel renders (degraded wins).
+    // Pipeline returns healthy → must collapse back to default pill, NOT
+    // remain stuck in the operator's stale expand intent. Without the
+    // reset effect this regresses to "expanded forever until reload."
+    const healthy = {
+      queueDepth: 5,
+      maxQueueSize: 8192,
+      overflowCount: 0,
+      writerRunning: true,
+      databaseDialect: "sqlite",
+    } as const;
+    const degraded = {
+      queueDepth: 8000,
+      maxQueueSize: 8192,
+      overflowCount: 0,
+      writerRunning: false,
+      databaseDialect: "sqlite",
+    } as const;
+
+    const spy = vi
+      .spyOn(tracesApi, "getTraceHealth")
+      .mockResolvedValue(healthy);
+    const user = userEvent.setup();
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <PipelineHealthPanel />
+      </QueryClientProvider>,
+    );
+
+    // Healthy → collapsed pill.
+    const pill = await screen.findByTestId("pipeline-health-collapsed");
+    await user.click(pill);
+    // Operator expanded the panel.
+    expect(
+      await screen.findByTestId("pipeline-health-panel"),
+    ).toBeInTheDocument();
+
+    // Pipeline goes degraded — full panel keeps rendering, but the
+    // useEffect should reset the operator's expand intent.
+    spy.mockResolvedValue(degraded);
+    client.invalidateQueries({ queryKey: ["traces", "health"] });
+    await waitFor(() => {
+      expect(screen.getByTestId("pipeline-health-warn")).toBeInTheDocument();
+    });
+
+    // Pipeline returns to healthy — without the reset, the operator
+    // would stay stuck in expanded mode. Assert we collapse back.
+    spy.mockResolvedValue(healthy);
+    client.invalidateQueries({ queryKey: ["traces", "health"] });
     await waitFor(() => {
       expect(
-        screen.queryByTestId("pipeline-health-panel"),
-      ).not.toBeInTheDocument();
+        screen.getByTestId("pipeline-health-collapsed"),
+      ).toBeInTheDocument();
     });
-    expect(container.firstChild).toBeNull();
+    expect(
+      screen.queryByTestId("pipeline-health-panel"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders nothing on a 500 (silent degrade)", async () => {
@@ -120,5 +193,11 @@ describe("PipelineHealthPanel", () => {
         screen.queryByTestId("pipeline-health-panel"),
       ).not.toBeInTheDocument();
     });
+    expect(
+      screen.queryByTestId("pipeline-health-collapsed"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("pipeline-health-auth-pill"),
+    ).not.toBeInTheDocument();
   });
 });

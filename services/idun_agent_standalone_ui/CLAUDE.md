@@ -17,10 +17,11 @@ A Next.js 15 + Tailwind v4 + React 19 SPA shipped as a static export. Bundled in
 | `/admin/observability` | Observability singleton — wired to `/admin/api/v1/observability` |
 | `/admin/integrations` | Integrations collection — partially migrated; still references the old `kind` field |
 | `/admin/prompts` | Prompts versioned collection — wired to `/admin/api/v1/prompts` |
+| `/admin/traces` | Trace list with cursor pagination + filter Selects (auto-populated from observed values) — wired to `/admin/api/v1/traces` |
+| `/admin/traces/[traceId]` | Trace detail: header metric strip, span tree (W3C ARIA, ↑↓→← keyboard nav), waterfall (sticky time-axis ruler, ↑↓ keyboard nav, root-to-leaf critical-path emphasis), span-detail rail (Info/Tool/Input/Output/Attributes/Events tabs with Pretty/Raw segmented control + JSON dark theme + Copy-all). Wired to `/admin/api/v1/traces/{trace_id}`. URL-stateful via `?view=tree|waterfall&span=<id>`. Mobile (<lg) renders the rail as a Sheet. |
 | `/admin/settings` | Theme + password sections — **runtime 404** (deferred backend; see "Deferred features") |
 | `/admin` | Dashboard with sessions list — **runtime 404** (sessions route deferred) |
 | `/login` | Password sign-in — **runtime 404** (SPA wiring deferred; standalone backend exists) |
-| `/traces`, `/traces/session` | Sessions list, run timeline, event detail — **runtime 404** (traces dropped from backend) |
 | `/logs` | Live tail of recent events — **runtime 404** (no backend route) |
 
 ## Theme
@@ -80,7 +81,6 @@ Unit tests live in the top-level `__tests__/` directory, organized by surface (`
 | `/admin/settings` (theme + password) | Runtime 404 | Backend deferred. Page references will typecheck-fail until restored or deleted. |
 | `/admin` dashboard with sessions list | Runtime 404 | Sessions backend deferred. |
 | `/login` password sign-in | Runtime 404 | Standalone backend implements password auth in strict-minimum scope; the SPA login page wiring is on a separate branch. |
-| `/traces`, `/traces/session` | Runtime 404 | Traces backend dropped from baseline migration; `trace_event` table not materialized. |
 | `/logs` live tail | Runtime 404 | No backend route. |
 | `/admin/integrations` (still uses old `kind` field) | Half-migrated | Update to current `IntegrationConfig` shape when revisiting messaging integrations. |
 

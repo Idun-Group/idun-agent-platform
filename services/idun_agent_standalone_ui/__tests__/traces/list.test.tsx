@@ -100,8 +100,13 @@ describe("TracesPage list view", () => {
     // Token formatting + cost formatting smoke check.
     expect(screen.getByText("4,096")).toBeInTheDocument();
     expect(screen.getByText("$0.0123")).toBeInTheDocument();
-    // Model chips render.
-    expect(screen.getByText("gpt-4o")).toBeInTheDocument();
+    // Model chips render. (gpt-4o also appears as the name subtitle now,
+    // so use getAllByText.)
+    expect(screen.getAllByText("gpt-4o").length).toBeGreaterThanOrEqual(1);
+    // Name subtitle shows models[0] under the link.
+    expect(
+      screen.getByTestId("trace-row-model-subtitle"),
+    ).toHaveTextContent("gpt-4o");
   });
 
   it("renders the empty state when listTraces returns no items", async () => {

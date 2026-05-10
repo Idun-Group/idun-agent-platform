@@ -98,7 +98,7 @@ describe("TraceTree", () => {
     expect(screen.getByText("~$0.0123")).toBeInTheDocument();
 
     // Grandchild has a unique latency.
-    expect(screen.getByText("25ms")).toBeInTheDocument();
+    expect(screen.getByText("25 ms")).toBeInTheDocument();
   });
 
   it("supports ArrowDown / ArrowUp keyboard navigation", () => {
@@ -257,5 +257,108 @@ describe("TraceTree", () => {
     expect(items[0]).toHaveAttribute("aria-selected", "false");
     expect(items[1]).toHaveAttribute("aria-selected", "true");
     expect(items[2]).toHaveAttribute("aria-selected", "false");
+  });
+
+  // ── P3 Sub-C coverage: expand-all / collapse-all / errors-only ───────
+
+  it("Collapse all leaves only the root row visible", () => {
+    render(<TraceTree nodes={TREE} selectedSpanId={null} onSelect={vi.fn()} />);
+    expect(screen.getAllByRole("treeitem")).toHaveLength(3);
+
+    fireEvent.click(screen.getByTestId("tree-toolbar-collapse-all"));
+
+    const items = screen.getAllByRole("treeitem");
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("Expand all re-expands the entire tree after a collapse", () => {
+    const empty = new Set<string>();
+    render(
+      <TraceTree
+        nodes={TREE}
+        selectedSpanId={null}
+        onSelect={vi.fn()}
+        initialExpanded={empty}
+      />,
+    );
+    expect(screen.getAllByRole("treeitem")).toHaveLength(1);
+
+    fireEvent.click(screen.getByTestId("tree-toolbar-expand-all"));
+
+    expect(screen.getAllByRole("treeitem")).toHaveLength(3);
+  });
+
+  it("Errors only is disabled when no spans have status=ERROR", () => {
+    render(<TraceTree nodes={TREE} selectedSpanId={null} onSelect={vi.fn()} />);
+    const btn = screen.getByTestId("tree-toolbar-errors-only");
+    expect(btn).toBeDisabled();
+  });
+
+  it("Errors only expands ancestor chains of error spans and collapses the rest", () => {
+    // Tag the grandchild with status=ERROR so the toolbar action has
+    // a target. The error-path set should be { root, child, grandchild }.
+    const ERR_TREE: StandaloneSpanTreeNode[] = [
+      {
+        ...TREE[0],
+        children: [
+          {
+            ...TREE[0].children[0],
+            children: [
+              {
+                span: makeSpan({
+                  otelSpanId: "grandchild",
+                  name: "grandchild",
+                  parentSpanId: "child",
+                  status: "ERROR",
+                }),
+                children: [],
+              },
+            ],
+          },
+          {
+            span: makeSpan({
+              otelSpanId: "second-child",
+              name: "second-child",
+              parentSpanId: "root",
+              status: "OK",
+            }),
+            children: [
+              {
+                span: makeSpan({
+                  otelSpanId: "second-grandchild",
+                  name: "second-grandchild",
+                  parentSpanId: "second-child",
+                  status: "OK",
+                }),
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    render(
+      <TraceTree
+        nodes={ERR_TREE}
+        selectedSpanId={null}
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByRole("treeitem")).toHaveLength(5);
+
+    fireEvent.click(screen.getByTestId("tree-toolbar-errors-only"));
+
+    // Only the error path stays expanded: root + child + grandchild.
+    // second-child is collapsed (its branch has no errors).
+    const items = screen.getAllByRole("treeitem");
+    const visibleIds = items.map((i) => i.getAttribute("data-span-id"));
+    expect(visibleIds).toContain("root");
+    expect(visibleIds).toContain("child");
+    expect(visibleIds).toContain("grandchild");
+    expect(visibleIds).toContain("second-child");
+    // second-grandchild is collapsed under second-child.
+    expect(visibleIds).not.toContain("second-grandchild");
   });
 });

@@ -328,6 +328,39 @@ def _decode_trace_id_path(otel_trace_id: str) -> bytes:
     return decoded
 
 
+def _maybe_decode_json(value: Any, *, column: str) -> Any:
+    """Decode a JSON column from raw text when SQLAlchemy didn't.
+
+    The recursive-CTE read path uses raw ``text(...)`` SQL, which
+    bypasses SQLAlchemy's ``JSON`` ``result_processor``. On SQLite
+    that means ``attributes`` / ``events`` / ``cost_breakdown`` come
+    back as the raw ``TEXT`` storage (the writer ``json.dumps``-encoded
+    them on insert). On PostgreSQL the asyncpg driver decodes
+    ``jsonb`` to ``dict`` / ``list`` directly, so this helper is a
+    no-op on that path.
+
+    Returns ``None`` instead of a stringly-typed value when decode
+    fails — the wire model declares ``dict | None`` / ``list[dict] |
+    None`` and a malformed payload should not 500 the whole route.
+    Decode failures are logged at WARNING (per ERR-003 / LOG-001) so
+    a silently-corrupt span row leaves an operator-discoverable trail
+    instead of just rendering an empty Attributes / Events tab.
+    """
+    if isinstance(value, (bytes, bytearray)):
+        value = value.decode("utf-8")
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            logger.warning(
+                "admin.traces span_json_decode_failed column=%s payload_len=%d",
+                column,
+                len(value),
+            )
+            return None
+    return value
+
+
 def _row_mapping_to_span_read(mapping: Any) -> StandaloneSpanRead:
     """Translate a ``Result.mappings()`` row into the wire model."""
     return StandaloneSpanRead(
@@ -343,9 +376,7 @@ def _row_mapping_to_span_read(mapping: Any) -> StandaloneSpanRead:
         started_at=mapping["started_at"],
         ended_at=mapping["ended_at"],
         latency_ms=(
-            float(mapping["latency_ms"])
-            if mapping["latency_ms"] is not None
-            else None
+            float(mapping["latency_ms"]) if mapping["latency_ms"] is not None else None
         ),
         model=mapping["model"],
         provider=mapping["provider"],
@@ -357,11 +388,13 @@ def _row_mapping_to_span_read(mapping: Any) -> StandaloneSpanRead:
         cost_usd=(
             float(mapping["cost_usd"]) if mapping["cost_usd"] is not None else None
         ),
-        cost_breakdown=mapping["cost_breakdown"],
+        cost_breakdown=_maybe_decode_json(
+            mapping["cost_breakdown"], column="cost_breakdown"
+        ),
         cost_source=mapping["cost_source"],
         status=mapping["status"],
-        attributes=mapping["attributes"],
-        events=mapping["events"],
+        attributes=_maybe_decode_json(mapping["attributes"], column="attributes"),
+        events=_maybe_decode_json(mapping["events"], column="events"),
     )
 
 
@@ -377,8 +410,7 @@ def _build_tree(
     trace.
     """
     by_id: dict[str, StandaloneSpanTreeNode] = {
-        s.otel_span_id: StandaloneSpanTreeNode(span=s, children=[])
-        for s in spans
+        s.otel_span_id: StandaloneSpanTreeNode(span=s, children=[]) for s in spans
     }
     roots: list[StandaloneSpanTreeNode] = []
     for span in spans:
@@ -506,9 +538,7 @@ async def delete_trace(
         )
 
     span_result = await session.execute(
-        delete(StandaloneSpanRow).where(
-            StandaloneSpanRow.otel_trace_id == trace_id_8
-        )
+        delete(StandaloneSpanRow).where(StandaloneSpanRow.otel_trace_id == trace_id_8)
     )
     deleted_spans = span_result.rowcount or 0
 
@@ -556,9 +586,7 @@ async def bulk_delete_traces(
     )
 
     is_pg = _is_postgres(session)
-    select_ids = select(
-        StandaloneTraceRow.started_at, StandaloneTraceRow.otel_trace_id
-    )
+    select_ids = select(StandaloneTraceRow.started_at, StandaloneTraceRow.otel_trace_id)
     select_ids = _apply_filters(select_ids, filters, is_postgres=is_pg)
     rows = (await session.execute(select_ids)).all()
     if not rows:
