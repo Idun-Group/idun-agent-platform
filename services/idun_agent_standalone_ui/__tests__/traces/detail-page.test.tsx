@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import TraceDetailPage from "@/app/admin/traces/[traceId]/page";
+import TraceDetailPage from "@/app/admin/traces/[traceId]/TraceDetailClient";
 import { ApiError } from "@/lib/api/client";
 import * as tracesApi from "@/lib/api/traces";
 
