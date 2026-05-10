@@ -31,6 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { StandaloneSpanRead, StandaloneSpanTreeNode } from "@/lib/api/traces";
+import { formatDuration } from "@/lib/format/duration";
 import { cn } from "@/lib/utils";
 
 /**
@@ -186,6 +187,46 @@ export function Waterfall({
     [nodes, flatSpans],
   );
 
+  // ── Keyboard navigation (AUDIT.md #18) ─────────────────────────────
+  //
+  // The flat row list is a one-dimensional roving-tabindex region: the
+  // currently-focused row carries `tabindex=0`; the rest carry
+  // `tabindex=-1`. ↑ / ↓ move between rows; Home / End jump to ends.
+  // The previous "every row tabindex=0" model interleaved with the
+  // tree's own roving tabindex when the operator clicked back into
+  // the tree — fixed by making this region truly roving.
+  const [focusedIndex, setFocusedIndex] = React.useState<number>(0);
+  const rowRefs = React.useRef<Array<HTMLDivElement | null>>([]);
+  rowRefs.current.length = flatSpans.length;
+
+  // When the selected span id changes from outside, sync focus so
+  // a click in the tree visually mirrors here.
+  React.useEffect(() => {
+    if (!selectedSpanId) return;
+    const idx = flatSpans.findIndex(
+      (s) => s.span.otelSpanId === selectedSpanId,
+    );
+    if (idx >= 0) setFocusedIndex(idx);
+  }, [selectedSpanId, flatSpans]);
+
+  // Clamp focusedIndex when the flat list shrinks (different trace).
+  React.useEffect(() => {
+    if (focusedIndex >= flatSpans.length) {
+      setFocusedIndex(Math.max(0, flatSpans.length - 1));
+    }
+  }, [flatSpans.length, focusedIndex]);
+
+  const moveFocus = React.useCallback(
+    (nextIdx: number) => {
+      const clamped = Math.max(0, Math.min(flatSpans.length - 1, nextIdx));
+      setFocusedIndex(clamped);
+      // Move actual DOM focus so the visual ring follows the operator.
+      const el = rowRefs.current[clamped];
+      if (el) el.focus();
+    },
+    [flatSpans.length],
+  );
+
   if (!bounds || flatSpans.length === 0) {
     return (
       <div
@@ -199,6 +240,11 @@ export function Waterfall({
     );
   }
 
+  // Ruler ticks at 0%, 25%, 50%, 75%, 100% of duration. AUDIT.md #17:
+  // bars positioned via percent margin/width were unreadable without a
+  // scale at the top — a 38ms trace and a 3.8s trace looked identical.
+  const tickFractions = [0, 0.25, 0.5, 0.75, 1] as const;
+
   return (
     <TooltipProvider>
       <div
@@ -206,7 +252,47 @@ export function Waterfall({
         aria-label="Span waterfall"
         className={cn("flex flex-col gap-1 text-xs", className)}
       >
-        {flatSpans.map((row) => {
+        {/*
+          Time-axis ruler — sticky header. Mirrors the grid columns of
+          the rows below (200px label gutter + 1fr bar track) so the
+          ticks align with the bars at every viewport. Position is
+          ``sticky top-0`` so the ruler stays put while the flat row
+          list scrolls underneath.
+        */}
+        <div
+          data-testid="waterfall-time-ruler"
+          aria-hidden="true"
+          className="sticky top-0 z-10 grid grid-cols-[200px_1fr] items-center gap-3 border-b bg-background/95 px-2 py-1 backdrop-blur"
+        >
+          <span className="font-mono text-[10px] uppercase text-muted-foreground">
+            Time
+          </span>
+          <div className="relative h-4 w-full">
+            {tickFractions.map((frac) => {
+              const ms = bounds.total * frac;
+              return (
+                <div
+                  key={frac}
+                  data-testid="waterfall-tick"
+                  className="absolute top-0 -translate-x-1/2 select-none font-mono text-[10px] text-muted-foreground"
+                  style={{ left: `${frac * 100}%` }}
+                >
+                  {formatDuration(ms)}
+                </div>
+              );
+            })}
+            {/* Tick marks underneath the labels for visual anchoring. */}
+            {tickFractions.map((frac) => (
+              <div
+                key={`mark-${frac}`}
+                aria-hidden="true"
+                className="absolute -bottom-1 h-1 w-px bg-muted-foreground/40"
+                style={{ left: `${frac * 100}%` }}
+              />
+            ))}
+          </div>
+        </div>
+        {flatSpans.map((row, rowIdx) => {
           const leftPct =
             ((row.startedAtMs - bounds.traceStartMs) / bounds.total) * 100;
           const widthPct = (row.durationMs / bounds.total) * 100;
@@ -220,11 +306,17 @@ export function Waterfall({
           const kindClass =
             (resolvedKind && KIND_BAR_CLASS[resolvedKind]) ?? FALLBACK_BAR_CLASS;
 
+          // Roving tabindex: only the focused row is reachable via Tab.
+          const isFocused = rowIdx === focusedIndex;
+
           return (
             <div
               key={row.span.otelSpanId}
+              ref={(el) => {
+                rowRefs.current[rowIdx] = el;
+              }}
               role="button"
-              tabIndex={0}
+              tabIndex={isFocused ? 0 : -1}
               aria-pressed={isSelected}
               aria-label={`Span ${row.span.name}, ${row.durationMs} ms`}
               data-span-id={row.span.otelSpanId}
@@ -234,7 +326,11 @@ export function Waterfall({
                 "group/wf-row grid cursor-pointer grid-cols-[200px_1fr] items-center gap-3 rounded-md px-2 py-1 outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring",
                 isSelected && "bg-muted",
               )}
-              onClick={() => onSelect(row.span)}
+              onClick={() => {
+                setFocusedIndex(rowIdx);
+                onSelect(row.span);
+              }}
+              onFocus={() => setFocusedIndex(rowIdx)}
               onKeyDown={(event) => {
                 // Activate on Enter or Space, matching the WAI-ARIA
                 // button pattern. ``preventDefault`` on Space stops the
@@ -242,6 +338,27 @@ export function Waterfall({
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
                   onSelect(row.span);
+                  return;
+                }
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  moveFocus(rowIdx + 1);
+                  return;
+                }
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  moveFocus(rowIdx - 1);
+                  return;
+                }
+                if (event.key === "Home") {
+                  event.preventDefault();
+                  moveFocus(0);
+                  return;
+                }
+                if (event.key === "End") {
+                  event.preventDefault();
+                  moveFocus(flatSpans.length - 1);
+                  return;
                 }
               }}
             >

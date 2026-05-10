@@ -139,9 +139,13 @@ describe("Waterfall", () => {
       <Waterfall nodes={TREE} selectedSpanId={null} onSelect={onSelect} />,
     );
     const items = screen.getAllByRole("button");
-    // Each row must be reachable via Tab.
+    // Roving tabindex (AUDIT.md #18): only the focused row carries
+    // tabindex=0, the rest carry tabindex=-1 so the Waterfall and
+    // tree don't interleave roving regions when the operator tabs
+    // back. The first row is focused by default.
     expect(items[0]).toHaveAttribute("tabindex", "0");
-    expect(items[1]).toHaveAttribute("tabindex", "0");
+    expect(items[1]).toHaveAttribute("tabindex", "-1");
+    expect(items[2]).toHaveAttribute("tabindex", "-1");
 
     fireEvent.keyDown(items[1], { key: "Enter" });
     expect(onSelect).toHaveBeenCalledWith(
@@ -152,6 +156,56 @@ describe("Waterfall", () => {
     expect(onSelect).toHaveBeenLastCalledWith(
       expect.objectContaining({ otelSpanId: "child-b" }),
     );
+  });
+
+  // ── P3 Sub-C coverage: keyboard nav + time ruler ─────────────────────
+
+  it("ArrowDown / ArrowUp move focus across the flat row list", () => {
+    render(
+      <Waterfall nodes={TREE} selectedSpanId={null} onSelect={vi.fn()} />,
+    );
+    const items = screen.getAllByRole("button");
+    expect(items[0]).toHaveAttribute("tabindex", "0");
+
+    fireEvent.keyDown(items[0], { key: "ArrowDown" });
+    expect(items[1]).toHaveAttribute("tabindex", "0");
+    expect(items[0]).toHaveAttribute("tabindex", "-1");
+
+    fireEvent.keyDown(items[1], { key: "ArrowDown" });
+    expect(items[2]).toHaveAttribute("tabindex", "0");
+
+    // ArrowUp goes back.
+    fireEvent.keyDown(items[2], { key: "ArrowUp" });
+    expect(items[1]).toHaveAttribute("tabindex", "0");
+  });
+
+  it("Home / End jump to the first / last row", () => {
+    render(
+      <Waterfall nodes={TREE} selectedSpanId={null} onSelect={vi.fn()} />,
+    );
+    const items = screen.getAllByRole("button");
+    fireEvent.keyDown(items[0], { key: "End" });
+    expect(items[2]).toHaveAttribute("tabindex", "0");
+    fireEvent.keyDown(items[2], { key: "Home" });
+    expect(items[0]).toHaveAttribute("tabindex", "0");
+  });
+
+  it("renders a sticky time-axis ruler with 5 ticks", () => {
+    render(
+      <Waterfall nodes={TREE} selectedSpanId={null} onSelect={vi.fn()} />,
+    );
+    const ruler = screen.getByTestId("waterfall-time-ruler");
+    expect(ruler).toBeInTheDocument();
+    expect(ruler.className).toMatch(/sticky/);
+    const ticks = screen.getAllByTestId("waterfall-tick");
+    // Five tick LABELS (the underlying mark divs are aria-hidden and
+    // not testid-tagged).
+    expect(ticks).toHaveLength(5);
+    // First tick is "0 ms" since duration starts at 0; last tick
+    // shows the trace's total duration formatted via formatDuration
+    // — for our 1000ms trace that's "1.00 s".
+    expect(ticks[0]).toHaveTextContent("0 ms");
+    expect(ticks[4]).toHaveTextContent("1.00 s");
   });
 
   it("reflects selection through aria-pressed", () => {

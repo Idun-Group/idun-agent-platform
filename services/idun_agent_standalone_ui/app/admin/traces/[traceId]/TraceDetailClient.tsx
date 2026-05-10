@@ -34,7 +34,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon, GitBranchIcon, ListTreeIcon, Trash2Icon } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { SpanDetailRail } from "@/components/traces/SpanDetailRail";
@@ -52,6 +52,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/api/client";
@@ -213,6 +220,55 @@ export default function TraceDetailClient() {
 
   const partial = useMemo(() => anyPartialCost(tree), [tree]);
   const totalSpanCount = useMemo(() => countSpans(tree), [tree]);
+
+  // ── Mobile rail (AUDIT.md #40) ───────────────────────────────────────
+  //
+  // At <lg viewport the side-by-side layout collapses to a column;
+  // the rail used to render full-width below the tree, eating the
+  // entire next viewport. Wrap it in a `<Sheet>` (Radix Dialog under
+  // the hood) that opens on a span click and closes on Esc / X. The
+  // open state is local — we DON'T persist "rail open" to the URL
+  // (transient overlay; refresh shouldn't re-open it).
+  //
+  // Detect "is mobile" via a `matchMedia("(max-width: lg)")` listener
+  // so the rail only renders inside the Sheet on narrow viewports.
+  // On wider screens the inline rail wins and the Sheet is suppressed.
+  const [isNarrow, setIsNarrow] = useState(false);
+  const [mobileRailOpen, setMobileRailOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    // Tailwind v4's `lg` breakpoint default is 1024px. The query
+    // matches when width is BELOW the breakpoint (i.e. mobile / tablet).
+    const mql = window.matchMedia("(max-width: 1023px)");
+    const handler = (event: MediaQueryListEvent) => setIsNarrow(event.matches);
+    setIsNarrow(mql.matches);
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", handler);
+      return () => mql.removeEventListener("change", handler);
+    }
+    // Safari < 14 fallback.
+    mql.addListener(handler);
+    return () => mql.removeListener(handler);
+  }, []);
+
+  // When the operator selects a span on a narrow viewport, slide
+  // the Sheet open. We trigger off the URL-driven `urlSpanInTree`
+  // (which only flips when the user explicitly picks a span) so a
+  // refresh with `?span=<id>` does NOT pop the sheet automatically;
+  // the operator should land on the trace overview, not on a modal.
+  const userSelectedSpanId = urlSpanInTree;
+  const previousUserSpanIdRef = useRef<string | null>(userSelectedSpanId);
+  useEffect(() => {
+    if (
+      userSelectedSpanId &&
+      userSelectedSpanId !== previousUserSpanIdRef.current &&
+      isNarrow
+    ) {
+      setMobileRailOpen(true);
+    }
+    previousUserSpanIdRef.current = userSelectedSpanId;
+  }, [userSelectedSpanId, isNarrow]);
 
   const del = useMutation({
     mutationFn: () => deleteTrace(traceId),
@@ -394,7 +450,11 @@ export default function TraceDetailClient() {
         </div>
       </header>
 
-      {/* Body */}
+      {/*
+        Body — at <lg, single column (the rail rides in a `<Sheet>`,
+        not inline). At lg+, two columns: the structure on the left,
+        the rail flush right at 380px.
+      */}
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px]">
         <section
           className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r"
@@ -448,8 +508,15 @@ export default function TraceDetailClient() {
           </Tabs>
         </section>
 
+        {/*
+          Inline rail — desktop. Hidden below `lg`; on narrow viewports
+          the rail renders inside the `<Sheet>` further down so the
+          tree retains the full column width and the operator can see
+          tree + rail by toggling the sheet rather than scrolling
+          half a screen at a time.
+        */}
         <aside
-          className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-background"
+          className="hidden min-h-0 min-w-0 flex-col overflow-hidden bg-background lg:flex"
           aria-label="Span detail rail"
           data-testid="span-detail-rail"
         >
@@ -463,6 +530,43 @@ export default function TraceDetailClient() {
           )}
         </aside>
       </div>
+
+      {/*
+        Mobile rail — AUDIT.md #40. On `<lg` viewports the rail rides
+        in a `<Sheet>` (Radix Dialog) that slides in from the right.
+        Esc / X close the sheet (Radix wires both natively); the
+        operator's selected span is preserved across the open/close
+        cycle because selection lives in the URL.
+      */}
+      <Sheet
+        open={isNarrow && mobileRailOpen}
+        onOpenChange={(next) => {
+          // Sync the local "rail open" flag, but only when the
+          // viewport is narrow — wide viewports never open the
+          // sheet so we shouldn't react to its open-state events.
+          if (isNarrow) setMobileRailOpen(next);
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="w-full max-w-md p-0"
+          data-testid="mobile-rail-sheet"
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Span detail</SheetTitle>
+            <SheetDescription>
+              Selected span info, payload, attributes, and events.
+            </SheetDescription>
+          </SheetHeader>
+          {selectedSpan ? (
+            <SpanDetailRail
+              span={selectedSpan}
+              onClose={() => setMobileRailOpen(false)}
+              className="bg-popover"
+            />
+          ) : null}
+        </SheetContent>
+      </Sheet>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>

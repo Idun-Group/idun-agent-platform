@@ -453,4 +453,71 @@ describe("TraceDetailPage", () => {
       .join("\n");
     expect(allCalls).toContain("view=waterfall");
   });
+
+  // ── P3 Sub-C coverage: mobile rail Sheet ─────────────────────────────
+
+  it("opens the mobile rail Sheet when a span is clicked on a narrow viewport", async () => {
+    // Stub matchMedia to flag a narrow viewport BEFORE rendering.
+    const originalMatchMedia = window.matchMedia;
+    type Listener = (event: MediaQueryListEvent) => void;
+    const listeners = new Set<Listener>();
+    window.matchMedia = vi.fn().mockImplementation(() => ({
+      matches: true,
+      media: "",
+      onchange: null,
+      addEventListener: (_: string, fn: Listener) => listeners.add(fn),
+      removeEventListener: (_: string, fn: Listener) => listeners.delete(fn),
+      addListener: (fn: Listener) => listeners.add(fn),
+      removeListener: (fn: Listener) => listeners.delete(fn),
+      dispatchEvent: () => true,
+    })) as typeof window.matchMedia;
+
+    try {
+      vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+      render(withQuery(<TraceDetailPage />));
+
+      await waitFor(() => {
+        expect(screen.getAllByRole("treeitem")).toHaveLength(3);
+      });
+
+      // No sheet open initially — landing on the trace overview should
+      // NOT auto-pop the rail (operator should see the structure first).
+      expect(screen.queryByTestId("mobile-rail-sheet")).toBeNull();
+
+      const llmRow = screen
+        .getAllByRole("treeitem")
+        .find((row) => row.getAttribute("data-span-id") === "child-llm");
+      fireEvent.click(llmRow!);
+
+      // After click → URL updates → effect detects user-driven span
+      // change on a narrow viewport → Sheet opens.
+      await waitFor(() => {
+        expect(screen.queryByTestId("mobile-rail-sheet")).toBeInTheDocument();
+      });
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
+
+  it("does NOT open the mobile rail Sheet on a wide viewport (inline rail wins)", async () => {
+    // Default jsdom matchMedia returns matches=false — wide viewport.
+    vi.spyOn(tracesApi, "getTrace").mockResolvedValue(TRACE_DETAIL);
+    render(withQuery(<TraceDetailPage />));
+
+    await waitFor(() => {
+      expect(screen.getAllByRole("treeitem")).toHaveLength(3);
+    });
+
+    const llmRow = screen
+      .getAllByRole("treeitem")
+      .find((row) => row.getAttribute("data-span-id") === "child-llm");
+    fireEvent.click(llmRow!);
+
+    // The URL still updates and the rail still re-renders inline,
+    // but the Sheet is NOT mounted on wide viewports.
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalled();
+    });
+    expect(screen.queryByTestId("mobile-rail-sheet")).toBeNull();
+  });
 });

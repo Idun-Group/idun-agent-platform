@@ -34,10 +34,16 @@
  * native React state so we keep total control over the row chrome.
  */
 
-import { ChevronRightIcon } from "lucide-react";
+import {
+  ChevronRightIcon,
+  ChevronsDownUpIcon,
+  ChevronsUpDownIcon,
+  CircleAlertIcon,
+} from "lucide-react";
 import * as React from "react";
 
 import { SpanKindIcon } from "@/components/traces/SpanKindIcon";
+import { Button } from "@/components/ui/button";
 import { formatDuration } from "@/lib/format/duration";
 import { formatCostUSD } from "@/lib/format/money";
 import {
@@ -122,6 +128,53 @@ function collectAllIds(nodes: StandaloneSpanTreeNode[]): Set<string> {
     for (const child of node.children) walk(child);
   }
   for (const n of nodes) walk(n);
+  return out;
+}
+
+/**
+ * Identify span statuses that should be considered "errors" for the
+ * Errors-only filter. The writer normalises OTel's ``StatusCode`` to
+ * the trio ``OK / ERROR / UNSET``; downstream raw values may also
+ * appear lowercase. We deliberately do NOT treat ``UNSET`` as an
+ * error — too many ADK spans never close out a status and would all
+ * spuriously match.
+ */
+function isErrorStatus(status: string | null | undefined): boolean {
+  if (!status) return false;
+  return status.toUpperCase() === "ERROR";
+}
+
+/**
+ * Walk the tree and return the set of span ids that are ANCESTORS of
+ * any error span (exclusive of the error span itself, but we add the
+ * error span too so the chain is intact). Used by the Errors-only
+ * toolbar action — selecting it expands those ids and collapses
+ * everything else, so the operator sees a clean cause path.
+ *
+ * Returns an empty set when no errors are present; the caller falls
+ * back to "no-op" so we don't accidentally collapse everything.
+ */
+function collectErrorPathIds(
+  nodes: StandaloneSpanTreeNode[],
+): Set<string> {
+  const out = new Set<string>();
+  function visit(
+    node: StandaloneSpanTreeNode,
+    chain: readonly string[],
+  ): boolean {
+    let hasError = isErrorStatus(node.span.status);
+    const nextChain = [...chain, node.span.otelSpanId];
+    for (const child of node.children) {
+      if (visit(child, nextChain)) hasError = true;
+    }
+    if (hasError) {
+      for (const id of nextChain) out.add(id);
+    }
+    return hasError;
+  }
+  for (const n of nodes) {
+    visit(n, []);
+  }
   return out;
 }
 
@@ -257,6 +310,30 @@ export function TraceTree({
     });
   }, []);
 
+  // ── Tree toolbar handlers (AUDIT.md #32) ─────────────────────────────
+  const handleExpandAll = React.useCallback(() => {
+    setExpanded(collectAllIds(nodes));
+  }, [nodes]);
+
+  const handleCollapseAll = React.useCallback(() => {
+    // Keep the root rows visible — collapsing them too would leave
+    // the operator with literally nothing in view. Set holds only
+    // child ids that are currently expanded; clearing it collapses
+    // everything below the root.
+    setExpanded(new Set());
+  }, []);
+
+  const errorPathIds = React.useMemo(
+    () => collectErrorPathIds(nodes),
+    [nodes],
+  );
+  const hasErrors = errorPathIds.size > 0;
+
+  const handleErrorsOnly = React.useCallback(() => {
+    if (errorPathIds.size === 0) return;
+    setExpanded(new Set(errorPathIds));
+  }, [errorPathIds]);
+
   const selectAndFocus = React.useCallback(
     (row: VisibleRow) => {
       setFocusedId(row.id);
@@ -331,13 +408,65 @@ export function TraceTree({
   );
 
   return (
-    <div
-      role="tree"
-      aria-label="Span tree"
-      className={cn("flex flex-col text-sm", className)}
-      onKeyDown={handleKeyDown}
-    >
-      {rows.map((row) => {
+    <div className={cn("flex flex-col gap-2", className)}>
+      {/*
+        Toolbar — AUDIT.md #32. Three actions:
+        - Expand all: re-expands every node (default state).
+        - Collapse all: clears the expanded Set so only root rows
+          remain visible.
+        - Errors only: when any span has a non-OK status, expands
+          ONLY the ancestor chains leading to error spans and
+          collapses the rest. Disabled when no errors are present so
+          clicking it doesn't surprise the operator with a no-op.
+      */}
+      <div
+        className="flex flex-wrap items-center gap-1 border-b pb-2"
+        data-testid="trace-tree-toolbar"
+        aria-label="Span tree toolbar"
+      >
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={handleExpandAll}
+          className="h-7 gap-1 px-2 text-[11px]"
+          data-testid="tree-toolbar-expand-all"
+        >
+          <ChevronsUpDownIcon className="size-3.5" />
+          Expand all
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={handleCollapseAll}
+          className="h-7 gap-1 px-2 text-[11px]"
+          data-testid="tree-toolbar-collapse-all"
+        >
+          <ChevronsDownUpIcon className="size-3.5" />
+          Collapse all
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={handleErrorsOnly}
+          disabled={!hasErrors}
+          className="h-7 gap-1 px-2 text-[11px]"
+          data-testid="tree-toolbar-errors-only"
+          title={hasErrors ? undefined : "No spans with status=ERROR"}
+        >
+          <CircleAlertIcon className="size-3.5" />
+          Errors only
+        </Button>
+      </div>
+      <div
+        role="tree"
+        aria-label="Span tree"
+        className="flex flex-col text-sm"
+        onKeyDown={handleKeyDown}
+      >
+        {rows.map((row) => {
         const isFocused = row.id === focusedId;
         const isSelected = row.id === selectedSpanId;
         return (
@@ -425,6 +554,7 @@ export function TraceTree({
           </Collapsible>
         );
       })}
+      </div>
     </div>
   );
 }
