@@ -12,7 +12,6 @@ import {
   Database,
   ExternalLink,
   Eye,
-  FileText,
   KeyRound,
   LayoutDashboard,
   LogOut,
@@ -50,8 +49,7 @@ const NAV: NavGroup[] = [
     label: "Overview",
     items: [
       { href: "/admin/", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/traces/", label: "Traces", icon: Activity },
-      { href: "/logs/", label: "Logs", icon: FileText },
+      { href: "/admin/traces/", label: "Traces", icon: Activity },
     ],
   },
   {
