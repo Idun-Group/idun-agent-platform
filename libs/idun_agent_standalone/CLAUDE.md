@@ -156,7 +156,7 @@ These were present in the pre-rework standalone but have **no router or service 
 | `idun init <name>` scaffold command | `scaffold.py` | **Restored** — see "Key entry points" above. Now a thin launcher (migrations + seed + browser + serve), not the legacy multi-file scaffolder. |
 | `idun hash-password` | `cli.py` | **Restored** — generates a bcrypt hash for `IDUN_ADMIN_PASSWORD_HASH`. |
 | `idun-standalone export` | `config_io.py` | Removed; YAML export comes back with the materialized-config endpoints (deferred) |
-| `runtime.py` (live agent handle, observer registration after each reload) | top-level | Removed with traces |
+| `runtime.py` (live agent handle, observer registration after each reload) | top-level | Removed alongside the pre-rework trace surface; the v1 OTel trace pipeline (see "Trace pipeline" above) supersedes the observer-registration model that lived here. |
 
 The empty `admin/`, `auth/`, `theme/` directories remain on disk so import paths used by deferred-feature work-in-progress branches don't have to change name.
 
