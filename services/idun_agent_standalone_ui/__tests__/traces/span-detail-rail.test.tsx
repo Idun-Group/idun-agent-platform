@@ -93,12 +93,13 @@ describe("SpanDetailRail", () => {
       screen.getByText("You are a helpful assistant."),
     ).toBeInTheDocument();
     expect(screen.getByText("Hello!")).toBeInTheDocument();
-    // Pretty button has aria-pressed=true; Raw is unpressed.
-    expect(screen.getByRole("button", { name: "Pretty" })).toHaveAttribute(
+    // Pretty/Raw is now a Tabs segmented control. The active variant
+    // is reflected through aria-pressed on the trigger.
+    expect(screen.getByRole("tab", { name: "Pretty" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("button", { name: "Raw" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Raw" })).toHaveAttribute(
       "aria-pressed",
       "false",
     );
@@ -109,8 +110,8 @@ describe("SpanDetailRail", () => {
     render(<SpanDetailRail span={makeSpan()} />);
     await user.click(screen.getByRole("tab", { name: "Input" }));
 
-    await user.click(screen.getByRole("button", { name: "Raw" }));
-    expect(screen.getByRole("button", { name: "Raw" })).toHaveAttribute(
+    await user.click(screen.getByRole("tab", { name: "Raw" }));
+    expect(screen.getByRole("tab", { name: "Raw" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -118,8 +119,8 @@ describe("SpanDetailRail", () => {
     // mounted — the JSON tree viewer renders instead.
     expect(screen.queryByTestId("chat-bubbles")).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Pretty" }));
-    expect(screen.getByRole("button", { name: "Pretty" })).toHaveAttribute(
+    await user.click(screen.getByRole("tab", { name: "Pretty" }));
+    expect(screen.getByRole("tab", { name: "Pretty" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -149,5 +150,126 @@ describe("SpanDetailRail", () => {
     render(<SpanDetailRail span={makeSpan()} onClose={onClose} />);
     fireEvent.click(screen.getByRole("button", { name: /close span detail/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // ── P3 Sub-B coverage ────────────────────────────────────────────────
+
+  it("Input tab reads gen_ai.input.messages on ADK spans (PayloadViewer fallback chain)", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpanDetailRail
+        span={makeSpan({
+          attributes: {
+            "gen_ai.input.messages": JSON.stringify([
+              { role: "user", content: "Hello ADK" },
+            ]),
+          },
+        })}
+      />,
+    );
+    await user.click(screen.getByRole("tab", { name: "Input" }));
+    expect(screen.getByText("Hello ADK")).toBeInTheDocument();
+  });
+
+  it("Output tab reads gcp.vertex.agent.tool_response on ADK tool spans", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpanDetailRail
+        span={makeSpan({
+          name: "execute_tool foo",
+          kind: "INTERNAL",
+          attributes: {
+            "gcp.vertex.agent.tool_response": JSON.stringify({ ok: true }),
+          },
+        })}
+      />,
+    );
+    await user.click(screen.getByRole("tab", { name: "Output" }));
+    // No "No payload recorded." now that the fallback chain finds the
+    // ADK tool response. The Raw mode mounts a JsonView (Pretty would
+    // pick up the chat-bubble path only if messages are detected).
+    expect(screen.queryByText(/no payload recorded/i)).toBeNull();
+    await user.click(screen.getByRole("tab", { name: "Raw" }));
+    // The "ok" key is rendered somewhere in the JsonView.
+    expect(screen.getByText(/ok/)).toBeInTheDocument();
+  });
+
+  it("OpenInference input.value still wins when present (chain ordering)", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpanDetailRail
+        span={makeSpan({
+          attributes: {
+            "input.value": JSON.stringify([{ role: "user", content: "OI wins" }]),
+            "gen_ai.input.messages": JSON.stringify([
+              { role: "user", content: "ADK shadow" },
+            ]),
+          },
+        })}
+      />,
+    );
+    await user.click(screen.getByRole("tab", { name: "Input" }));
+    expect(screen.getByText("OI wins")).toBeInTheDocument();
+    expect(screen.queryByText("ADK shadow")).toBeNull();
+  });
+
+  it("renders the Tool tab as a conditional 6th tab on TOOL-shaped spans", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpanDetailRail
+        span={makeSpan({
+          kind: "INTERNAL",
+          name: "execute_tool weather",
+          attributes: {
+            "gcp.vertex.agent.tool_call_args": JSON.stringify({ city: "NYC" }),
+            "gcp.vertex.agent.tool_response": JSON.stringify({ tempC: 22 }),
+          },
+        })}
+      />,
+    );
+    const toolTab = screen.getByTestId("span-rail-tool-tab");
+    expect(toolTab).toBeInTheDocument();
+    await user.click(toolTab);
+    // Parameters and Result rows are present after switching tabs.
+    expect(screen.getByText("city")).toBeInTheDocument();
+    expect(screen.getByText('"NYC"')).toBeInTheDocument();
+    expect(screen.getByText("tempC")).toBeInTheDocument();
+  });
+
+  it("does NOT render the Tool tab on a generic LLM span", () => {
+    render(
+      <SpanDetailRail
+        span={makeSpan({
+          kind: "LLM",
+          name: "openai.chat",
+          attributes: { "input.value": JSON.stringify({ msg: "hi" }) },
+        })}
+      />,
+    );
+    expect(screen.queryByTestId("span-rail-tool-tab")).toBeNull();
+  });
+
+  it("kind badge uses variant=secondary with a per-kind colour class (#34)", () => {
+    render(
+      <SpanDetailRail
+        span={makeSpan({ kind: "LLM", name: "openai.chat" })}
+      />,
+    );
+    const badge = screen.getByTestId("span-kind-badge");
+    expect(badge).toHaveAttribute("data-variant", "secondary");
+    // The shared per-kind class should be present somewhere in the
+    // className list (don't pin the exact tailwind tokens).
+    expect(badge.className).toMatch(/bg-blue-500/);
+  });
+
+  it("Copy-all button is rendered above the Input payload pane", async () => {
+    const user = userEvent.setup();
+    render(<SpanDetailRail span={makeSpan()} />);
+    await user.click(screen.getByRole("tab", { name: "Input" }));
+    // The button is testid-tagged. There may be more than one across
+    // the rail if multiple panels are mounted; `getAllByTestId` is
+    // safe here.
+    const copyAllButtons = screen.getAllByTestId("copy-all-button");
+    expect(copyAllButtons.length).toBeGreaterThanOrEqual(1);
   });
 });
