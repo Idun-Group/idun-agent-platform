@@ -93,19 +93,22 @@ async def test_pg_branch_advisory_lock_skip_when_busy():
     assert "pg_try_advisory_lock" in call_sql
 
 
-def test_retention_days_env_default(monkeypatch):
-    """Default retention is 14 days when env var unset."""
-    monkeypatch.delenv("IDUN_TRACE_RETENTION_DAYS", raising=False)
+def test_retention_days_default():
+    """Default retention is 14 days when no override is supplied.
+
+    ENV-001: ``IDUN_TRACE_RETENTION_DAYS`` is now read by
+    ``StandaloneSettings`` and threaded into the scheduler by the
+    bootstrap callback. The scheduler itself only takes a kwarg.
+    """
     sm = MagicMock()
     scheduler = RetentionScheduler(session_factory=sm)
     assert scheduler._retention_days == 14
 
 
-def test_retention_days_env_override(monkeypatch):
-    """Env var overrides the default."""
-    monkeypatch.setenv("IDUN_TRACE_RETENTION_DAYS", "30")
+def test_retention_days_kwarg_override():
+    """Constructor kwarg overrides the default."""
     sm = MagicMock()
-    scheduler = RetentionScheduler(session_factory=sm)
+    scheduler = RetentionScheduler(session_factory=sm, retention_days=30)
     assert scheduler._retention_days == 30
 
 

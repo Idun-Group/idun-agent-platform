@@ -5,7 +5,9 @@ PG branch:
       uvicorn deployments — only one worker rotates partitions at a
       time.
     - Drops monthly partitions whose calendar end is older than
-      ``now - IDUN_TRACE_RETENTION_DAYS`` for both ``standalone_trace``
+      ``now - <retention_days>`` (sourced from
+      ``StandaloneSettings.trace_retention_days`` →
+      ``IDUN_TRACE_RETENTION_DAYS``) for both ``standalone_trace``
       and ``standalone_span``. Uses ``DETACH CONCURRENTLY`` then
       ``DROP TABLE`` to avoid an ACCESS EXCLUSIVE lock on the parent.
     - Pre-creates the next-next-month partition for both tables so
@@ -31,7 +33,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import os
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -73,14 +74,10 @@ class RetentionScheduler:
         self,
         *,
         session_factory: async_sessionmaker[Any],
-        retention_days: int | None = None,
+        retention_days: int = 14,
     ) -> None:
         self._session_factory = session_factory
-        self._retention_days = (
-            retention_days
-            if retention_days is not None
-            else int(os.getenv("IDUN_TRACE_RETENTION_DAYS", "14"))
-        )
+        self._retention_days = retention_days
         self._scheduler: AsyncIOScheduler | None = None
 
     async def start(self) -> None:

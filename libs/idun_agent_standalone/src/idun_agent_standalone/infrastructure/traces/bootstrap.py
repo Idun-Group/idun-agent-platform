@@ -36,6 +36,7 @@ from fastapi import FastAPI
 from idun_agent_engine.observability import otel_lifecycle
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+from . import costs
 from .exporter import StandaloneSpanExporter
 from .retention import RetentionScheduler
 from .writer import TraceWriter
@@ -77,6 +78,15 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
     """
     # 1. Reload teardown — stop previous tasks if any.
     await _stop_previous_tasks(app)
+
+    # Resolve trace-pipeline settings off ``app.state``. Falls back to
+    # safe defaults when no settings are attached (test harness, very
+    # early bootstrap) so the callback stays usable in those contexts.
+    settings = getattr(app.state, "settings", None)
+    retention_days = getattr(settings, "trace_retention_days", 14)
+    max_attribute_bytes = getattr(settings, "traces_input_value_max_bytes", 65536)
+    prices_refresh_enabled = getattr(settings, "prices_refresh_enabled", False)
+    costs.set_refresh_enabled(bool(prices_refresh_enabled))
 
     # 2. Resolve the active observability config so we know whether
     #    to self-install LangChainInstrumentor.
@@ -128,7 +138,10 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
     #    bounded queue (and any buffered spans) survive reload.
     exporter = getattr(app.state, "trace_exporter", None)
     if not isinstance(exporter, StandaloneSpanExporter):
-        exporter = StandaloneSpanExporter(max_queue_size=_MAX_QUEUE_SIZE)
+        exporter = StandaloneSpanExporter(
+            max_queue_size=_MAX_QUEUE_SIZE,
+            max_attribute_bytes=int(max_attribute_bytes),
+        )
         app.state.trace_exporter = exporter
 
     # 6. New BatchSpanProcessor every time — the prior one was drained
@@ -170,7 +183,10 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
         logger.exception("trace pipeline: writer task failed to start")
 
     try:
-        retention = RetentionScheduler(session_factory=session_factory)
+        retention = RetentionScheduler(
+            session_factory=session_factory,
+            retention_days=int(retention_days),
+        )
         await retention.start()
         app.state.trace_retention_task = retention
     except Exception:

@@ -9,7 +9,6 @@ Locked design:
 from __future__ import annotations
 
 import logging
-import os
 import queue
 import threading
 from datetime import UTC, datetime
@@ -24,17 +23,26 @@ logger = logging.getLogger(__name__)
 
 
 _OPENINFERENCE_KIND_KEY = "openinference.span.kind"
-_DEFAULT_MAX_BYTES = int(os.getenv("IDUN_TRACES_INPUT_VALUE_MAX_BYTES", "65536"))
+# Default per-attribute byte cap retained as a module constant for
+# backwards-compatible direct construction in tests. Production paths
+# pass ``max_attribute_bytes`` explicitly from ``StandaloneSettings``.
+_DEFAULT_MAX_BYTES = 65536
 
 
 class StandaloneSpanExporter(SpanExporter):
     """Thread-safe in-process SpanExporter with drop-oldest backpressure."""
 
-    def __init__(self, *, max_queue_size: int = 8192) -> None:
+    def __init__(
+        self,
+        *,
+        max_queue_size: int = 8192,
+        max_attribute_bytes: int = _DEFAULT_MAX_BYTES,
+    ) -> None:
         self._queue: queue.Queue[dict[str, Any]] = queue.Queue(
             maxsize=max_queue_size
         )
         self._max_queue_size = max_queue_size
+        self._max_attribute_bytes = max_attribute_bytes
         self._overflow_count = 0
         self._lock = threading.Lock()
 
@@ -92,15 +100,18 @@ class StandaloneSpanExporter(SpanExporter):
     def _span_to_row(self, span: ReadableSpan) -> dict[str, Any]:
         """Parse OpenInference attrs into a row dict.
 
-        Truncates large string attrs at
-        ``IDUN_TRACES_INPUT_VALUE_MAX_BYTES`` (default 64 KB) to defend
-        against TOAST inflection on Postgres.
+        Truncates large string attrs at ``self._max_attribute_bytes``
+        (default 64 KB, configurable via
+        ``IDUN_TRACES_INPUT_VALUE_MAX_BYTES`` through
+        ``StandaloneSettings``) to defend against TOAST inflection on
+        Postgres.
         """
         attrs = dict(span.attributes or {})
+        max_bytes = self._max_attribute_bytes
         # Truncate large attributes to defend against TOAST inflection.
         for key, val in list(attrs.items()):
-            if isinstance(val, str) and len(val.encode("utf-8")) > _DEFAULT_MAX_BYTES:
-                truncated = val.encode("utf-8")[:_DEFAULT_MAX_BYTES].decode(
+            if isinstance(val, str) and len(val.encode("utf-8")) > max_bytes:
+                truncated = val.encode("utf-8")[:max_bytes].decode(
                     "utf-8", errors="ignore"
                 )
                 attrs[key] = truncated + "…[truncated]"

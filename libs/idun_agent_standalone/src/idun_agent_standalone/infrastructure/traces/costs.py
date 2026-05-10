@@ -2,7 +2,9 @@
 
 Snapshot vendored at ``data/litellm_prices.json``. Refresh monthly via
 Dependabot-style PR (no auto-merge — human review). Optional runtime
-fetch via ``IDUN_PRICES_REFRESH=true``; falls back to the snapshot on
+fetch is gated by ``set_refresh_enabled(True)``, which the trace
+pipeline bootstrap calls when ``StandaloneSettings.prices_refresh_enabled``
+(``IDUN_PRICES_REFRESH``) is true; falls back to the snapshot on
 failure.
 
 Locked design:
@@ -13,7 +15,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from functools import lru_cache
 from importlib.resources import files
 from typing import Any
@@ -22,15 +23,37 @@ logger = logging.getLogger(__name__)
 
 _SNAPSHOT_VERSION = "vendored-2026-05"
 
+# Module-level toggle for the LiteLLM snapshot runtime refresh. Flipped
+# once at boot by ``set_refresh_enabled`` from ``StandaloneSettings``.
+# Kept module-level rather than a per-call kwarg because ``_load_prices``
+# is wrapped in ``lru_cache(maxsize=1)`` — the result is computed once
+# per process.
+_prices_refresh_enabled: bool = False
+
+
+def set_refresh_enabled(enabled: bool) -> None:
+    """Enable or disable the LiteLLM snapshot runtime refresh.
+
+    Called once from the trace pipeline bootstrap (or any embedder
+    that wants to opt into runtime price fetching). Must be called
+    before the first ``compute_span_cost`` so the cached load picks
+    up the toggle.
+    """
+    global _prices_refresh_enabled
+    _prices_refresh_enabled = enabled
+    # Bust the cached snapshot so the next call honours the new toggle.
+    _load_prices.cache_clear()
+
 
 @lru_cache(maxsize=1)
 def _load_prices() -> dict[str, Any]:
     """Load the LiteLLM prices table.
 
-    If ``IDUN_PRICES_REFRESH=true``, attempt a runtime fetch with a 5 s
-    timeout. On any failure, fall back to the vendored snapshot.
+    If ``set_refresh_enabled(True)`` has been called, attempt a runtime
+    fetch with a 5 s timeout. On any failure, fall back to the
+    vendored snapshot.
     """
-    if os.getenv("IDUN_PRICES_REFRESH", "").lower() in {"true", "1"}:
+    if _prices_refresh_enabled:
         try:
             import urllib.request
 
