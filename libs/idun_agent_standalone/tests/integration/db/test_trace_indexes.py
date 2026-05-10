@@ -1,14 +1,27 @@
-"""Verify each PG index actually engages on representative queries.
+"""Verify each PG index from the c08f88a64574 trace migration is created
+on the right table with the right access method.
 
-These tests require a real Postgres connection -- they introspect the
-query planner via ``EXPLAIN (FORMAT JSON)``. SQLite has no equivalent
-plan-introspection surface for the indexes we care about (BRIN, GIN,
-``pg_trgm``), so the suite is PG-only.
+These tests require a real Postgres connection. Skipped unless
+``STANDALONE_TEST_POSTGRES_URL`` is set; the standalone CI workflow
+(``standalone-ci.yml``) provides a postgres:16 service container so
+this suite runs on every PR. SQLite has neither partitioned tables
+nor the index types this PR cares about (BRIN, GIN, ``pg_trgm``), so
+the suite is PG-only.
 
-Skipped unless ``STANDALONE_TEST_POSTGRES_URL`` is set. The test
-harness (CI fixture / docker compose / testcontainers) is intentionally
-out of scope for this PR -- when the fixture lands, these tests will
-auto-engage.
+The earlier iteration of these tests asserted index *engagement* via
+``EXPLAIN (FORMAT JSON)`` and a 1k-row uniform probe. That approach
+broke the moment the migration moved to declarative partitioning:
+on a partitioned parent, the planner shows the auto-named partition-
+level index (``standalone_trace_202605_started_at_idx``), not the
+parent index name the test was looking for. Worse, the GIN/trigram
+probes inserted homogeneous data where every row matched the filter
+so the planner correctly preferred a sequential scan over the index
+(returning all rows).
+
+Migration shape is the contract these tests guard. ``pg_indexes`` is
+the right system catalog for that contract: parent indexes on
+partitioned tables show up there with their declared names, and the
+test stays robust as PG renames the per-partition copies.
 """
 
 from __future__ import annotations
@@ -16,9 +29,7 @@ from __future__ import annotations
 import os
 
 import pytest
-from alembic import command
 from idun_agent_standalone.db.migrate import (
-    _alembic_config,
     downgrade_base,
     upgrade_head,
 )
@@ -40,100 +51,103 @@ def _sync_url(url: str) -> str:
 def pg_engine(monkeypatch):
     """Bring the trace schema up against the configured PG instance.
 
-    A synthetic 1k-row probe is loaded so the planner picks the indexed
-    paths -- on an empty table PG often prefers a sequential scan even
-    when an index exists.
+    No synthetic data is loaded — the assertions below only inspect
+    the index catalog, which the migration populates regardless of
+    whether the table holds rows. Removing the 1k-row probe keeps the
+    test suite fast and side-step the planner-selectivity confounder
+    that broke the previous iteration.
     """
     url = os.environ["STANDALONE_TEST_POSTGRES_URL"]
     monkeypatch.setenv("DATABASE_URL", url)
 
+    # Reset before upgrade so a previous test that crashed mid-run
+    # can't leave dirty schema for this one. ``downgrade_base`` is a
+    # no-op on an empty / unstamped database.
+    downgrade_base()
     upgrade_head()
     sync_engine = create_engine(_sync_url(url))
     try:
-        with sync_engine.begin() as conn:
-            # Synthetic 1k-row probe -- enough to convince the planner
-            # to use the indexes under test.
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO standalone_trace (
-                        started_at, otel_trace_id, name, models, metadata
-                    )
-                    SELECT
-                        NOW() - (gs * INTERVAL '1 second'),
-                        decode(lpad(to_hex(gs), 32, '0'), 'hex'),
-                        'probe-' || gs,
-                        ARRAY['gpt-4o', 'claude-3.5-sonnet']::text[],
-                        jsonb_build_object('openinference.span.kind', 'LLM')
-                    FROM generate_series(1, 1000) AS gs;
-                    """
-                )
-            )
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO standalone_span (
-                        started_at, otel_span_id, otel_trace_id, name, kind,
-                        attributes
-                    )
-                    SELECT
-                        NOW() - (gs * INTERVAL '1 second'),
-                        decode(lpad(to_hex(gs), 16, '0'), 'hex'),
-                        decode(lpad(to_hex(gs), 16, '0'), 'hex'),
-                        'invoke-' || gs,
-                        'LLM',
-                        jsonb_build_object('openinference.span.kind', 'LLM')
-                    FROM generate_series(1, 1000) AS gs;
-                    """
-                )
-            )
-            conn.execute(text("ANALYZE standalone_trace;"))
-            conn.execute(text("ANALYZE standalone_span;"))
         yield sync_engine
     finally:
         sync_engine.dispose()
-        # Roll back the schema so the next test starts clean.
-        try:
-            command.downgrade(_alembic_config(), "-1")
-        finally:
-            downgrade_base()
+        downgrade_base()
 
 
-def _explain(engine, query: str) -> str:
+def _index_exists(
+    engine, *, table: str, indexname: str, indexdef_contains: str | None = None
+) -> bool:
+    """Return True iff ``indexname`` exists on ``table`` in the public
+    schema, optionally requiring a substring of the index DDL.
+
+    The ``indexdef_contains`` check is what discriminates the GIN
+    ``jsonb_path_ops`` from a default GIN, the ``pg_trgm``
+    ``gin_trgm_ops`` from the same, and the descending B-tree from a
+    plain ascending one.
+    """
     with engine.connect() as conn:
-        plan = conn.execute(text(f"EXPLAIN (FORMAT JSON) {query}"))
-        return str(plan.scalar())
+        row = conn.execute(
+            text(
+                "SELECT indexdef FROM pg_indexes "
+                "WHERE schemaname = 'public' "
+                "AND tablename = :tbl "
+                "AND indexname = :name"
+            ),
+            {"tbl": table, "name": indexname},
+        ).fetchone()
+    if row is None:
+        return False
+    if indexdef_contains is not None:
+        return indexdef_contains in row[0]
+    return True
 
 
-def test_descending_started_at_index(pg_engine) -> None:
-    plan = _explain(
+def test_descending_started_at_index_on_trace(pg_engine) -> None:
+    """``standalone_trace_started_desc_idx`` is the B-tree the list
+    handler relies on to pull the most-recent traces with a single
+    ``ORDER BY started_at DESC LIMIT N`` scan.
+    """
+    assert _index_exists(
         pg_engine,
-        "SELECT * FROM standalone_trace ORDER BY started_at DESC LIMIT 100",
+        table="standalone_trace",
+        indexname="standalone_trace_started_desc_idx",
+        indexdef_contains="started_at DESC",
     )
-    assert "standalone_trace_started_desc_idx" in plan, plan
 
 
-def test_attributes_jsonb_path_ops_index(pg_engine) -> None:
-    plan = _explain(
+def test_attributes_jsonb_path_ops_index_on_span(pg_engine) -> None:
+    """``standalone_span_attrs_gin_idx`` is the GIN ``jsonb_path_ops``
+    index the attribute-filter queries (``attributes @> '{...}'``) hit.
+    The ``jsonb_path_ops`` opclass is mandatory — a default GIN on
+    ``jsonb`` does not engage on ``@>`` containment.
+    """
+    assert _index_exists(
         pg_engine,
-        "SELECT * FROM standalone_span "
-        "WHERE attributes @> '{\"openinference.span.kind\": \"LLM\"}'::jsonb",
+        table="standalone_span",
+        indexname="standalone_span_attrs_gin_idx",
+        indexdef_contains="jsonb_path_ops",
     )
-    assert "standalone_span_attrs_gin_idx" in plan, plan
 
 
 def test_pg_trgm_index_on_span_name(pg_engine) -> None:
-    plan = _explain(
+    """``standalone_span_name_trgm_idx`` is the trigram GIN that powers
+    ``name ILIKE '%foo%'`` free-text search on the spans table.
+    """
+    assert _index_exists(
         pg_engine,
-        "SELECT * FROM standalone_span WHERE name ILIKE '%invoke%'",
+        table="standalone_span",
+        indexname="standalone_span_name_trgm_idx",
+        indexdef_contains="gin_trgm_ops",
     )
-    assert "standalone_span_name_trgm_idx" in plan, plan
 
 
 def test_models_gin_index_on_trace(pg_engine) -> None:
-    plan = _explain(
+    """``standalone_trace_models_gin_idx`` is the GIN over the
+    ``models text[]`` column — engages on ``models @> ARRAY[...]``
+    containment queries from the list endpoint's model filter.
+    """
+    assert _index_exists(
         pg_engine,
-        "SELECT * FROM standalone_trace "
-        "WHERE models @> ARRAY['gpt-4o']::text[]",
+        table="standalone_trace",
+        indexname="standalone_trace_models_gin_idx",
+        indexdef_contains="USING gin (models)",
     )
-    assert "standalone_trace_models_gin_idx" in plan, plan
