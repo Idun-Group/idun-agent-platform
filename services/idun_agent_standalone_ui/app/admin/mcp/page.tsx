@@ -747,7 +747,11 @@ export default function McpPage() {
           <SheetHeader className="border-b border-border px-6 py-4">
             <SheetTitle>
               {editingIdx === null
-                ? `Add MCP server — ${sheetType ? TRANSPORT_LABELS[sheetType] : ""}`
+                ? `Add MCP server — ${
+                    sheetType
+                      ? (TRANSPORT_CATALOG.find((o) => o.id === sheetType)?.label ?? sheetType)
+                      : ""
+                  }`
                 : "Edit MCP server"}
             </SheetTitle>
           </SheetHeader>
