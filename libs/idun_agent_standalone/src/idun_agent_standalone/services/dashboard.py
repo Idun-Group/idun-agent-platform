@@ -14,7 +14,15 @@ from __future__ import annotations
 import re
 from datetime import UTC, datetime, timedelta
 
-from idun_agent_schema.standalone.dashboard import DashboardRange
+from idun_agent_schema.standalone.dashboard import (
+    CostBlock,
+    DashboardRange,
+    DashboardResponse,
+    ErrorRateBlock,
+    LatencyBlock,
+    RequestsBlock,
+)
+from sqlalchemy.ext.asyncio import AsyncSession
 
 _RANGE_TO_SECONDS: dict[DashboardRange, int] = {
     DashboardRange.h1: 60 * 60,
@@ -87,3 +95,96 @@ def _normalize_span_name(name: str) -> str:
     head = _UUID_PATTERN.sub("<uuid>", head)
     head = _STANDALONE_INT_PATTERN.sub("<n>", head)
     return head
+
+
+def _dialect_is_postgres(session: AsyncSession) -> bool:
+    # Matches the helper at ``api/v1/routers/traces.py`` ``_is_postgres``.
+    # ``get_bind()`` is the supported AsyncSession accessor; ``.bind``
+    # is fine on the sync Session but brittle here.
+    return session.get_bind().dialect.name == "postgresql"
+
+
+async def compute_dashboard(
+    session: AsyncSession,
+    range_value: DashboardRange,
+    *,
+    now: datetime | None = None,
+) -> DashboardResponse:
+    """Run all aggregations for the given range and return the response.
+
+    Dialect-dispatched: routes to ``_postgres_*`` on Postgres, falls
+    back to ``_sqlite_*`` otherwise. ``now`` is overridable for tests.
+    """
+    start, end, prior_start = _resolve_window(range_value, now=now)
+    bucket = _resolve_bucket_seconds(range_value)
+    is_pg = _dialect_is_postgres(session)
+
+    if is_pg:
+        requests = await _postgres_requests(session, start, end, prior_start, bucket)
+        latency = await _postgres_latency(session, start, end, prior_start, bucket)
+        error_rate = await _postgres_error_rate(session, start, end, prior_start, bucket)
+        cost = await _postgres_cost(session, start, end, prior_start, bucket)
+        top_errors = await _postgres_top_errors(session, start, end)
+    else:
+        requests = await _sqlite_requests(session, start, end, prior_start, bucket)
+        latency = await _sqlite_latency(session, start, end, prior_start, bucket)
+        error_rate = await _sqlite_error_rate(session, start, end, prior_start, bucket)
+        cost = await _sqlite_cost(session, start, end, prior_start, bucket)
+        top_errors = await _sqlite_top_errors(session, start, end)
+
+    return DashboardResponse(
+        range=range_value,
+        generated_at=end,
+        bucket_seconds=bucket,
+        requests=requests,
+        latency=latency,
+        error_rate=error_rate,
+        cost=cost,
+        top_errors=top_errors,
+    )
+
+
+# --- Postgres implementations (stubbed -- Task T1.4 fills them in) ---
+
+
+async def _postgres_requests(session, start, end, prior_start, bucket) -> RequestsBlock:
+    raise NotImplementedError("Task T1.4")
+
+
+async def _postgres_latency(session, start, end, prior_start, bucket) -> LatencyBlock:
+    raise NotImplementedError("Task T1.4")
+
+
+async def _postgres_error_rate(session, start, end, prior_start, bucket) -> ErrorRateBlock:
+    raise NotImplementedError("Task T1.4")
+
+
+async def _postgres_cost(session, start, end, prior_start, bucket) -> CostBlock:
+    raise NotImplementedError("Task T1.4")
+
+
+async def _postgres_top_errors(session, start, end):
+    raise NotImplementedError("Task T1.4")
+
+
+# --- SQLite implementations (stubbed -- Task T1.5 fills them in) ---
+
+
+async def _sqlite_requests(session, start, end, prior_start, bucket) -> RequestsBlock:
+    raise NotImplementedError("Task T1.5")
+
+
+async def _sqlite_latency(session, start, end, prior_start, bucket) -> LatencyBlock:
+    raise NotImplementedError("Task T1.5")
+
+
+async def _sqlite_error_rate(session, start, end, prior_start, bucket) -> ErrorRateBlock:
+    raise NotImplementedError("Task T1.5")
+
+
+async def _sqlite_cost(session, start, end, prior_start, bucket) -> CostBlock:
+    raise NotImplementedError("Task T1.5")
+
+
+async def _sqlite_top_errors(session, start, end):
+    raise NotImplementedError("Task T1.5")
