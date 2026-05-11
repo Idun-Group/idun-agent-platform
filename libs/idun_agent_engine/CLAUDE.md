@@ -166,7 +166,9 @@ agent:
   type: "ADK"
   config:
     name: "ADK Agent"
-    app_name: "adk_agent"
+    # app_name is optional — auto-derived from `name` (slugified) when
+    # omitted. Set it explicitly only when migrating sessions from an
+    # existing deployment with a fixed app_name namespace.
     agent: "./agent.py:root_agent"        # module_path:variable_name (points to ADK agent)
     session_service:
       type: "in_memory"                   # in_memory | vertex_ai | database
