@@ -414,6 +414,16 @@ function GuardFields({
             <FormDescription>
               Stored on the row and forwarded to the engine on save. If left
               empty, the engine falls back to the GUARDRAILS_API_KEY env var.
+              Get a key from{" "}
+              <a
+                href="https://guardrailsai.com/hub/keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                guardrailsai.com/hub/keys
+              </a>
+              .
             </FormDescription>
             <FormMessage />
           </FormItem>
