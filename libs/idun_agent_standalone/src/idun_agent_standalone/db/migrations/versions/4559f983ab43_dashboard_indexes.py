@@ -14,10 +14,11 @@ from __future__ import annotations
 
 from alembic import op
 
-revision = "4559f983ab43"
-down_revision = "c08f88a64574"
-branch_labels = None
-depends_on = None
+# Revision identifiers, used by Alembic.
+revision: str = "4559f983ab43"
+down_revision: str | None = "c08f88a64574"
+branch_labels: str | None = None
+depends_on: str | None = None
 
 
 def upgrade() -> None:
