@@ -24,7 +24,7 @@ The settings model is in [`libs/idun_agent_standalone/src/idun_agent_standalone/
   `IDUN_HOST` defaults to `0.0.0.0`. On a laptop or single-tenant box without a reverse proxy, set `IDUN_HOST=127.0.0.1` so the admin panel is not reachable from your LAN.
 </Warning>
 
-## Step 1 — Switch admin auth to password mode
+## Step 1: Switch admin auth to password mode
 
 Generate the hash once on a workstation, never on the server:
 
@@ -37,7 +37,7 @@ idun hash-password
 
 Set it as `IDUN_ADMIN_PASSWORD_HASH` on the server. The hash is consumed only at first boot to seed the singleton admin row. Subsequent boots ignore the env var; rotate the password through the admin UI or by truncating the `standalone_admin_user` table and rebooting.
 
-## Step 2 — Generate a session secret
+## Step 2: Generate a session secret
 
 The session secret signs the `idun_session` cookie. Use any 32+ char random string:
 
@@ -49,7 +49,7 @@ Store the value in your secrets manager (AWS Secrets Manager, GCP Secret Manager
 
 A secret shorter than 32 chars in `password` mode causes the process to fail at startup.
 
-## Step 3 — Set the bind address
+## Step 3: Set the bind address
 
 <Tabs>
   <Tab title="Behind a reverse proxy">
@@ -74,7 +74,7 @@ A secret shorter than 32 chars in `password` mode causes the process to fail at 
   </Tab>
 </Tabs>
 
-## Step 4 — Switch the database to Postgres
+## Step 4: Switch the database to Postgres
 
 SQLite is the default and fine for evaluation, but production deployments should use Postgres for concurrency and external backup:
 
@@ -90,7 +90,7 @@ idun setup
 
 For backups, run `pg_dump` against the database; Idun stores admin state and trace events there.
 
-## Step 5 — Trace retention
+## Step 5: Trace retention
 
 By default, trace rows older than 14 days are dropped by a daily scheduler. Tune this to your compliance window:
 
@@ -108,9 +108,9 @@ IDUN_TRACES_INPUT_VALUE_MAX_BYTES=65536
 
 The standalone sets cookie flags automatically:
 
-- `HttpOnly` — always set, blocks JavaScript access to the session cookie
-- `SameSite=Lax` — always set, blocks cross-site cookie use except top-level navigations
-- `Secure` — set when the request is over HTTPS (scheme `https` or `X-Forwarded-Proto: https`)
+- `HttpOnly`: always set, blocks JavaScript access to the session cookie
+- `SameSite=Lax`: always set, blocks cross-site cookie use except top-level navigations
+- `Secure`: set when the request is over HTTPS (scheme `https` or `X-Forwarded-Proto: https`)
 
 If your reverse proxy is not forwarding `X-Forwarded-Proto`, the `Secure` flag will not activate and the cookie can leak over plain HTTP. Verify your proxy config.
 
@@ -139,5 +139,5 @@ Before a production deploy:
 
 ## What's next
 
-- [Agent route protection](/auth/overview) — require an OIDC JWT on the agent API
-- [Troubleshooting](/troubleshooting) — what to do when reload fails or the admin panel says `agent_not_ready`
+- [Agent route protection](/auth/overview): require an OIDC JWT on the agent API
+- [Troubleshooting](/troubleshooting): what to do when reload fails or the admin panel says `agent_not_ready`

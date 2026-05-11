@@ -10,7 +10,11 @@ This page covers route protection for the engine runtime. For standalone admin-p
 
 ## Protected routes
 
-When SSO is enabled, these engine routes require a valid bearer token:
+When SSO is enabled, every `/agent/*` route requires a valid bearer token. The canonical AG-UI entry point is:
+
+- `POST /agent/run`
+
+The following routes are deprecated compatibility shims, also gated by the same SSO dependency:
 
 - `POST /agent/invoke`
 - `POST /agent/stream`
@@ -56,8 +60,8 @@ Health and metadata routes (`/health`, `/_engine/info`) stay open. The engine `/
 
 Any OIDC-compliant provider works as long as it publishes a JWKS endpoint via `.well-known/openid-configuration`. Tested providers:
 
-- **Google Workspace** — issuer: `https://accounts.google.com`
-- **Microsoft Entra ID / Azure AD** — multi-tenant via `https://login.microsoftonline.com/common`, or single-tenant via `https://login.microsoftonline.com/<tenant-uuid>`
+- **Google Workspace** (issuer: `https://accounts.google.com`)
+- **Microsoft Entra ID / Azure AD** (multi-tenant via `https://login.microsoftonline.com/common`, or single-tenant via `https://login.microsoftonline.com/<tenant-uuid>`)
 
 <Note>
   Domain and email allowlists are applied after JWT signature verification. A valid token from an allowed provider is still rejected if the email domain or address is not in the allowlist.
@@ -82,16 +86,19 @@ Obtain a JWT from your provider, then pass it in the `Authorization` header:
 # Export the JWT obtained from your provider's OAuth flow
 export JWT=$(your-token-tool fetch)
 
-curl -X POST https://your-agent.example.com/agent/invoke \
+curl -X POST https://your-agent.example.com/agent/run \
   -H "Authorization: Bearer $JWT" \
   -H "Content-Type: application/json" \
-  -d '{"message": "Hello"}'
+  -d '{
+    "thread_id": "test-1",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'
 ```
 
 For browser clients, obtain the token through your provider's standard OAuth 2.0 + PKCE flow, then call the agent API from your application code with the resulting access token.
 
 ## What's next
 
-- [Deployment hardening](/deployment/hardening) — production env-var checklist (`IDUN_HOST`, session secret, cookie security, TLS)
-- [Standalone overview](/standalone/overview) — set up admin-panel auth (`IDUN_ADMIN_AUTH_MODE=password`) for the `/admin/*` UI
-- [Troubleshooting](/troubleshooting) — what `agent_not_ready` and reload-pipeline errors mean
+- [Deployment hardening](/deployment/hardening): production env-var checklist (`IDUN_HOST`, session secret, cookie security, TLS)
+- [Standalone overview](/standalone/overview): set up admin-panel auth (`IDUN_ADMIN_AUTH_MODE=password`) for the `/admin/*` UI
+- [Troubleshooting](/troubleshooting): what `agent_not_ready` and reload-pipeline errors mean

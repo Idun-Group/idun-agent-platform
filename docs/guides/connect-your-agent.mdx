@@ -40,10 +40,10 @@ graph = builder  # <-- this is what Idun will load
 ```
 
 <Note>
-  Assign an uncompiled `StateGraph` to the top-level variable. The engine compiles it with its own checkpointer and store. A `CompiledStateGraph` is also accepted — the engine extracts its `.builder` and recompiles — but you'll see a deprecation warning.
+  Assign an uncompiled `StateGraph` to the top-level variable. The engine compiles it with its own checkpointer and store. A `CompiledStateGraph` is also accepted (the engine extracts its `.builder` and recompiles), but you'll see a deprecation warning.
 </Note>
 
-## Step 1 — Write a minimal config.yaml
+## Step 1: Write a minimal config.yaml
 
 ```yaml config.yaml
 server:
@@ -59,9 +59,9 @@ agent:
 
 Three fields do all the work:
 
-- `agent.type` — `"LANGGRAPH"` or `"ADK"` (case-insensitive). Determines which adapter wraps your code.
-- `agent.config.name` — display name shown in the admin panel.
-- `agent.config.graph_definition` — `"<path>:<variable>"` for LangGraph. For ADK, the equivalent field is `agent.config.agent`.
+- `agent.type`: `"LANGGRAPH"` or `"ADK"` (case-insensitive). Determines which adapter wraps your code.
+- `agent.config.name`: display name shown in the admin panel.
+- `agent.config.graph_definition`: `"<path>:<variable>"` for LangGraph. For ADK, the equivalent field is `agent.config.agent`.
 
 ### `graph_definition` format
 
@@ -78,7 +78,7 @@ graph_definition: "my_package.agents.router:graph"
 
 Common variable names: `graph`, `app`, `agent`. Anything that resolves to a `StateGraph` works.
 
-## Step 2 — Run
+## Step 2: Run
 
 For evaluation and local development, use the standalone launcher:
 
@@ -115,7 +115,7 @@ python serve.py
 
 The engine reads the YAML, instantiates your graph, and serves the AG-UI streaming endpoint at `POST /agent/run`. You bring your own admin tooling.
 
-## Step 3 — Test the agent
+## Step 3: Test the agent
 
 Open `http://localhost:8000/` in a browser. The chat UI streams your agent's responses.
 
@@ -142,7 +142,7 @@ By writing eight lines of YAML, you now have:
 - A trace viewer at `/admin/traces/` with a waterfall span tree
 - An OpenAPI schema at `/docs`
 
-To add guardrails, observability, MCP servers, or per-agent SSO, edit the YAML or use the admin panel — no agent code change required.
+To add guardrails, observability, MCP servers, or per-agent SSO, edit the YAML or use the admin panel: no agent code change required.
 
 ## ADK agents
 
@@ -169,8 +169,8 @@ See [ADK frameworks reference](/frameworks/adk) for full configuration options.
 
 ## What's next
 
-- [Production hardening](/deployment/hardening) — before exposing this beyond localhost
-- [Guardrails overview](/guardrails/overview) — add input and output guards
-- [Observability overview](/observability/overview) — wire Langfuse, Phoenix, or LangSmith
-- [Tool governance](/tool-governance/overview) — attach MCP servers
-- [Troubleshooting](/troubleshooting) — graph load errors, reload failures
+- [Production hardening](/deployment/hardening): before exposing this beyond localhost
+- [Guardrails overview](/guardrails/overview): add input and output guards
+- [Observability overview](/observability/overview): wire Langfuse, Phoenix, or LangSmith
+- [Tool governance](/tool-governance/overview): attach MCP servers
+- [Troubleshooting](/troubleshooting): graph load errors, reload failures

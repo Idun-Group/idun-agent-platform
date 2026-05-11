@@ -6,7 +6,7 @@ keywords: ["troubleshooting", "errors", "agent_not_ready", "reload failed", "gra
 
 This page covers the runtime errors and log messages you are most likely to hit, what each one means, and how to recover. The error strings below come directly from the engine and standalone source.
 
-## `agent_not_ready` — HTTP 503 from `/agent/*`
+## `agent_not_ready`: HTTP 503 from `/agent/*`
 
 **Symptom.** A POST to `/agent/invoke`, `/agent/stream`, or `/agent/copilotkit/stream` returns:
 
@@ -31,10 +31,10 @@ boot engine layer skipped, admin only mode reason=<AssemblyError ...>
 followed by:
 
 ```
-boot engine app started unconfigured (no agent yet — wizard will materialize)
+boot engine app started unconfigured (no agent yet, wizard will materialize)
 ```
 
-**Cause.** The standalone read the DB and could not assemble an `EngineConfig` from the stored rows — usually because no agent row exists yet, or because the seeded YAML failed validation. The server still boots so you can reach `/admin/` and `/onboarding/`, but the `/agent/*` routes will return `agent_not_ready` until the agent is materialised.
+**Cause.** The standalone read the DB and could not assemble an `EngineConfig` from the stored rows. This usually happens because no agent row exists yet, or because the seeded YAML failed validation. The server still boots so you can reach `/admin/` and `/onboarding/`, but the `/agent/*` routes will return `agent_not_ready` until the agent is materialised.
 
 **Fix.** Either complete the onboarding wizard, or check the `AssemblyError` reason printed in the log. If your `config.yaml` was supposed to seed an agent on first boot, the YAML failed schema validation; fix the validation error and rerun `idun setup`.
 
@@ -48,7 +48,7 @@ Every admin-panel save flows through the three-round validation and reload pipel
 | `RESTART_REQUIRED` | The change touched `agent.type` or `agent.config.graph_definition`, which requires a full process restart. | Toast: "Saved. Restart required to apply." |
 | `RELOAD_FAILED` | The engine refused to re-initialise with the new config. The DB write was rolled back. | Toast: "Engine reload failed; config not saved." Error detail attached. |
 
-### `RELOAD_FAILED` — the engine refused to reload
+### `RELOAD_FAILED`: the engine refused to reload
 
 **Cause.** One of:
 
@@ -57,7 +57,7 @@ Every admin-panel save flows through the three-round validation and reload pipel
 - An MCP server is unreachable and the engine could not discover its tools.
 - An observability provider rejected the credentials at init time.
 
-**Fix.** Read the error detail in the toast (or in the standalone log). The previous config is still active — your agent did not break. Fix the underlying issue in the admin form and resave.
+**Fix.** Read the error detail in the toast (or in the standalone log). The previous config is still active; your agent did not break. Fix the underlying issue in the admin form and resave.
 
 ### Round 2 validation failures (HTTP 422)
 
@@ -76,10 +76,10 @@ A save that fails Round 2 returns:
 
 **Common causes:**
 
-- **Framework mismatch** — e.g. setting `agent.type=langgraph` but configuring an ADK `SessionService` for memory. Each framework has its own valid memory and checkpointer set.
+- **Framework mismatch**: e.g. setting `agent.type=langgraph` but configuring an ADK `SessionService` for memory. Each framework has its own valid memory and checkpointer set.
 - **Missing required field** for the chosen `agent.type`. The admin UI surfaces these inline; if you hit a 422 via API, the `field_errors` array points at the offending field.
 
-**Fix.** Resolve the field error and resave. The Round 2 check runs against the *assembled* config (DB rows merged into a synthetic `EngineConfig`), so the error may reference a field that lives in a different admin sub-page than the one you just edited.
+**Fix.** Resolve the field error and resave. The Round 2 check runs against the *assembled* config (DB rows merged into a synthetic `EngineConfig`), so the error may reference a field that lives in a different admin sub-page than the one you edited.
 
 ## Graph load errors
 
@@ -127,6 +127,6 @@ These are noise from upstream packages and do not affect functionality. They wil
 
 ## What's next
 
-- [Connect your existing agent](/guides/connect-your-agent) — minimal config for an existing `StateGraph`
-- [Production hardening](/deployment/hardening) — production env-var checklist
-- [Agent route protection](/auth/overview) — require an OIDC JWT on `/agent/*`
+- [Connect your existing agent](/guides/connect-your-agent): minimal config for an existing `StateGraph`
+- [Production hardening](/deployment/hardening): production env-var checklist
+- [Agent route protection](/auth/overview): require an OIDC JWT on `/agent/*`

@@ -4,7 +4,7 @@ description: "Extend the engine to support a new tracing or observability provid
 keywords: ["ObservabilityHandlerBase", "custom observability", "tracing", "OpenTelemetry", "callbacks", "instrumentation", "extension"]
 ---
 
-The engine ships handlers for Langfuse, Arize Phoenix, LangSmith, Google Cloud Trace, and Google Cloud Logging. If you run a different observability stack — Datadog, Honeycomb, Grafana Tempo, a custom OTLP collector — you can wrap it as an Idun handler by subclassing `ObservabilityHandlerBase`.
+The engine ships handlers for Langfuse, Arize Phoenix, LangSmith, Google Cloud Trace, and Google Cloud Logging. If you run a different observability stack (Datadog, Honeycomb, Grafana Tempo, a custom OTLP collector), you can wrap it as an Idun handler by subclassing `ObservabilityHandlerBase`.
 
 <Note>
   Like the agent adapter factory, the observability factory in `idun_agent_engine.observability.base.create_observability_handler` is currently a hardcoded `if/elif` over the `ObservabilityProvider` enum. Wiring a new handler requires a small upstream change. There is no Python entry-point hook today.
@@ -12,7 +12,7 @@ The engine ships handlers for Langfuse, Arize Phoenix, LangSmith, Google Cloud T
 
 ## The base class
 
-`ObservabilityHandlerBase` lives in [`libs/idun_agent_engine/src/idun_agent_engine/observability/base.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/base.py). It is small — three members and one optional helper:
+`ObservabilityHandlerBase` lives in [`libs/idun_agent_engine/src/idun_agent_engine/observability/base.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/base.py). It is small: three members and one optional helper:
 
 | Member | Kind | Purpose |
 |---|---|---|
@@ -27,7 +27,7 @@ That's it. The minimal handler is fifteen lines.
 
 Observability providers fall into one of two categories. Your handler should pick one.
 
-### Pattern A — LangChain callbacks (Langfuse-style)
+### Pattern A: LangChain callbacks (Langfuse-style)
 
 For providers that expose a LangChain `BaseCallbackHandler`. Return your callback list from `get_callbacks()` and the engine attaches them to every agent invocation:
 
@@ -64,9 +64,9 @@ class LangfuseLikeHandler(ObservabilityHandlerBase):
 
 Use this pattern for: Langfuse, LangSmith via the LangChain integration, Helicone, Comet Opik.
 
-### Pattern B — Global OpenTelemetry instrumentation (Phoenix-style)
+### Pattern B: Global OpenTelemetry instrumentation (Phoenix-style)
 
-For providers that hook into the global OpenTelemetry SDK. Configure your tracer provider and exporter inside `__init__`, then return an empty list from `get_callbacks()` — the agent runtime will be auto-instrumented globally:
+For providers that hook into the global OpenTelemetry SDK. Configure your tracer provider and exporter inside `__init__`, then return an empty list from `get_callbacks()`: the agent runtime will be auto-instrumented globally:
 
 ```python phoenix_like.py
 import os
@@ -104,17 +104,23 @@ Use this pattern for: any OTLP-compatible backend (Honeycomb, Tempo, Jaeger, Dat
 
 ## The `_resolve_env` helper
 
-Both reference handlers define a static `_resolve_env` helper for the `${ENV_VAR}` syntax users can put in their YAML:
+The canonical implementation lives in `idun_agent_schema.engine.observability`. Each shipping handler imports it and re-exposes it as a `staticmethod` for convenience:
 
 ```python
-@staticmethod
-def _resolve_env(value: str | None) -> str | None:
-    if value and value.startswith("${") and value.endswith("}"):
-        return os.environ.get(value[2:-1])
-    return value
+from idun_agent_schema.engine.observability import _resolve_env
+
+
+class MyHandler(ObservabilityHandlerBase):
+    provider = "my_provider"
+
+    @staticmethod
+    def _resolve_env(value: str | None) -> str | None:
+        return _resolve_env(value)
 ```
 
-Copy this verbatim. It lets users keep secrets in env vars and reference them in `config.yaml`:
+Import it from the schema rather than copying the body, so future changes (e.g. expanded env-var syntax) propagate to your handler automatically.
+
+The helper lets users keep secrets in env vars and reference them from `config.yaml`:
 
 ```yaml
 observability:
@@ -180,7 +186,7 @@ observability:
 
 ## The local trace pipeline (standalone)
 
-The standalone runtime ships its own local trace store backed by SQLite or Postgres. It uses the same OpenTelemetry SpanProcessor hook as Pattern B, registered via `attach_span_processor()` from `idun_agent_engine.observability.otel_lifecycle`. Your handler does not need to do anything for the local pipeline to work — it runs alongside whatever provider the user has configured.
+The standalone runtime ships its own local trace store backed by SQLite or Postgres. It uses the same OpenTelemetry SpanProcessor hook as Pattern B, registered via `attach_span_processor()` from `idun_agent_engine.observability.otel_lifecycle`. Your handler does not need to do anything for the local pipeline to work: it runs alongside whatever provider the user has configured.
 
 If you want your handler to *interoperate* with the local pipeline (e.g. share the same TracerProvider), call `attach_span_processor()` rather than instantiating your own `TracerProvider`:
 
@@ -196,13 +202,13 @@ def __init__(self, options: dict | None = None) -> None:
 
 The five shipping handlers cover both patterns. Read them in this order:
 
-- **Langfuse** ([`observability/langfuse/langfuse_handler.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/langfuse/langfuse_handler.py)) — simplest Pattern A handler. Env-var resolution, lazy client init, auth check.
-- **Phoenix** ([`observability/phoenix/phoenix_handler.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/phoenix/phoenix_handler.py)) — simplest Pattern B handler. `phoenix.otel.register()` + `LangChainInstrumentor().instrument()`.
-- **GCP Trace** ([`observability/gcp_trace/`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/gcp_trace/)) — Pattern B with multiple instrumentors (LangChain, Guardrails, VertexAI, MCP).
-- **LangSmith** ([`observability/langsmith/`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/langsmith/)) — env-var-only handler that returns no callbacks; LangChain auto-traces from `LANGSMITH_*` env vars.
+- **Langfuse** ([`observability/langfuse/langfuse_handler.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/langfuse/langfuse_handler.py)): simplest Pattern A handler. Env-var resolution, lazy client init, auth check.
+- **Phoenix** ([`observability/phoenix/phoenix_handler.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/phoenix/phoenix_handler.py)): simplest Pattern B handler. `phoenix.otel.register()` + `LangChainInstrumentor().instrument()`.
+- **GCP Trace** ([`observability/gcp_trace/`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/gcp_trace/)): Pattern B with multiple instrumentors (LangChain, Guardrails, VertexAI, MCP).
+- **LangSmith** ([`observability/langsmith/`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/langsmith/)): env-var-only handler that returns no callbacks; LangChain auto-traces from `LANGSMITH_*` env vars.
 
 ## What's next
 
-- [Observability overview](/observability/overview) — built-in providers and configuration
-- [Custom framework adapter](/frameworks/custom-adapter) — the same extension pattern for agent frameworks
-- [Troubleshooting](/troubleshooting) — diagnosing observability init failures in the log
+- [Observability overview](/observability/overview): built-in providers and configuration
+- [Custom framework adapter](/frameworks/custom-adapter): the same extension pattern for agent frameworks
+- [Troubleshooting](/troubleshooting): diagnosing observability init failures in the log
