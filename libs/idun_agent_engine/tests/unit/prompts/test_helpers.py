@@ -396,3 +396,122 @@ class TestGetPrompt:
         result = get_prompt(prompt_id, config_path=config_file)
         assert result is not None
         assert result.content == expected_content
+
+
+class TestGetPromptsResolutionOrder:
+    """Exercise the four-branch resolution chain in ``get_prompts``."""
+
+    @pytest.fixture(autouse=True)
+    def _clear_snapshot(self):
+        from idun_agent_engine.prompts.registry import set_active_prompts
+
+        set_active_prompts(None)
+        yield
+        set_active_prompts(None)
+
+    def test_explicit_config_path_wins_over_snapshot(self, tmp_path: Path) -> None:
+        from idun_agent_engine.prompts.helpers import get_prompts
+        from idun_agent_engine.prompts.registry import set_active_prompts
+
+        set_active_prompts(
+            [
+                PromptConfig.model_validate(
+                    {"prompt_id": "from-snap", "version": 1, "content": "snap"}
+                )
+            ]
+        )
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text(
+            yaml.dump(
+                {
+                    "prompts": [
+                        {"prompt_id": "from-file", "version": 1, "content": "file"}
+                    ]
+                }
+            )
+        )
+
+        result = get_prompts(config_path=config_file)
+        assert [p.prompt_id for p in result] == ["from-file"]
+
+    def test_snapshot_wins_over_idun_config_path_env(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from idun_agent_engine.prompts.helpers import get_prompts
+        from idun_agent_engine.prompts.registry import set_active_prompts
+
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text(
+            yaml.dump(
+                {"prompts": [{"prompt_id": "from-env", "version": 1, "content": "env"}]}
+            )
+        )
+        monkeypatch.setenv("IDUN_CONFIG_PATH", str(config_file))
+
+        set_active_prompts(
+            [
+                PromptConfig.model_validate(
+                    {"prompt_id": "from-snap", "version": 1, "content": "snap"}
+                )
+            ]
+        )
+
+        result = get_prompts()
+        assert [p.prompt_id for p in result] == ["from-snap"]
+
+    def test_empty_snapshot_falls_through_to_yaml(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from idun_agent_engine.prompts.helpers import get_prompts
+
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text(
+            yaml.dump(
+                {"prompts": [{"prompt_id": "from-env", "version": 1, "content": "env"}]}
+            )
+        )
+        monkeypatch.setenv("IDUN_CONFIG_PATH", str(config_file))
+
+        result = get_prompts()
+        assert [p.prompt_id for p in result] == ["from-env"]
+
+    def test_no_snapshot_no_env_falls_through_to_manager(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from idun_agent_engine.prompts import helpers
+
+        monkeypatch.delenv("IDUN_CONFIG_PATH", raising=False)
+        called = {}
+
+        def _fake_api():
+            called["yes"] = True
+            return [
+                PromptConfig.model_validate(
+                    {"prompt_id": "from-api", "version": 1, "content": "api"}
+                )
+            ]
+
+        monkeypatch.setattr(helpers, "get_prompts_from_api", _fake_api)
+
+        result = helpers.get_prompts()
+        assert called.get("yes") is True
+        assert [p.prompt_id for p in result] == ["from-api"]
+
+    def test_empty_list_snapshot_is_treated_as_set(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An empty list is still a snapshot (operator deleted all prompts).
+        It must short-circuit the YAML/Manager fallbacks."""
+        from idun_agent_engine.prompts.helpers import get_prompts
+        from idun_agent_engine.prompts.registry import set_active_prompts
+
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text(
+            yaml.dump(
+                {"prompts": [{"prompt_id": "from-env", "version": 1, "content": "env"}]}
+            )
+        )
+        monkeypatch.setenv("IDUN_CONFIG_PATH", str(config_file))
+        set_active_prompts([])
+
+        assert get_prompts() == []

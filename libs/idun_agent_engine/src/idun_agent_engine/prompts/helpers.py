@@ -84,13 +84,20 @@ def get_prompts_from_api() -> list[PromptConfig]:
 
 
 def get_prompts(config_path: str | Path | None = None) -> list[PromptConfig]:
-    """Return prompts: config_path > IDUN_CONFIG_PATH env > Manager API.
+    """Resolve prompts.
 
-    Never raises on a missing or unreachable source. Callers receive
-    an empty list and decide whether to use a default prompt.
+    Order: explicit ``config_path`` arg > in-process snapshot (standalone)
+    > ``IDUN_CONFIG_PATH`` YAML (bare engine) > Manager API (SaaS). Never
+    raises; callers fall back to a default when the result is empty.
     """
+    from .registry import get_active_prompts
+
     if config_path:
         return get_prompts_from_file(config_path)
+
+    snapshot = get_active_prompts()
+    if snapshot is not None:
+        return snapshot
 
     env_config_path = os.environ.get("IDUN_CONFIG_PATH")
     if env_config_path:

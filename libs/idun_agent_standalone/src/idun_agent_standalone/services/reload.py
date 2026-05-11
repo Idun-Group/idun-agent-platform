@@ -31,6 +31,10 @@ from hashlib import sha256
 
 import rfc8785
 from fastapi import status as http_status
+from idun_agent_engine.prompts.registry import (
+    get_active_prompts,
+    set_active_prompts,
+)
 from idun_agent_schema.engine.engine import EngineConfig
 from idun_agent_schema.standalone import (
     StandaloneAdminError,
@@ -210,9 +214,16 @@ async def commit_with_reload(
             message="Saved. Restart required to apply.",
         )
 
+    # Publish the new prompts snapshot before reload_callable runs — the
+    # adapter rebuilds with exec_module, which re-runs user code that
+    # calls get_prompt() at import time. The snapshot must already hold
+    # the new value at that point. Rolled back on ReloadInitFailed.
+    prior_prompts = get_active_prompts()
+    set_active_prompts(assembled.prompts)
     try:
         await reload_callable(assembled)
     except ReloadInitFailed as exc:
+        set_active_prompts(prior_prompts)
         await session.rollback()
         await runtime_state.record_reload_outcome(
             session,
