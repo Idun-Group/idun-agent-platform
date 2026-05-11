@@ -173,11 +173,12 @@ async def test_attach_trace_pipeline_surfaces_instrumentor_dependency_conflict(
 
     attach_calls: list[object] = []
     original_attach = _ol.attach_instrumentor
-    monkeypatch.setattr(
-        _ol,
-        "attach_instrumentor",
-        lambda inst, **_kw: attach_calls.append(inst),
-    )
+
+    def _track_no_op(inst, **_kw):  # noqa: ANN001
+        attach_calls.append(inst)
+        return True
+
+    monkeypatch.setattr(_ol, "attach_instrumentor", _track_no_op)
 
     app = FastAPI()
     app.state.sessionmaker = sessionmaker_factory
@@ -230,7 +231,7 @@ async def test_attach_trace_pipeline_attaches_genai_instrumentor_alongside_langc
 
     def _track(inst, **kwargs):
         attach_calls.append(inst)
-        original_attach(inst, **kwargs)
+        return original_attach(inst, **kwargs)
 
     monkeypatch.setattr(_ol, "attach_instrumentor", _track)
 
@@ -270,9 +271,12 @@ async def test_attach_trace_pipeline_skips_genai_when_otel_provider_active(
     from openinference.instrumentation.langchain import LangChainInstrumentor
 
     attach_calls: list[object] = []
-    monkeypatch.setattr(
-        _ol, "attach_instrumentor", lambda inst, **_kw: attach_calls.append(inst)
-    )
+
+    def _track_provider_active(inst, **_kw):  # noqa: ANN001
+        attach_calls.append(inst)
+        return True
+
+    monkeypatch.setattr(_ol, "attach_instrumentor", _track_provider_active)
 
     class _ObservabilityEntry:
         enabled = True
@@ -389,6 +393,7 @@ async def test_attach_trace_pipeline_passes_separate_trace_flag(
     def _recorder(instrumentor, **kwargs):
         recorded_kwargs.update(kwargs)
         recorded_kwargs["__instrumentor"] = instrumentor
+        return True
 
     monkeypatch.setattr(_ol, "attach_instrumentor", _recorder)
 
@@ -426,6 +431,7 @@ async def test_attach_trace_pipeline_falls_back_when_kwarg_unsupported(
     def _recorder(instrumentor, **kwargs):
         recorded_kwargs.update(kwargs)
         recorded_kwargs["__instrumentor"] = instrumentor
+        return True
 
     monkeypatch.setattr(_ol, "attach_instrumentor", _recorder)
 
@@ -460,6 +466,39 @@ async def test_attach_trace_pipeline_falls_back_when_kwarg_unsupported(
             "separate_trace_from_runtime_context" in rec.message
             for rec in caplog.records
         )
+    finally:
+        monkeypatch.setattr(_ol, "attach_instrumentor", original_attach)
+        if getattr(app.state, "trace_writer_task", None) is not None:
+            await app.state.trace_writer_task.stop()
+        if getattr(app.state, "trace_retention_task", None) is not None:
+            await app.state.trace_retention_task.stop()
+
+
+@pytest.mark.asyncio
+async def test_attach_trace_pipeline_surfaces_attach_failed_when_instrumentor_returns_false(
+    sessionmaker_factory, monkeypatch
+):
+    """``attach_instrumentor`` now returns ``False`` when ``.instrument()``
+    silently fails or no TracerProvider is installed. The bootstrap must
+    flip ``trace_instrumentor_status`` to ``"attach_failed"`` so /_health
+    reflects the missing capture path — never a green ``"ok"`` state."""
+    from idun_agent_engine.observability import otel_lifecycle as _ol
+
+    original_attach = _ol.attach_instrumentor
+
+    def _fail_attach(_inst, **_kwargs):
+        return False
+
+    monkeypatch.setattr(_ol, "attach_instrumentor", _fail_attach)
+
+    app = FastAPI()
+    app.state.sessionmaker = sessionmaker_factory
+    app.state.engine_config = None  # no provider → self-install path
+
+    try:
+        await attach_trace_pipeline(app)
+        assert app.state.trace_instrumentor_status == "attach_failed"
+        assert app.state.trace_instrumentor_message is not None
     finally:
         monkeypatch.setattr(_ol, "attach_instrumentor", original_attach)
         if getattr(app.state, "trace_writer_task", None) is not None:

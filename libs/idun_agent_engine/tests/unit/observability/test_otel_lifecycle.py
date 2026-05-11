@@ -335,3 +335,60 @@ class TestAttachInstrumentor:
             recorder.called_with["tracer_provider"]
             is otel_lifecycle.get_tracer_provider()
         )
+
+    def test_returns_true_on_successful_attach(self):
+        from idun_agent_engine.observability import otel_lifecycle
+
+        otel_lifecycle.init_otel(
+            ObservabilityConfig(
+                provider=ObservabilityProvider.GCP_TRACE,
+                config=GCPTraceConfig(),
+            )
+        )
+
+        class _Recorder:
+            def instrument(self, **_kwargs: object) -> None:
+                return
+
+            def uninstrument(self) -> None:
+                return
+
+        assert otel_lifecycle.attach_instrumentor(_Recorder()) is True
+
+    def test_returns_false_when_no_tracer_provider(self):
+        from idun_agent_engine.observability import otel_lifecycle
+
+        # Drain any provider installed by a previous test.
+        otel_lifecycle.shutdown_otel()
+
+        class _Recorder:
+            def instrument(self, **_kwargs: object) -> None:
+                return
+
+            def uninstrument(self) -> None:
+                return
+
+        recorder = _Recorder()
+        assert otel_lifecycle.attach_instrumentor(recorder) is False
+        assert recorder not in otel_lifecycle._installed_instrumentors
+
+    def test_returns_false_when_instrument_raises(self):
+        from idun_agent_engine.observability import otel_lifecycle
+
+        otel_lifecycle.init_otel(
+            ObservabilityConfig(
+                provider=ObservabilityProvider.GCP_TRACE,
+                config=GCPTraceConfig(),
+            )
+        )
+
+        class _Broken:
+            def instrument(self, **_kwargs: object) -> None:
+                raise RuntimeError("boom")
+
+            def uninstrument(self) -> None:
+                return
+
+        broken = _Broken()
+        assert otel_lifecycle.attach_instrumentor(broken) is False
+        assert broken not in otel_lifecycle._installed_instrumentors

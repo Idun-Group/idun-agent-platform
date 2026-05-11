@@ -88,7 +88,14 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
 
     1. Stop the previous writer + retention if this is a reload.
     2. Self-install ``LangChainInstrumentor`` when the active provider
-       bypasses OTel (Langfuse / LangSmith) or none is configured.
+       bypasses OTel (Langfuse / LangSmith) or none is configured. We
+       pass ``separate_trace_from_runtime_context=True`` when the
+       installed openinference-langchain version supports it; otherwise
+       we attach without the flag and flip
+       ``app.state.trace_instrumentor_status`` to ``"kwarg_unsupported"``
+       so ``/_health`` surfaces the regression. A False return from
+       ``attach_instrumentor`` (silent ``.instrument()`` failure or no
+       TracerProvider) sets the status to ``"attach_failed"``.
     3. Ensure a TracerProvider is installed (some providers — Phoenix,
        GCP Trace — install one themselves; we do it ourselves for the
        bypassing-providers case so ``attach_span_processor`` works).
@@ -174,26 +181,42 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
                 )
             else:
                 if _langchain_instrumentor_supports_separate_trace():
-                    otel_lifecycle.attach_instrumentor(
+                    attached = otel_lifecycle.attach_instrumentor(
                         instrumentor,
                         separate_trace_from_runtime_context=True,
                     )
-                    logger.info("trace pipeline: self-installed LangChainInstrumentor")
+                    if attached:
+                        logger.info(
+                            "trace pipeline: self-installed LangChainInstrumentor"
+                        )
+                    else:
+                        instrumentor_status = "attach_failed"
+                        instrumentor_message = (
+                            "openinference.instrumentation.langchain "
+                            ".instrument() failed; see logs"
+                        )
                 else:
-                    otel_lifecycle.attach_instrumentor(instrumentor)
-                    instrumentor_status = "kwarg_unsupported"
-                    instrumentor_message = (
-                        "openinference-instrumentation-langchain dropped the "
-                        "separate_trace_from_runtime_context kwarg; trace rows "
-                        "will be missing for agents whose runtime OTel "
-                        "context leaks a parent span. Pin a compatible "
-                        "version."
-                    )
-                    logger.warning(
-                        "trace pipeline: self-installed LangChainInstrumentor "
-                        "without separate_trace_from_runtime_context "
-                        "(kwarg not in installed version)"
-                    )
+                    attached = otel_lifecycle.attach_instrumentor(instrumentor)
+                    if not attached:
+                        instrumentor_status = "attach_failed"
+                        instrumentor_message = (
+                            "openinference.instrumentation.langchain "
+                            ".instrument() failed; see logs"
+                        )
+                    else:
+                        instrumentor_status = "kwarg_unsupported"
+                        instrumentor_message = (
+                            "openinference-instrumentation-langchain dropped the "
+                            "separate_trace_from_runtime_context kwarg; trace rows "
+                            "will be missing for agents whose runtime OTel "
+                            "context leaks a parent span. Pin a compatible "
+                            "version."
+                        )
+                        logger.warning(
+                            "trace pipeline: self-installed LangChainInstrumentor "
+                            "without separate_trace_from_runtime_context "
+                            "(kwarg not in installed version)"
+                        )
         except ImportError:
             instrumentor_status = "attach_failed"
             instrumentor_message = (

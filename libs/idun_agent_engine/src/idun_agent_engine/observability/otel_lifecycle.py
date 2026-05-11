@@ -186,7 +186,7 @@ def attach_span_processor(processor: SpanProcessor) -> None:
     _attached_processors.append(processor)
 
 
-def attach_instrumentor(instrumentor: Any, **instrument_kwargs: Any) -> None:
+def attach_instrumentor(instrumentor: Any, **instrument_kwargs: Any) -> bool:
     """Install an Instrumentor and track it for uninstrumentation.
 
     The instrumentor must already be instantiated. We call
@@ -203,6 +203,12 @@ def attach_instrumentor(instrumentor: Any, **instrument_kwargs: Any) -> None:
     caller is expected to live with that — instrumentor failures here
     are logged and swallowed so a misbehaving instrumentor cannot block
     engine boot. See root CLAUDE.md § Error Handling.
+
+    Returns ``True`` when the instrumentor attached and was tracked,
+    ``False`` otherwise (no active TracerProvider, or ``.instrument()``
+    raised). Callers that publish a health status to operators (e.g.
+    the standalone trace bootstrap) should map ``False`` to
+    ``"attach_failed"`` rather than reporting a green state.
     """
     if _tracer_provider is None:
         logger.warning(
@@ -210,7 +216,7 @@ def attach_instrumentor(instrumentor: Any, **instrument_kwargs: Any) -> None:
             "init_otel must be called first. Instrumentor=%r ignored.",
             instrumentor,
         )
-        return
+        return False
     try:
         instrumentor.instrument(tracer_provider=_tracer_provider, **instrument_kwargs)
     except Exception:
@@ -218,8 +224,9 @@ def attach_instrumentor(instrumentor: Any, **instrument_kwargs: Any) -> None:
             "attach_instrumentor: %r .instrument() failed; not tracking",
             instrumentor,
         )
-        return
+        return False
     _installed_instrumentors.append(instrumentor)
+    return True
 
 
 def reload_otel(new_config: ObservabilityConfig | None) -> None:
