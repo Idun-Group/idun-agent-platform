@@ -186,12 +186,16 @@ def attach_span_processor(processor: SpanProcessor) -> None:
     _attached_processors.append(processor)
 
 
-def attach_instrumentor(instrumentor: Any) -> None:
+def attach_instrumentor(instrumentor: Any, **instrument_kwargs: Any) -> None:
     """Install an Instrumentor and track it for uninstrumentation.
 
     The instrumentor must already be instantiated. We call
-    ``.instrument(tracer_provider=<active>)`` ourselves and remember
-    the instance so ``shutdown_otel`` can call ``.uninstrument()``.
+    ``.instrument(tracer_provider=<active>, **instrument_kwargs)`` and
+    remember the instance so ``shutdown_otel`` can call
+    ``.uninstrument()``. Extra kwargs forward to the instrumentor
+    unchanged so callers can pass instrumentor-specific flags (e.g. the
+    OpenInference LangChain instrumentor's
+    ``separate_trace_from_runtime_context``).
 
     Fire-and-forget: if ``.instrument()`` raises, the instrumentor is
     *not* tracked and any partial side-effects (global hooks installed
@@ -208,7 +212,9 @@ def attach_instrumentor(instrumentor: Any) -> None:
         )
         return
     try:
-        instrumentor.instrument(tracer_provider=_tracer_provider)
+        instrumentor.instrument(
+            tracer_provider=_tracer_provider, **instrument_kwargs
+        )
     except Exception:
         logger.exception(
             "attach_instrumentor: %r .instrument() failed; not tracking",

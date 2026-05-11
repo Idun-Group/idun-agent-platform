@@ -266,3 +266,70 @@ class TestReloadOtel:
         # (we don't assert distinct identity because LANGFUSE is a no-op
         # provider for OTel and may share state).
         assert isinstance(otel_lifecycle.get_tracer_provider(), TracerProvider)
+
+
+@pytest.mark.unit
+class TestAttachInstrumentor:
+    def test_forwards_extra_kwargs_to_instrument(self):
+        from idun_agent_engine.observability import otel_lifecycle
+
+        otel_lifecycle.init_otel(
+            ObservabilityConfig(
+                provider=ObservabilityProvider.GCP_TRACE,
+                config=GCPTraceConfig(),
+            )
+        )
+
+        class _Recorder:
+            def __init__(self) -> None:
+                self.called_with: dict[str, object] = {}
+
+            def instrument(self, **kwargs: object) -> None:
+                self.called_with = kwargs
+
+            def uninstrument(self) -> None:
+                return
+
+        recorder = _Recorder()
+        otel_lifecycle.attach_instrumentor(
+            recorder,
+            separate_trace_from_runtime_context=True,
+            some_other_flag=42,
+        )
+
+        assert (
+            recorder.called_with.get("tracer_provider")
+            is otel_lifecycle.get_tracer_provider()
+        )
+        assert recorder.called_with.get("separate_trace_from_runtime_context") is True
+        assert recorder.called_with.get("some_other_flag") == 42
+        assert recorder in otel_lifecycle._installed_instrumentors
+
+    def test_no_extra_kwargs_preserves_existing_behavior(self):
+        from idun_agent_engine.observability import otel_lifecycle
+
+        otel_lifecycle.init_otel(
+            ObservabilityConfig(
+                provider=ObservabilityProvider.GCP_TRACE,
+                config=GCPTraceConfig(),
+            )
+        )
+
+        class _Recorder:
+            def __init__(self) -> None:
+                self.called_with: dict[str, object] = {}
+
+            def instrument(self, **kwargs: object) -> None:
+                self.called_with = kwargs
+
+            def uninstrument(self) -> None:
+                return
+
+        recorder = _Recorder()
+        otel_lifecycle.attach_instrumentor(recorder)
+
+        assert set(recorder.called_with.keys()) == {"tracer_provider"}
+        assert (
+            recorder.called_with["tracer_provider"]
+            is otel_lifecycle.get_tracer_provider()
+        )
