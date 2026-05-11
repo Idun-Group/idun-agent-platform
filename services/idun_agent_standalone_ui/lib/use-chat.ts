@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type AGUIEvent,
@@ -330,6 +331,7 @@ function applyEvent(
 }
 
 export function useChat(threadId: string) {
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [events, setEvents] = useState<ChatEvent[]>([]);
   const [status, setStatus] = useState<Status>("idle");
@@ -475,9 +477,20 @@ export function useChat(threadId: string) {
               : m,
           ),
         );
+        // A fresh thread becomes a session row on the backend when the
+        // checkpointer commits the run. The SSE stream sometimes closes
+        // a few ms before that commit lands (especially with aiosqlite
+        // WAL), so a single invalidation here races and the new row is
+        // missing about 5 out of 6 times. Fire one invalidation now and
+        // two retries on a short backoff to cover the commit window.
+        const refreshSessions = () =>
+          queryClient.invalidateQueries({ queryKey: ["agent-sessions"] });
+        refreshSessions();
+        window.setTimeout(refreshSessions, 250);
+        window.setTimeout(refreshSessions, 1000);
       }
     },
-    [threadId],
+    [threadId, queryClient],
   );
 
   const stop = useCallback(() => {

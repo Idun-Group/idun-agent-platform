@@ -1,6 +1,30 @@
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  renderHook as rtlRenderHook,
+  type RenderHookOptions,
+  act,
+  waitFor,
+} from "@testing-library/react";
+import type { ReactNode } from "react";
+import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { AGUIEvent, RunOptions } from "@/lib/agui";
+
+// useChat now calls useQueryClient (so it can invalidate the
+// agent-sessions cache after a run lands). Every renderHook in this
+// file needs a QueryClientProvider in scope; we wrap it transparently
+// via a local renderHook helper so the existing call sites stay short.
+function renderHook<TProps, TResult>(
+  callback: (props: TProps) => TResult,
+  options?: Omit<RenderHookOptions<TProps>, "wrapper">,
+) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  const wrapper = ({ children }: { children: ReactNode }) =>
+    React.createElement(QueryClientProvider, { client }, children);
+  return rtlRenderHook(callback, { ...options, wrapper });
+}
 
 // Mock the agui module so the hook never opens an SSE connection. We hand
 // it back a pending promise so `send()` resolves only when we explicitly
