@@ -25,8 +25,11 @@ from idun_agent_schema.standalone.dashboard import (
     TimeBucketPoint,
     TopErrorRow,
 )
-from sqlalchemy import text
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from idun_agent_standalone.infrastructure.db.models.span import StandaloneSpanRow
+from idun_agent_standalone.infrastructure.db.models.trace import StandaloneTraceRow
 
 _RANGE_TO_SECONDS: dict[DashboardRange, int] = {
     DashboardRange.h1: 60 * 60,
@@ -115,6 +118,24 @@ def _bucket_floor(ts: datetime, bucket_seconds: int) -> datetime:
     epoch = ts.timestamp()
     floored = (int(epoch) // bucket_seconds) * bucket_seconds
     return datetime.fromtimestamp(floored, tz=UTC)
+
+
+def _percentile(values: list[float], q: float) -> float | None:
+    """Compute the q-th percentile (q in [0, 1]) using linear interpolation.
+
+    Returns ``None`` for an empty list. Matches Postgres's
+    ``percentile_cont`` semantics for the v1 widget's needs.
+    """
+    if not values:
+        return None
+    s = sorted(values)
+    if len(s) == 1:
+        return float(s[0])
+    rank = q * (len(s) - 1)
+    lo = int(rank)
+    hi = min(lo + 1, len(s) - 1)
+    weight = rank - lo
+    return float(s[lo] * (1 - weight) + s[hi] * weight)
 
 
 def _dialect_is_postgres(session: AsyncSession) -> bool:
@@ -460,7 +481,7 @@ async def _postgres_top_errors(
     return [TopErrorRow(**d) for d in ranked]
 
 
-# --- SQLite implementations (stubbed -- Task T1.5 fills them in) ---
+# --- SQLite implementations ---
 
 
 async def _sqlite_requests(
@@ -470,7 +491,37 @@ async def _sqlite_requests(
     prior_start: datetime,
     bucket: int,
 ) -> RequestsBlock:
-    raise NotImplementedError("Task T1.5")
+    total_stmt = (
+        select(func.count())
+        .select_from(StandaloneTraceRow)
+        .where(StandaloneTraceRow.started_at >= start)
+        .where(StandaloneTraceRow.started_at < end)
+    )
+    prior_stmt = (
+        select(func.count())
+        .select_from(StandaloneTraceRow)
+        .where(StandaloneTraceRow.started_at >= prior_start)
+        .where(StandaloneTraceRow.started_at < start)
+    )
+    total = (await session.execute(total_stmt)).scalar() or 0
+    prior = (await session.execute(prior_stmt)).scalar() or 0
+
+    rows = (
+        await session.execute(
+            select(StandaloneTraceRow.started_at)
+            .where(StandaloneTraceRow.started_at >= start)
+            .where(StandaloneTraceRow.started_at < end)
+            .order_by(StandaloneTraceRow.started_at)
+        )
+    ).all()
+    buckets: dict[datetime, int] = {}
+    for (ts,) in rows:
+        b = _bucket_floor(ts, bucket)
+        buckets[b] = buckets.get(b, 0) + 1
+    series = [TimeBucketPoint(t=b, v=float(c)) for b, c in sorted(buckets.items())]
+    return RequestsBlock(
+        total=int(total), delta_pct=_delta_pct(total, prior), series=series
+    )
 
 
 async def _sqlite_latency(
@@ -480,7 +531,50 @@ async def _sqlite_latency(
     prior_start: datetime,
     bucket: int,
 ) -> LatencyBlock:
-    raise NotImplementedError("Task T1.5")
+    # Cap rows per bucket at 200 for percentile compute. Cheap on a
+    # laptop install -- if the cap matters, the user belongs on PG.
+    cap_per_bucket = 200
+    rows = (
+        await session.execute(
+            select(StandaloneTraceRow.started_at, StandaloneTraceRow.latency_ms)
+            .where(StandaloneTraceRow.started_at >= start)
+            .where(StandaloneTraceRow.started_at < end)
+            .where(StandaloneTraceRow.latency_ms.isnot(None))
+            .order_by(StandaloneTraceRow.started_at)
+        )
+    ).all()
+    bucket_to_lat: dict[datetime, list[float]] = {}
+    overall: list[float] = []
+    for ts, lat in rows:
+        overall.append(float(lat))
+        b = _bucket_floor(ts, bucket)
+        arr = bucket_to_lat.setdefault(b, [])
+        if len(arr) < cap_per_bucket:
+            arr.append(float(lat))
+
+    prior_rows = (
+        await session.execute(
+            select(StandaloneTraceRow.latency_ms)
+            .where(StandaloneTraceRow.started_at >= prior_start)
+            .where(StandaloneTraceRow.started_at < start)
+            .where(StandaloneTraceRow.latency_ms.isnot(None))
+        )
+    ).all()
+    prior = [float(r[0]) for r in prior_rows]
+
+    p50 = _percentile(overall, 0.5)
+    p95 = _percentile(overall, 0.95)
+    prior_p95 = _percentile(prior, 0.95)
+    series = [
+        LatencyBucketPoint(t=b, p50=_percentile(v, 0.5), p95=_percentile(v, 0.95))
+        for b, v in sorted(bucket_to_lat.items())
+    ]
+    return LatencyBlock(
+        p50_ms=p50,
+        p95_ms=p95,
+        p95_delta_pct=_delta_pct(p95, prior_p95),
+        series=series,
+    )
 
 
 async def _sqlite_error_rate(
@@ -490,7 +584,42 @@ async def _sqlite_error_rate(
     prior_start: datetime,
     bucket: int,
 ) -> ErrorRateBlock:
-    raise NotImplementedError("Task T1.5")
+    rows = (
+        await session.execute(
+            select(StandaloneTraceRow.started_at, StandaloneTraceRow.status)
+            .where(StandaloneTraceRow.started_at >= start)
+            .where(StandaloneTraceRow.started_at < end)
+            .order_by(StandaloneTraceRow.started_at)
+        )
+    ).all()
+    buckets: dict[datetime, tuple[int, int]] = {}
+    total = 0
+    errors = 0
+    for ts, status in rows:
+        total += 1
+        is_err = 1 if status == "ERROR" else 0
+        errors += is_err
+        b = _bucket_floor(ts, bucket)
+        e, t = buckets.get(b, (0, 0))
+        buckets[b] = (e + is_err, t + 1)
+
+    prior_rows = (
+        await session.execute(
+            select(StandaloneTraceRow.status)
+            .where(StandaloneTraceRow.started_at >= prior_start)
+            .where(StandaloneTraceRow.started_at < start)
+        )
+    ).all()
+    prior_total = len(prior_rows)
+    prior_errors = sum(1 for (s,) in prior_rows if s == "ERROR")
+    value = (errors / total) if total else 0.0
+    prior_value = (prior_errors / prior_total) if prior_total else None
+    delta_pp = (value - prior_value) if prior_value is not None else None
+    series = [
+        TimeBucketPoint(t=b, v=(e / t) if t else 0.0)
+        for b, (e, t) in sorted(buckets.items())
+    ]
+    return ErrorRateBlock(value_pct=value, delta_pp=delta_pp, series=series)
 
 
 async def _sqlite_cost(
@@ -500,7 +629,32 @@ async def _sqlite_cost(
     prior_start: datetime,
     bucket: int,
 ) -> CostBlock:
-    raise NotImplementedError("Task T1.5")
+    rows = (
+        await session.execute(
+            select(StandaloneTraceRow.started_at, StandaloneTraceRow.total_cost_usd)
+            .where(StandaloneTraceRow.started_at >= start)
+            .where(StandaloneTraceRow.started_at < end)
+        )
+    ).all()
+    total = 0.0
+    buckets: dict[datetime, float] = {}
+    for ts, cost in rows:
+        amount = float(cost or 0.0)
+        total += amount
+        b = _bucket_floor(ts, bucket)
+        buckets[b] = buckets.get(b, 0.0) + amount
+
+    prior = (
+        await session.execute(
+            select(func.coalesce(func.sum(StandaloneTraceRow.total_cost_usd), 0.0))
+            .where(StandaloneTraceRow.started_at >= prior_start)
+            .where(StandaloneTraceRow.started_at < start)
+        )
+    ).scalar() or 0.0
+    series = [TimeBucketPoint(t=b, v=v) for b, v in sorted(buckets.items())]
+    return CostBlock(
+        total_usd=total, delta_pct=_delta_pct(total, float(prior)), series=series
+    )
 
 
 async def _sqlite_top_errors(
@@ -508,4 +662,58 @@ async def _sqlite_top_errors(
     start: datetime,
     end: datetime,
 ) -> list[TopErrorRow]:
-    raise NotImplementedError("Task T1.5")
+    # standalone_span.otel_trace_id is only the last 8 bytes of the
+    # 16-byte trace id. Build a {trace_id_8 -> full_trace_id_hex} map
+    # from standalone_trace first, then group spans and look up the
+    # most-recent matching trace per (span_name, trace_id_8).
+    trace_rows = (
+        await session.execute(
+            select(StandaloneTraceRow.otel_trace_id, StandaloneTraceRow.started_at)
+            .where(StandaloneTraceRow.started_at >= start)
+            .where(StandaloneTraceRow.started_at < end)
+            .order_by(StandaloneTraceRow.started_at.desc())
+        )
+    ).all()
+    suffix_to_hex: dict[bytes, str] = {}
+    for tid_full, _ts in trace_rows:
+        suffix = tid_full[8:]
+        if suffix not in suffix_to_hex:
+            suffix_to_hex[suffix] = tid_full.hex()
+
+    span_rows = (
+        await session.execute(
+            select(
+                StandaloneSpanRow.name,
+                StandaloneSpanRow.started_at,
+                StandaloneSpanRow.otel_trace_id,
+            )
+            .where(StandaloneSpanRow.status == "ERROR")
+            .where(StandaloneSpanRow.started_at >= start)
+            .where(StandaloneSpanRow.started_at < end)
+            .order_by(StandaloneSpanRow.started_at.desc())
+        )
+    ).all()
+
+    collapsed: dict[str, dict] = {}
+    for name, ts, tid_8 in span_rows:
+        full_hex = suffix_to_hex.get(tid_8)
+        if full_hex is None:
+            # Parent trace hadn't finalized yet -- skip; surfaced on
+            # the next refresh once finalize runs.
+            continue
+        key = _normalize_span_name(name)
+        entry = collapsed.setdefault(
+            key,
+            {
+                "span_name": key,
+                "count": 0,
+                "last_seen": ts,
+                "sample_trace_id": full_hex,
+            },
+        )
+        entry["count"] += 1
+        if ts > entry["last_seen"]:
+            entry["last_seen"] = ts
+            entry["sample_trace_id"] = full_hex
+    ranked = sorted(collapsed.values(), key=lambda d: d["count"], reverse=True)[:5]
+    return [TopErrorRow(**d) for d in ranked]
