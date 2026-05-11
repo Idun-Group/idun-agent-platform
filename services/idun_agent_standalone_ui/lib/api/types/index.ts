@@ -20,3 +20,14 @@ export type {
   ToolKind,
   ToolNode,
 } from "./graph";
+export type {
+  CostBlock,
+  DashboardRange,
+  DashboardResponse,
+  ErrorRateBlock,
+  LatencyBlock,
+  LatencyBucketPoint,
+  RequestsBlock,
+  TimeBucketPoint,
+  TopErrorRow,
+} from "./dashboard";

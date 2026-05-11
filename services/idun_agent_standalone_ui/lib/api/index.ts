@@ -8,6 +8,7 @@
 
 import { apiFetch, j } from "./client";
 import type { AgentGraph } from "./types/graph";
+import type { DashboardRange, DashboardResponse } from "./types/dashboard";
 import type {
   AgentCapabilities,
   AgentPatch,
@@ -226,6 +227,9 @@ export const api = {
     apiFetch<{ mermaid: string }>("/agent/graph/mermaid"),
   getAgentGraphAscii: () =>
     apiFetch<{ ascii: string }>("/agent/graph/ascii"),
+
+  getDashboard: ({ range }: { range: DashboardRange }) =>
+    apiFetch<DashboardResponse>(`${ADMIN}/dashboard?range=${range}`),
 
   // Engine surface — health probe (used by the agent page Verify button).
   // Returns 503 with `agent_not_ready` until the engine is materialized.
