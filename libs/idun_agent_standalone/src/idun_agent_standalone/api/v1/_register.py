@@ -15,6 +15,9 @@ from fastapi import FastAPI, params
 
 from idun_agent_standalone.api.v1.routers.agent import router as agent_router
 from idun_agent_standalone.api.v1.routers.auth import router as auth_router
+from idun_agent_standalone.api.v1.routers.dashboard import (
+    router as dashboard_router,
+)
 from idun_agent_standalone.api.v1.routers.guardrails import (
     router as guardrails_router,
 )
@@ -68,6 +71,7 @@ def register_standalone_routers(
     app.include_router(sso_router, dependencies=deps)
     app.include_router(onboarding_router, dependencies=deps)
     app.include_router(traces_router, dependencies=deps)
+    app.include_router(dashboard_router, dependencies=deps)
     # Public (always reachable) routers.
     app.include_router(runtime_config_router)
     app.include_router(sso_info_router)
