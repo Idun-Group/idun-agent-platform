@@ -79,7 +79,7 @@
           {
             "group": "Agent frameworks",
             "icon": "layer-group",
-            "pages": ["frameworks/overview", "frameworks/langgraph", "frameworks/adk"]
+            "pages": ["frameworks/overview", "frameworks/langgraph", "frameworks/adk", "frameworks/custom-adapter"]
           },
           {
             "group": "Guardrails",
@@ -94,7 +94,7 @@
           {
             "group": "Observability",
             "icon": "chart-line",
-            "pages": ["observability/overview", "observability/traces", "observability/langfuse", "observability/arize-phoenix", "observability/langsmith", "observability/gcp-trace", "observability/gcp-logging"]
+            "pages": ["observability/overview", "observability/traces", "observability/langfuse", "observability/arize-phoenix", "observability/langsmith", "observability/gcp-trace", "observability/gcp-logging", "observability/custom-handler"]
           },
           {
             "group": "Tool governance",
@@ -118,11 +118,12 @@
           {
             "group": "Deployment",
             "icon": "server",
-            "pages": ["deployment/overview", "deployment/gcp"]
+            "pages": ["deployment/overview", "deployment/hardening", "deployment/gcp"]
           },
           {
             "group": "Guides",
             "pages": [
+              "guides/connect-your-agent",
               "guides/langgraph-production-deployment",
               "guides/programmatic-chat"
             ]
@@ -130,7 +131,7 @@
           {
             "group": "Advanced",
             "icon": "gear",
-            "pages": ["configuration", "prompts", "cli/overview", "faq"]
+            "pages": ["configuration", "prompts", "cli/overview", "troubleshooting", "faq"]
           }
         ]
       },

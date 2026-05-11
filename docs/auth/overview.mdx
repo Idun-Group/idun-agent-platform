@@ -1,127 +1,32 @@
 ---
-title: "Authentication and authorization"
-description: "Configure user authentication with username/password or OIDC SSO (Google, Microsoft), and manage access with role-based access control."
-keywords: ["authentication", "authorization", "SSO", "OIDC", "RBAC", "roles", "Google OAuth", "Google OIDC", "Microsoft", "Azure AD", "Entra ID"]
+title: "Agent route protection"
+description: "Enforce OIDC JWT validation on engine agent API routes with a per-agent SSO config. Supports Google Workspace, Microsoft Entra ID, and any OIDC-compliant provider."
+keywords: ["authentication", "SSO", "OIDC", "JWT", "Google OAuth", "Microsoft Entra", "Azure AD", "agent API", "per-agent SSO"]
 ---
 
-Idun Agent Platform supports two authentication modes for the Manager and a per-agent SSO layer for engine route protection. Role-based access control (RBAC) governs what authenticated users can do within each workspace.
+The engine can enforce OIDC JWT validation on agent API routes. When SSO is enabled, clients must present a valid JWT in the `Authorization` header to call `/agent/*` endpoints.
 
-## Authentication modes
+This page covers route protection for the engine runtime. For standalone admin-panel auth (the `idun_session` cookie on `/admin/*`), see [Standalone overview](/standalone/overview) and [Deployment hardening](/deployment/hardening).
 
-The Manager supports two mutually exclusive authentication modes, controlled by the `AUTH__DISABLE_USERNAME_PASSWORD` environment variable.
+## Protected routes
 
-<Tabs>
-  <Tab title="Username/password (default)">
-    The default mode. Users register and log in with email and password.
+When SSO is enabled, every `/agent/*` route requires a valid bearer token. The canonical AG-UI entry point is:
 
-    - `POST /api/v1/auth/basic/signup` to register
-    - `POST /api/v1/auth/basic/login` to log in
-    - Passwords are hashed with bcrypt
+- `POST /agent/run`
 
-    No additional configuration is required. This mode is active when `AUTH__DISABLE_USERNAME_PASSWORD` is `false` (the default).
-  </Tab>
-  <Tab title="OIDC SSO">
-    Enable SSO by setting `AUTH__DISABLE_USERNAME_PASSWORD=true` and configuring one or more OIDC providers. Each provider is registered automatically when its `client_id` env var is set.
+The following routes are deprecated compatibility shims, also gated by the same SSO dependency:
 
-    - `GET /api/v1/auth/providers` lists enabled providers
-    - `GET /api/v1/auth/login/{provider}` redirects to the provider's authorization page
-    - `GET /api/v1/auth/callback` exchanges the authorization code for tokens and sets a session cookie
-    - Users are automatically created on first login
+- `POST /agent/invoke`
+- `POST /agent/stream`
+- `POST /agent/copilotkit/stream`
 
-    <Tabs>
-      <Tab title="Google">
-        ```bash
-        AUTH__DISABLE_USERNAME_PASSWORD=true
-        AUTH__GOOGLE_CLIENT_ID=your-google-client-id
-        AUTH__GOOGLE_CLIENT_SECRET=your-google-client-secret
-        AUTH__REDIRECT_URI=https://your-domain.com/api/v1/auth/callback
-        AUTH__FRONTEND_URL=https://your-domain.com
-        ```
-      </Tab>
-      <Tab title="Microsoft (Entra ID)">
-        ```bash
-        AUTH__DISABLE_USERNAME_PASSWORD=true
-        AUTH__MICROSOFT_CLIENT_ID=your-azure-app-client-id
-        AUTH__MICROSOFT_CLIENT_SECRET=your-azure-app-client-secret
-        # Optional: defaults to "common" (any Entra tenant + personal Microsoft accounts)
-        # AUTH__MICROSOFT_TENANT_ID=common
-        AUTH__REDIRECT_URI=https://your-domain.com/api/v1/auth/callback
-        AUTH__FRONTEND_URL=https://your-domain.com
-        ```
+Health and metadata routes (`/health`, `/_engine/info`) stay open. The engine `/reload` route is not currently gated by the SSO dependency; treat the engine as a process running inside a trusted boundary.
 
-        `AUTH__MICROSOFT_TENANT_ID` defaults to `common`, which uses the multi-tenant Microsoft authority (`https://login.microsoftonline.com/common`) and accepts users from any Entra tenant as well as personal Microsoft accounts (Outlook, Hotmail, Live). Your Entra app registration must also be configured for **multi-tenant + personal Microsoft accounts** (the "Accounts in any organizational directory and personal Microsoft accounts" option).
-
-        To restrict sign-in to a single Entra tenant, set `AUTH__MICROSOFT_TENANT_ID` to that tenant's UUID. The Manager validates that ID tokens are issued by a Microsoft tenant (`https://login.microsoftonline.com/<tenant-uuid>/v2.0`) regardless of which authority is used; the JWKS signature check guarantees the token came from Microsoft.
-      </Tab>
-    </Tabs>
-
-    You can configure both providers simultaneously. The login page will show buttons for each enabled provider.
-  </Tab>
-</Tabs>
-
-### Session management
-
-Both modes use signed HTTP-only cookies for session management.
-
-| Setting | Environment variable | Default |
-|---|---|---|
-| Session secret | `AUTH__SESSION_SECRET` | Required, min 32 characters |
-| Session TTL | `AUTH__SESSION_TTL_SECONDS` | `86400` (24 hours) |
-| Secure cookies (HTTPS) | `AUTH__COOKIE_SECURE` | `false` |
-
-## Role-based access control
-
-Each workspace has its own set of members with assigned roles. Roles determine what actions a user can perform within that workspace.
-
-| Role | Level | Capabilities |
-|---|---|---|
-| **Owner** | 4 | Full control. Can delete the workspace, manage all members including other owners |
-| **Admin** | 3 | Can invite and remove members, update roles (except owners), manage all resources |
-| **Member** | 2 | Can create, read, update, and delete agents and resources within the workspace |
-| **Viewer** | 1 | Read-only access to agents and resources |
-
-Roles are hierarchical. A higher-level role includes all permissions of lower-level roles.
-
-### Workspace invitations
-
-Admins and owners can invite users by email. The invitation specifies a role and is consumed when the invited user signs up or logs in:
-
-1. Admin sends an invitation for `user@company.com` with role `member`
-2. When that user signs up (via either auth mode), the invitation is consumed
-3. The user is added to the workspace with the assigned role
-4. If it is the user's first workspace, it becomes their default
-
-## Per-agent SSO (engine route protection)
-
-Separate from Manager authentication, the engine can enforce OIDC JWT validation on agent API routes. When enabled, clients must provide a valid JWT in the `Authorization` header to call agent endpoints.
-
-Protected routes:
-- `/agent/invoke`
-- `/agent/stream`
-- `/agent/copilotkit/stream`
-
-### SSO config
+## Configuration
 
 <Tabs>
-  <Tab title="Manager UI">
-    **SSO/OIDC configuration**
-
-    Navigate to the SSO page to manage SSO configurations for your workspace.
-
-    ![SSO page](/images/ui/sso-page.png)
-
-    Click **Add SSO config** and fill in the issuer URL, client ID, and allowed domains.
-
-    **User management**
-
-    The User Management page shows a table of workspace members with their assigned roles.
-
-    ![Workspace users list](/images/ui/users-list.png)
-
-    From this page you can invite new users by email and assign them a role: **Owner**, **Admin**, **Member**, or **Viewer**. You can also update an existing member's role or remove them from the workspace.
-  </Tab>
-  <Tab title="Config file">
-    Configure per-agent SSO directly in YAML:
+  <Tab title="YAML">
+    Add an `sso` block to your engine `config.yaml`:
 
     ```yaml config.yaml
     sso:
@@ -141,22 +46,59 @@ Protected routes:
     | `issuer` | OIDC issuer URL. Used to discover the JWKS endpoint via `.well-known/openid-configuration` |
     | `client_id` | OAuth 2.0 client ID. Used as the default audience for JWT validation |
     | `audience` | Expected JWT `aud` claim. Defaults to `client_id` if not set |
-    | `allowed_domains` | Optional list of allowed email domains (e.g., `["company.com"]`) |
+    | `allowed_domains` | Optional list of allowed email domains (e.g. `["company.com"]`) |
     | `allowed_emails` | Optional list of specific email addresses allowed access |
+  </Tab>
+  <Tab title="Admin UI">
+    In the standalone admin panel, navigate to the agent's SSO settings, paste the issuer URL, client ID, and any domain or email allowlists, then save. The standalone reload pipeline validates the config and re-instantiates the engine with the new SSO settings.
+
+    ![SSO page](/images/ui/sso-page.png)
   </Tab>
 </Tabs>
 
-### Supported providers
+## Supported providers
 
-The Manager supports the following OIDC providers for SSO authentication:
+Any OIDC-compliant provider works as long as it publishes a JWKS endpoint via `.well-known/openid-configuration`. Tested providers:
 
 - **Google Workspace** (issuer: `https://accounts.google.com`)
 - **Microsoft Entra ID / Azure AD** (multi-tenant via `https://login.microsoftonline.com/common`, or single-tenant via `https://login.microsoftonline.com/<tenant-uuid>`)
 
-Both can be enabled simultaneously. The login page shows a button for each configured provider.
-
-For per-agent SSO, the engine validates JWTs against any OIDC-compliant provider's JWKS endpoint.
-
 <Note>
   Domain and email allowlists are applied after JWT signature verification. A valid token from an allowed provider is still rejected if the email domain or address is not in the allowlist.
 </Note>
+
+## How validation works
+
+1. The engine discovers the JWKS endpoint from the issuer's `.well-known/openid-configuration` document at startup.
+2. For each request to a protected route, the engine reads the `Authorization: Bearer <jwt>` header.
+3. The JWT signature is validated against the JWKS. Signature algorithm and key are taken from the JWT header.
+4. The `aud` and `iss` claims are matched against `audience` and `issuer` from your config.
+5. If `allowed_domains` or `allowed_emails` is set, the token's `email` claim is checked against the lists.
+6. On success, the request proceeds. On failure, the engine returns `401 Unauthorized`.
+
+Tokens are not stored or persisted. Each request is validated independently.
+
+## Calling a protected agent
+
+Obtain a JWT from your provider, then pass it in the `Authorization` header:
+
+```bash
+# Export the JWT obtained from your provider's OAuth flow
+export JWT=$(your-token-tool fetch)
+
+curl -X POST https://your-agent.example.com/agent/run \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "thread_id": "test-1",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'
+```
+
+For browser clients, obtain the token through your provider's standard OAuth 2.0 + PKCE flow, then call the agent API from your application code with the resulting access token.
+
+## What's next
+
+- [Deployment hardening](/deployment/hardening): production env-var checklist (`IDUN_HOST`, session secret, cookie security, TLS)
+- [Standalone overview](/standalone/overview): set up admin-panel auth (`IDUN_ADMIN_AUTH_MODE=password`) for the `/admin/*` UI
+- [Troubleshooting](/troubleshooting): what `agent_not_ready` and reload-pipeline errors mean
