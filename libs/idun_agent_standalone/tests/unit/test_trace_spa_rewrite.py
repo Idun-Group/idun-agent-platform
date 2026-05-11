@@ -51,6 +51,20 @@ def shell_ui_dir(tmp_path: Path) -> Path:
     return tmp_path
 
 
+@pytest.fixture
+def shell_ui_dir_no_rsc(tmp_path: Path) -> Path:
+    """``index.html`` only — simulates a broken build with no RSC payload."""
+    _write_shell(tmp_path, rsc=None)
+    return tmp_path
+
+
+@pytest.fixture
+def shell_ui_dir_legacy(tmp_path: Path) -> Path:
+    """Unrenamed ``__trace__/`` directory (raw ``pnpm build`` output)."""
+    _write_shell(tmp_path, shell_dir="__trace__")
+    return tmp_path
+
+
 @pytest.mark.asyncio
 async def test_html_shell_served_for_unslashed_trace_id(shell_ui_dir: Path) -> None:
     app = _build_app(shell_ui_dir)
@@ -135,12 +149,11 @@ async def test_placeholder_segment_returns_410_for_rsc(shell_ui_dir: Path) -> No
 
 
 @pytest.mark.asyncio
-async def test_rsc_route_404s_when_payload_missing(tmp_path: Path) -> None:
+async def test_rsc_route_404s_when_payload_missing(shell_ui_dir_no_rsc: Path) -> None:
     """A build that emits ``index.html`` but no ``index.txt`` returns
     ``404`` for the RSC route rather than fabricating one — serving HTML
     as ``text/x-component`` would silently break the RSC client."""
-    _write_shell(tmp_path, rsc=None)
-    app = _build_app(tmp_path)
+    app = _build_app(shell_ui_dir_no_rsc)
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         rsc = await client.get("/admin/traces/abc123/index.txt")
@@ -150,11 +163,10 @@ async def test_rsc_route_404s_when_payload_missing(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_legacy_trace_directory_is_resolved(tmp_path: Path) -> None:
+async def test_legacy_trace_directory_is_resolved(shell_ui_dir_legacy: Path) -> None:
     """Unrenamed ``__trace__/`` (raw ``pnpm build`` output) is the
     fallback for direct-build workflows like ``e2e/boot-standalone.sh``."""
-    _write_shell(tmp_path, shell_dir="__trace__")
-    app = _build_app(tmp_path)
+    app = _build_app(shell_ui_dir_legacy)
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         html = await client.get("/admin/traces/abc123")
