@@ -2,6 +2,25 @@
 
 This file governs all documentation work in `/docs`.
 
+## Local preview
+
+The Mintlify CLI requires Node.js **24** or older. Node 25+ is not supported. The required version is pinned in `docs/.nvmrc`.
+
+```bash
+cd docs
+nvm use                                 # picks up .nvmrc if you have nvm/fnm/asdf/volta
+npx mintlify@latest dev                 # serves at http://localhost:3000 with hot reload
+```
+
+If you don't have a Node version manager and your system Node is too new, install Node 24 via Homebrew and run mintlify with the explicit binary path:
+
+```bash
+brew install node@24
+/opt/homebrew/opt/node@24/bin/npx mintlify@latest dev
+```
+
+`docs.idunplatform.com` is rebuilt automatically on every merge to `main`. Per-PR preview deployments are not currently published by the Mintlify GitHub app (the `Mintlify Deployment` check exits as `SKIPPED`). Always run a local preview before merging non-trivial docs PRs.
+
 ## Working relationship
 
 You are writing public-facing technical documentation for an open-source AI agent deployment platform. Every page will be read by developers evaluating the product, platform engineers adopting it, and AI systems indexing it for retrieval.
