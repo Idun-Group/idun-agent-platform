@@ -126,7 +126,21 @@ function applyEvent(
 
     // — Tool call lifecycle -----------------------------------
     case "TOOL_CALL_START":
-    case "ToolCallStart":
+    case "ToolCallStart": {
+      // Workaround for #629: when the LLM returns a tool call atomically
+      // (Gemini and other non-streaming paths), ag_ui_langgraph emits
+      // TOOL_CALL_START and returns without a follow-up TOOL_CALL_ARGS.
+      // The args are sitting on the raw chunk — pull them out so the
+      // row body isn't empty.
+      let initialArgs = "";
+      const raw = e.rawEvent as
+        | { data?: { chunk?: { tool_calls?: Array<{ args?: unknown }> } } }
+        | undefined;
+      const rawArgs = raw?.data?.chunk?.tool_calls?.[0]?.args;
+      if (rawArgs !== undefined && rawArgs !== null) {
+        initialArgs =
+          typeof rawArgs === "string" ? rawArgs : JSON.stringify(rawArgs);
+      }
       updateLatestAssistant((m) =>
         m.role === "assistant"
           ? {
@@ -138,13 +152,14 @@ function applyEvent(
                   name: String(
                     e.toolCallName ?? e.tool_call_name ?? "tool",
                   ),
-                  args: "",
+                  args: initialArgs,
                 },
               ],
             }
           : m,
       );
       break;
+    }
     case "TOOL_CALL_ARGS":
     case "ToolCallArgs":
       updateLatestAssistant((m) =>
@@ -168,17 +183,41 @@ function applyEvent(
               ...m,
               toolCalls: m.toolCalls.map((tc) =>
                 tc.id === String(e.toolCallId ?? e.tool_call_id ?? "")
-                  ? {
-                      ...tc,
-                      result: JSON.stringify(e.result ?? null),
-                      done: true,
-                    }
+                  ? { ...tc, done: true }
                   : tc,
               ),
             }
           : m,
       );
       break;
+    case "TOOL_CALL_RESULT":
+    case "ToolCallResult": {
+      // Workaround for #629: ag_ui_langgraph emits TOOL_CALL_RESULT with
+      // LangGraph's run_id as tool_call_id, not the LLM's call id. Match
+      // by id when possible; otherwise attach to the most recent tool
+      // call without a result.
+      const incomingId = String(e.toolCallId ?? e.tool_call_id ?? "");
+      const content = String(e.content ?? "");
+      updateLatestAssistant((m) => {
+        if (m.role !== "assistant") return m;
+        const exact = m.toolCalls.find((tc) => tc.id === incomingId);
+        const fallbackIndex = exact
+          ? -1
+          : (() => {
+              for (let i = m.toolCalls.length - 1; i >= 0; i--) {
+                if (m.toolCalls[i].result === undefined) return i;
+              }
+              return -1;
+            })();
+        return {
+          ...m,
+          toolCalls: m.toolCalls.map((tc, i) =>
+            tc === exact || i === fallbackIndex ? { ...tc, result: content } : tc,
+          ),
+        };
+      });
+      break;
+    }
 
     // — Thinking lifecycle ------------------------------------
     case "THINKING_START":

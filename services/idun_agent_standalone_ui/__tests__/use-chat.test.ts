@@ -446,4 +446,194 @@ describe("useChat", () => {
       expect(assistant.text).toBe("streamed answer");
     }
   });
+
+  it("captures tool result from TOOL_CALL_RESULT and leaves END alone empty", async () => {
+    // Regression: earlier builds fabricated `result: "null"` from a
+    // missing TOOL_CALL_END.result, causing every tool call to render
+    // a `null` body. ag_ui_langgraph actually emits the result on a
+    // separate TOOL_CALL_RESULT event with the real content.
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const script: AGUIEvent[] = [
+      { type: "RUN_STARTED" },
+      {
+        type: "TOOL_CALL_START",
+        toolCallId: "tc-1",
+        toolCallName: "search_idun_platform",
+      },
+      {
+        type: "TOOL_CALL_ARGS",
+        toolCallId: "tc-1",
+        delta: '{"query": "guardrails"}',
+      },
+      { type: "TOOL_CALL_END", toolCallId: "tc-1" },
+      {
+        type: "TOOL_CALL_RESULT",
+        toolCallId: "tc-1",
+        content: "doc body about guardrails",
+      },
+      { type: "RUN_FINISHED" },
+    ];
+
+    (runAgent as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: RunOptions) => {
+        for (const event of script) {
+          opts.onEvent(event);
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useChat("thread-tool"));
+    await act(async () => {
+      await result.current.send("hi");
+    });
+
+    const assistant = result.current.messages.find(
+      (m) => m.role === "assistant",
+    );
+    if (assistant && assistant.role === "assistant") {
+      expect(assistant.toolCalls).toHaveLength(1);
+      const tc = assistant.toolCalls[0];
+      expect(tc.id).toBe("tc-1");
+      expect(tc.name).toBe("search_idun_platform");
+      expect(tc.args).toBe('{"query": "guardrails"}');
+      expect(tc.done).toBe(true);
+      expect(tc.result).toBe("doc body about guardrails");
+    }
+  });
+
+  it("workaround #629: extracts args from TOOL_CALL_START rawEvent when no ARGS event follows", async () => {
+    // ag_ui_langgraph emits TOOL_CALL_START and returns without a
+    // TOOL_CALL_ARGS event for Gemini's atomic tool calls. The args sit
+    // on the raw chunk — pull them out at START time so the row body
+    // isn't empty.
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const script: AGUIEvent[] = [
+      { type: "RUN_STARTED" },
+      {
+        type: "TOOL_CALL_START",
+        toolCallId: "tc-atomic",
+        toolCallName: "search_idun_platform",
+        rawEvent: {
+          data: {
+            chunk: {
+              tool_calls: [
+                {
+                  name: "search_idun_platform",
+                  args: { query: "guardrails" },
+                  id: "tc-atomic",
+                },
+              ],
+            },
+          },
+        },
+      },
+      { type: "TOOL_CALL_END", toolCallId: "tc-atomic" },
+      { type: "RUN_FINISHED" },
+    ];
+
+    (runAgent as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: RunOptions) => {
+        for (const event of script) {
+          opts.onEvent(event);
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useChat("thread-atomic"));
+    await act(async () => {
+      await result.current.send("hi");
+    });
+
+    const assistant = result.current.messages.find(
+      (m) => m.role === "assistant",
+    );
+    if (assistant && assistant.role === "assistant") {
+      const tc = assistant.toolCalls[0];
+      expect(tc.args).toBe('{"query":"guardrails"}');
+    }
+  });
+
+  it("workaround #629: attaches TOOL_CALL_RESULT to latest unresolved call when ids mismatch", async () => {
+    // ag_ui_langgraph emits TOOL_CALL_RESULT with LangGraph's run_id
+    // as tool_call_id, not the LLM's. Fall back to the most recent
+    // tool call without a result so the content lands somewhere.
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const script: AGUIEvent[] = [
+      { type: "RUN_STARTED" },
+      {
+        type: "TOOL_CALL_START",
+        toolCallId: "llm-id-abc",
+        toolCallName: "search_idun_platform",
+      },
+      { type: "TOOL_CALL_END", toolCallId: "llm-id-abc" },
+      {
+        type: "TOOL_CALL_RESULT",
+        toolCallId: "langgraph-run-xyz",
+        content: "doc body about guardrails",
+      },
+      { type: "RUN_FINISHED" },
+    ];
+
+    (runAgent as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: RunOptions) => {
+        for (const event of script) {
+          opts.onEvent(event);
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useChat("thread-mismatch"));
+    await act(async () => {
+      await result.current.send("hi");
+    });
+
+    const assistant = result.current.messages.find(
+      (m) => m.role === "assistant",
+    );
+    if (assistant && assistant.role === "assistant") {
+      const tc = assistant.toolCalls[0];
+      expect(tc.id).toBe("llm-id-abc");
+      expect(tc.result).toBe("doc body about guardrails");
+    }
+  });
+
+  it("leaves result undefined when only TOOL_CALL_END fires (no result event)", async () => {
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const script: AGUIEvent[] = [
+      { type: "RUN_STARTED" },
+      { type: "TOOL_CALL_START", toolCallId: "tc-2", toolCallName: "noop" },
+      { type: "TOOL_CALL_END", toolCallId: "tc-2" },
+      { type: "RUN_FINISHED" },
+    ];
+
+    (runAgent as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: RunOptions) => {
+        for (const event of script) {
+          opts.onEvent(event);
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useChat("thread-noresult"));
+    await act(async () => {
+      await result.current.send("hi");
+    });
+
+    const assistant = result.current.messages.find(
+      (m) => m.role === "assistant",
+    );
+    if (assistant && assistant.role === "assistant") {
+      const tc = assistant.toolCalls[0];
+      expect(tc.done).toBe(true);
+      expect(tc.result).toBeUndefined();
+    }
+  });
 });
