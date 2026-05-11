@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { ProviderPicker, type ProviderOption } from "@/components/admin/ProviderPicker";
+import { SecretInput } from "@/components/admin/SecretInput";
 import {
   DiscordIcon,
   GoogleChatIcon,
@@ -506,11 +507,9 @@ function SecretField({
         <FormItem>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input
+            <SecretInput
               {...field}
               value={typeof field.value === "string" ? field.value : ""}
-              type="password"
-              autoComplete="off"
               placeholder={placeholder}
             />
           </FormControl>

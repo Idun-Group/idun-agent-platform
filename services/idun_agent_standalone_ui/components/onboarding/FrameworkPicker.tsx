@@ -52,12 +52,20 @@ export function FrameworkPicker({ onContinue, onRescan }: FrameworkPickerProps) 
         >
           Re-scan
         </button>
-        <Button
-          onClick={() => selected && onContinue(selected)}
-          disabled={!selected}
-        >
-          Continue
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            onClick={() => selected && onContinue(selected)}
+            disabled={!selected}
+            aria-describedby={!selected ? "fw-continue-help" : undefined}
+          >
+            Continue
+          </Button>
+          {!selected && (
+            <p id="fw-continue-help" className="text-xs text-muted-foreground">
+              Select a framework to continue
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -273,9 +273,24 @@ function ProfileTab({ authMode }: { authMode: string }) {
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
               Auth mode
             </div>
-            <Badge variant={authMode === "none" ? "secondary" : "default"}>
+            <Badge
+              variant={authMode === "none" ? "destructive" : "default"}
+            >
               {authMode}
             </Badge>
+            {authMode === "none" && (
+              <p className="text-xs text-destructive">
+                Production deployments must use{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-[11px] text-foreground">
+                  password
+                </code>{" "}
+                mode. Set{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-[11px] text-foreground">
+                  IDUN_ADMIN_AUTH_MODE=password
+                </code>{" "}
+                and restart.
+              </p>
+            )}
           </div>
         </div>
 

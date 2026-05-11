@@ -16,6 +16,21 @@ describe("WizardEmpty", () => {
     expect(screen.getByRole("button", { name: /continue/i })).toBeDisabled();
   });
 
+  it("shows helper text under the disabled Continue button (UI-014)", () => {
+    render(<WizardEmpty onContinue={vi.fn()} onRescan={vi.fn()} />);
+    expect(
+      screen.getByText(/select a framework to continue/i),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the helper text once a framework is selected (UI-014)", () => {
+    render(<WizardEmpty onContinue={vi.fn()} onRescan={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText(/langgraph/i));
+    expect(
+      screen.queryByText(/select a framework to continue/i),
+    ).not.toBeInTheDocument();
+  });
+
   it("calls onContinue with the selected framework", () => {
     const onContinue = vi.fn();
     render(<WizardEmpty onContinue={onContinue} onRescan={vi.fn()} />);
