@@ -6,10 +6,14 @@ import {
   AlertCircle,
   CheckCircle2,
   FileCode,
+  Globe,
   Loader2,
   Pencil,
+  Plug,
   Plus,
+  Radio,
   RotateCcw,
+  Terminal,
   Trash2,
   Wrench,
   X,
@@ -21,6 +25,7 @@ import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
 import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
+import { ProviderPicker, type ProviderOption } from "@/components/admin/ProviderPicker";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -60,13 +65,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -97,6 +96,36 @@ const TRANSPORT_LABELS: Record<Transport, string> = {
   sse: "sse",
   websocket: "websocket",
 };
+
+const TRANSPORT_CATALOG: ProviderOption<Transport>[] = [
+  {
+    id: "streamable_http",
+    label: "Streamable HTTP",
+    description:
+      "Connect to a remote MCP server over HTTP streaming. The modern default.",
+    icon: <Globe size={44} className="text-foreground/70" />,
+  },
+  {
+    id: "sse",
+    label: "SSE",
+    description:
+      "Server-Sent Events transport. Use when a server only exposes SSE.",
+    icon: <Radio size={44} className="text-foreground/70" />,
+  },
+  {
+    id: "websocket",
+    label: "WebSocket",
+    description: "Bidirectional WebSocket connection for live tool servers.",
+    icon: <Plug size={44} className="text-foreground/70" />,
+  },
+  {
+    id: "stdio",
+    label: "STDIO",
+    description:
+      "Run a local MCP process and pipe over stdin / stdout. Great for filesystem, git, local tools.",
+    icon: <Terminal size={44} className="text-foreground/70" />,
+  },
+];
 
 /** A row in the local working list. `id` is null for unsaved additions. */
 type ServerRow = {
@@ -317,6 +346,7 @@ export default function McpPage() {
 
   const [working, setWorking] = useState<ServerRow[]>(initialList);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetType, setSheetType] = useState<Transport | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [confirmIdx, setConfirmIdx] = useState<number | null>(null);
   const [yamlOpen, setYamlOpen] = useState(false);
@@ -354,18 +384,27 @@ export default function McpPage() {
   const watchedHeaders = form.watch("headers");
   const watchedEnv = form.watch("env");
 
-  function openSheetFor(index: number | null) {
+  function openCreate(transport: Transport) {
+    setSheetType(transport);
+    setEditingIdx(null);
+    form.reset({ ...emptyFormValues(), transport });
+    setSheetOpen(true);
+  }
+
+  function openEdit(index: number) {
+    const row = working[index];
+    if (!row) return;
+    const transport: Transport = isTransport(row.config.transport)
+      ? row.config.transport
+      : "stdio";
+    setSheetType(transport);
     setEditingIdx(index);
-    if (index === null) {
-      form.reset(emptyFormValues());
-    } else {
-      const row = working[index];
-      form.reset(configToFormValues(row.name, row.enabled, row.config));
-    }
+    form.reset(configToFormValues(row.name, row.enabled, row.config));
     setSheetOpen(true);
   }
 
   function closeSheet() {
+    setSheetType(null);
     setSheetOpen(false);
     setEditingIdx(null);
   }
@@ -572,18 +611,24 @@ export default function McpPage() {
         </Alert>
       )}
 
+      <ProviderPicker
+        aria-label="Choose transport"
+        value={sheetType ?? ("" as Transport)}
+        onChange={openCreate}
+        options={TRANSPORT_CATALOG}
+        columns={4}
+      />
+
+      <Separator />
+
       <Card>
-        <CardHeader className="flex-row items-center justify-between">
+        <CardHeader>
           <div className="space-y-1">
             <CardTitle>Configured servers</CardTitle>
             <CardDescription>
               {working.length} server{working.length === 1 ? "" : "s"}
             </CardDescription>
           </div>
-          <Button onClick={() => openSheetFor(null)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add server
-          </Button>
         </CardHeader>
         <CardContent>
           {working.length === 0 ? (
@@ -652,7 +697,7 @@ export default function McpPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => openSheetFor(i)}
+                          onClick={() => openEdit(i)}
                           aria-label={`Edit ${row.name}`}
                         >
                           <Pencil className="h-4 w-4" />
@@ -702,7 +747,15 @@ export default function McpPage() {
         >
           <SheetHeader className="border-b border-border px-6 py-4">
             <SheetTitle>
-              {editingIdx === null ? "Add MCP server" : "Edit MCP server"}
+              {(() => {
+                const transportLabel = sheetType
+                  ? (TRANSPORT_CATALOG.find((o) => o.id === sheetType)?.label ?? sheetType)
+                  : "";
+                const suffix = transportLabel ? ` — ${transportLabel}` : "";
+                return editingIdx === null
+                  ? `Add MCP server${suffix}`
+                  : `Edit MCP server${suffix}`;
+              })()}
             </SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -747,34 +800,6 @@ export default function McpPage() {
                           onCheckedChange={field.onChange}
                         />
                       </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="transport"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Transport</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={(v) => field.onChange(v as Transport)}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Pick a transport" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {TRANSPORTS.map((t) => (
-                            <SelectItem key={t} value={t}>
-                              {TRANSPORT_LABELS[t]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />

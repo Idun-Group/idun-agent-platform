@@ -2,14 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Settings, Trash2 } from "lucide-react";
+import { Settings, Trash2 } from "lucide-react";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { ProviderPicker } from "@/components/admin/ProviderPicker";
+import { ProviderPicker, type ProviderOption } from "@/components/admin/ProviderPicker";
 import { SecretInput } from "@/components/admin/SecretInput";
 import {
   DiscordIcon,
@@ -48,6 +48,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -111,12 +112,38 @@ function providerIcon(p: Provider, size = 40): React.ReactNode {
   }
 }
 
-const PROVIDER_PICKER_OPTIONS = PROVIDERS.map((p) => ({
-  id: p,
-  label: PROVIDER_META[p].label,
-  description: PROVIDER_META[p].summary,
-  icon: providerIcon(p, 44),
-}));
+const CATALOG_OPTIONS: ProviderOption<Provider>[] = [
+  {
+    id: "SLACK",
+    label: "Slack",
+    description: "Send and receive messages in any Slack channel.",
+    icon: <SlackIcon size={44} />,
+  },
+  {
+    id: "DISCORD",
+    label: "Discord",
+    description: "Run your agent inside Discord servers and DMs.",
+    icon: <DiscordIcon size={44} />,
+  },
+  {
+    id: "WHATSAPP",
+    label: "WhatsApp",
+    description: "Reach users on WhatsApp Business through the cloud API.",
+    icon: <WhatsAppIcon size={44} />,
+  },
+  {
+    id: "GOOGLE_CHAT",
+    label: "Google Chat",
+    description: "Wire your agent into Google Chat spaces and direct messages.",
+    icon: <GoogleChatIcon size={44} />,
+  },
+  {
+    id: "TEAMS",
+    label: "Microsoft Teams",
+    description: "Talk to your agent from Teams via the Bot Framework.",
+    icon: <MicrosoftTeamsIcon size={44} />,
+  },
+];
 
 function isProvider(v: unknown): v is Provider {
   return typeof v === "string" && (PROVIDERS as readonly string[]).includes(v);
@@ -502,6 +529,7 @@ export default function IntegrationsPage() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
+  const [sheetType, setSheetType] = useState<Provider | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
@@ -553,8 +581,9 @@ export default function IntegrationsPage() {
   });
 
   function openSheetForExisting(row: IntegrationRead) {
-    setEditingId(row.id);
     const provider = readProvider(row);
+    setSheetType(provider);
+    setEditingId(row.id);
     const config = readConfig(row);
     const next = configToValues(provider, config);
     next.name = row.name;
@@ -563,13 +592,15 @@ export default function IntegrationsPage() {
     setSheetOpen(true);
   }
 
-  function openSheetForNew() {
+  function openCreate(provider: Provider) {
+    setSheetType(provider);
     setEditingId("new");
-    form.reset(emptyForm());
+    form.reset({ ...emptyForm(), provider });
     setSheetOpen(true);
   }
 
   function closeSheet() {
+    setSheetType(null);
     setSheetOpen(false);
     setEditingId(null);
   }
@@ -618,12 +649,15 @@ export default function IntegrationsPage() {
         </p>
       </header>
 
-      <div className="flex justify-end">
-        <Button onClick={openSheetForNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add integration
-        </Button>
-      </div>
+      <ProviderPicker
+        aria-label="Choose channel"
+        value={sheetType ?? ("" as Provider)}
+        onChange={openCreate}
+        options={CATALOG_OPTIONS}
+        columns={3}
+      />
+
+      <Separator />
 
       {rows.length === 0 ? (
         <Card>
@@ -660,7 +694,9 @@ export default function IntegrationsPage() {
         >
           <SheetHeader className="border-b border-border px-6 py-4">
             <SheetTitle>
-              {editingId === "new" ? "Add integration" : "Configure integration"}
+              {editingId === "new"
+                ? `Add ${sheetType ? PROVIDER_META[sheetType].label : "integration"}`
+                : `Configure ${sheetType ? PROVIDER_META[sheetType].label : "integration"}`}
             </SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -681,30 +717,6 @@ export default function IntegrationsPage() {
                       </FormControl>
                       <FormDescription>
                         Display name. The slug is derived from this.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="provider"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Provider</FormLabel>
-                      <FormControl>
-                        <fieldset disabled={editingId !== "new"} className="contents">
-                          <ProviderPicker
-                            value={field.value}
-                            onChange={(v) => field.onChange(v as Provider)}
-                            options={PROVIDER_PICKER_OPTIONS}
-                            columns={2}
-                          />
-                        </fieldset>
-                      </FormControl>
-                      <FormDescription>
-                        Provider cannot change after creation.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
