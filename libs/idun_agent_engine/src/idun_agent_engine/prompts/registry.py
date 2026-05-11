@@ -16,5 +16,9 @@ def set_active_prompts(prompts: list[PromptConfig] | None) -> None:
 
 
 def get_active_prompts() -> list[PromptConfig] | None:
-    """Return the snapshot, or ``None`` if unset."""
-    return _active_prompts
+    """Return a shallow copy of the snapshot, or ``None`` if unset.
+
+    A copy guards against callers mutating the registry's backing list in
+    place; mutations should always go through :func:`set_active_prompts`.
+    """
+    return None if _active_prompts is None else list(_active_prompts)

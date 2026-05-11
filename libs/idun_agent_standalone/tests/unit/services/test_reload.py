@@ -431,3 +431,37 @@ async def test_reload_rolls_back_prompts_snapshot_on_failure(
     assert rolled_back is not None
     assert [p.content for p in rolled_back] == ["old prompt"]
     set_active_prompts(None)
+
+
+@pytest.mark.asyncio
+async def test_reload_rolls_back_prompts_snapshot_on_unexpected_exception(
+    async_session, frozen_now
+) -> None:
+    """An unexpected exception (not ReloadInitFailed) must also restore
+    the prior prompts snapshot and roll back the staged DB mutation."""
+    from idun_agent_engine.prompts.registry import (
+        get_active_prompts,
+        set_active_prompts,
+    )
+    from idun_agent_schema.engine.prompt import PromptConfig
+
+    prior = [
+        PromptConfig.model_validate(
+            {"prompt_id": "system_prompt", "version": 0, "content": "old prompt"}
+        )
+    ]
+    set_active_prompts(prior)
+
+    await _seed_agent(async_session)
+    await _seed_prompt(async_session, "system_prompt", "new prompt body")
+
+    failing = AsyncMock(side_effect=RuntimeError("unexpected boom"))
+    with pytest.raises(RuntimeError, match="unexpected boom"):
+        await commit_with_reload(
+            async_session, reload_callable=failing, now=frozen_now
+        )
+
+    rolled_back = get_active_prompts()
+    assert rolled_back is not None
+    assert [p.content for p in rolled_back] == ["old prompt"]
+    set_active_prompts(None)

@@ -243,6 +243,15 @@ async def commit_with_reload(
                 details={"recovered": True},
             ),
         ) from exc
+    except Exception:
+        # Anything other than ReloadInitFailed is unexpected: restore the
+        # prior prompts snapshot and roll back the staged DB mutation so
+        # the in-memory registry and the database stay consistent, then
+        # let the global handler render the response.
+        set_active_prompts(prior_prompts)
+        await session.rollback()
+        logger.exception("reload.round3_unexpected_error")
+        raise
 
     await session.commit()
     await runtime_state.record_reload_outcome(

@@ -49,3 +49,15 @@ def test_set_none_clears():
     set_active_prompts([_prompt("a")])
     set_active_prompts(None)
     assert get_active_prompts() is None
+
+
+def test_get_returns_defensive_copy():
+    """The registry returns a shallow copy so callers cannot mutate
+    the backing list in place."""
+    set_active_prompts([_prompt("a")])
+    snap = get_active_prompts()
+    assert snap is not None
+    snap.append(_prompt("b"))
+    again = get_active_prompts()
+    assert again is not None
+    assert len(again) == 1
