@@ -820,6 +820,7 @@ export default function GuardrailsPage() {
       )}
 
       <ProviderPicker
+        aria-label="Choose guard type"
         value={sheetType ?? ("" as GuardId)}
         onChange={openCreate}
         options={GUARD_CATALOG}

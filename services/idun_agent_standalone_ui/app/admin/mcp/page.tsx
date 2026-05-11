@@ -612,6 +612,7 @@ export default function McpPage() {
       )}
 
       <ProviderPicker
+        aria-label="Choose transport"
         value={sheetType ?? ("" as Transport)}
         onChange={openCreate}
         options={TRANSPORT_CATALOG}
@@ -746,13 +747,15 @@ export default function McpPage() {
         >
           <SheetHeader className="border-b border-border px-6 py-4">
             <SheetTitle>
-              {editingIdx === null
-                ? `Add MCP server — ${
-                    sheetType
-                      ? (TRANSPORT_CATALOG.find((o) => o.id === sheetType)?.label ?? sheetType)
-                      : ""
-                  }`
-                : "Edit MCP server"}
+              {(() => {
+                const transportLabel = sheetType
+                  ? (TRANSPORT_CATALOG.find((o) => o.id === sheetType)?.label ?? sheetType)
+                  : "";
+                const suffix = transportLabel ? ` — ${transportLabel}` : "";
+                return editingIdx === null
+                  ? `Add MCP server${suffix}`
+                  : `Edit MCP server${suffix}`;
+              })()}
             </SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-4">

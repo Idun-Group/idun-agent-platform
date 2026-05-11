@@ -651,6 +651,7 @@ export default function IntegrationsPage() {
       </header>
 
       <ProviderPicker
+        aria-label="Choose channel"
         value={sheetType ?? ("" as Provider)}
         onChange={openCreate}
         options={CATALOG_OPTIONS}
