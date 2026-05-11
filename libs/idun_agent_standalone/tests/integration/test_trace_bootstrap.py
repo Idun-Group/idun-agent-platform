@@ -176,7 +176,7 @@ async def test_attach_trace_pipeline_surfaces_instrumentor_dependency_conflict(
     monkeypatch.setattr(
         _ol,
         "attach_instrumentor",
-        lambda inst: attach_calls.append(inst),
+        lambda inst, **_kw: attach_calls.append(inst),
     )
 
     app = FastAPI()
@@ -228,9 +228,9 @@ async def test_attach_trace_pipeline_attaches_genai_instrumentor_alongside_langc
     attach_calls: list[object] = []
     original_attach = _ol.attach_instrumentor
 
-    def _track(inst):
+    def _track(inst, **kwargs):
         attach_calls.append(inst)
-        original_attach(inst)
+        original_attach(inst, **kwargs)
 
     monkeypatch.setattr(_ol, "attach_instrumentor", _track)
 
@@ -271,7 +271,7 @@ async def test_attach_trace_pipeline_skips_genai_when_otel_provider_active(
 
     attach_calls: list[object] = []
     monkeypatch.setattr(
-        _ol, "attach_instrumentor", lambda inst: attach_calls.append(inst)
+        _ol, "attach_instrumentor", lambda inst, **_kw: attach_calls.append(inst)
     )
 
     class _ObservabilityEntry:
