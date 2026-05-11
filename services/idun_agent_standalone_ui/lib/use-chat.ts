@@ -44,6 +44,19 @@ const PLAN_STEPS = new Set(["planner", "analyst"]);
  * closure for the duration of a single live run. */
 type SnapshotRef = { current: string | null };
 
+/** Shape of the raw chunk attached to AG-UI tool-call events by
+ * ag_ui_langgraph. Used as the lossy escape hatch for issue #629 where
+ * TOOL_CALL_START arrives without a follow-up TOOL_CALL_ARGS; the args are
+ * still present on the original LangChain chunk. Inline at the AG-UI/JSON
+ * boundary — keep this type narrow and call out new fields explicitly. */
+type RawToolCallChunk = {
+  data?: {
+    chunk?: {
+      tool_calls?: Array<{ args?: unknown; name?: string; id?: string }>;
+    };
+  };
+};
+
 /**
  * Apply a single AG-UI event to the chat state.
  *
@@ -127,15 +140,14 @@ function applyEvent(
     // — Tool call lifecycle -----------------------------------
     case "TOOL_CALL_START":
     case "ToolCallStart": {
-      // Workaround for #629: when the LLM returns a tool call atomically
-      // (Gemini and other non-streaming paths), ag_ui_langgraph emits
-      // TOOL_CALL_START and returns without a follow-up TOOL_CALL_ARGS.
-      // The args are sitting on the raw chunk — pull them out so the
-      // row body isn't empty.
+      // TODO(idun-engine): #629 — workaround until ag_ui_langgraph emits
+      // TOOL_CALL_ARGS for atomic (non-streaming) tool calls. When the LLM
+      // returns a tool call atomically (Gemini and other non-streaming
+      // paths), TOOL_CALL_START arrives without a follow-up
+      // TOOL_CALL_ARGS; the args are still on the raw chunk, so we pull
+      // them out so the row body isn't empty.
       let initialArgs = "";
-      const raw = e.rawEvent as
-        | { data?: { chunk?: { tool_calls?: Array<{ args?: unknown }> } } }
-        | undefined;
+      const raw = e.rawEvent as RawToolCallChunk | undefined;
       const rawArgs = raw?.data?.chunk?.tool_calls?.[0]?.args;
       if (rawArgs !== undefined && rawArgs !== null) {
         initialArgs =
@@ -192,10 +204,11 @@ function applyEvent(
       break;
     case "TOOL_CALL_RESULT":
     case "ToolCallResult": {
-      // Workaround for #629: ag_ui_langgraph emits TOOL_CALL_RESULT with
-      // LangGraph's run_id as tool_call_id, not the LLM's call id. Match
-      // by id when possible; otherwise attach to the most recent tool
-      // call without a result.
+      // TODO(idun-engine): #629 — workaround until ag_ui_langgraph
+      // forwards the LLM's tool_call_id on TOOL_CALL_RESULT. Today it
+      // emits LangGraph's run_id instead, so we match by id when
+      // possible and otherwise attach to the most recent tool call
+      // without a result.
       const incomingId = String(e.toolCallId ?? e.tool_call_id ?? "");
       const content = String(e.content ?? "");
       updateLatestAssistant((m) => {

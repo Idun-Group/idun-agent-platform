@@ -39,8 +39,22 @@ export function CopyButton({
   }, []);
 
   const handleClick = useCallback(() => {
-    const text =
-      typeof value === "string" ? value : JSON.stringify(value, null, 2);
+    // `JSON.stringify` can return `undefined` (e.g. a bare `undefined` /
+    // function / symbol input) or throw on `BigInt` and circular
+    // references. Either case would call `clipboard.writeText(undefined)`
+    // or crash this handler before the `.catch` runs, so we serialise
+    // defensively and fall back to a `String(...)` coercion.
+    let text: string;
+    if (typeof value === "string") {
+      text = value;
+    } else {
+      try {
+        const serialized = JSON.stringify(value, null, 2);
+        text = serialized ?? String(value);
+      } catch {
+        text = String(value);
+      }
+    }
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard
         .writeText(text)
