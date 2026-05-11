@@ -65,20 +65,24 @@ class _SilenceFalsePositiveAppNameMismatch(logging.Filter):
     has nothing to do with the operator's config — no value of
     ``app_name`` short of literally ``"agents"`` will satisfy it.
 
-    Filter on the literal substring ``adk/agents`` in the warning body
-    so genuine mismatches in the operator's own project directory are
-    still surfaced (e.g. a user-side ``my_project/agents/main.py``
-    mismatch keeps its warning).
+    Match on the full ``site-packages/google/adk/agents`` path segment
+    (with separators normalised to ``/`` so Windows backslash paths are
+    also handled) so genuine mismatches in the operator's own project
+    directory remain visible. A user project at
+    ``~/projects/python-adk/agents/main.py`` shares the substring
+    ``adk/agents`` but is NOT inside ``site-packages`` — its warning
+    must still surface.
     """
 
-    _MARKER = "adk/agents"
+    _MARKER = "site-packages/google/adk/agents"
     _PREFIX = "App name mismatch detected"
 
     def filter(self, record: logging.LogRecord) -> bool:
         msg = record.getMessage()
         if not msg.startswith(self._PREFIX):
             return True
-        return self._MARKER not in msg
+        normalised = msg.replace("\\", "/")
+        return self._MARKER not in normalised
 
 
 _app_name_mismatch_filter_installed = False

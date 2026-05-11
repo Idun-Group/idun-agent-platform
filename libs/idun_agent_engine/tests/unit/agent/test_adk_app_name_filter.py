@@ -58,6 +58,33 @@ def test_passes_through_genuine_user_side_mismatch() -> None:
     assert f.filter(_make_record(msg)) is True
 
 
+def test_passes_through_user_project_named_adk_agents() -> None:
+    """A user project whose path happens to contain ``adk/agents`` —
+    e.g. ``~/projects/python-adk/agents/main.py`` — must still surface
+    its warning. Only the full ``site-packages/google/adk/agents``
+    segment counts as ADK's own dir."""
+    msg = (
+        'App name mismatch detected. The runner is configured with app name '
+        '"x", but the root agent was loaded from '
+        '"/home/me/projects/python-adk/agents", which implies app name '
+        '"agents".'
+    )
+    f = _SilenceFalsePositiveAppNameMismatch()
+    assert f.filter(_make_record(msg)) is True
+
+
+def test_drops_false_positive_with_windows_separator() -> None:
+    """Windows backslash paths must be normalised before matching."""
+    msg = (
+        'App name mismatch detected. The runner is configured with app name '
+        '"x", but the root agent was loaded from '
+        '"C:\\Users\\me\\.venv\\Lib\\site-packages\\google\\adk\\agents", '
+        'which implies app name "agents".'
+    )
+    f = _SilenceFalsePositiveAppNameMismatch()
+    assert f.filter(_make_record(msg)) is False
+
+
 def test_passes_through_unrelated_warnings() -> None:
     """Filter must only target the specific mismatch warning."""
     f = _SilenceFalsePositiveAppNameMismatch()
