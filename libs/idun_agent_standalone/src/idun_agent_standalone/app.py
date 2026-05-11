@@ -361,12 +361,16 @@ def _register_trace_detail_routes(app: FastAPI, ui_dir: Path) -> None:
         return FileResponse(selected_trace_shell)
 
     def _serve_rsc_or_410(trace_id: str) -> FileResponse:
-        if selected_trace_rsc is None:
-            raise HTTPException(status_code=404)
+        # Placeholder check runs first so stale ``__trace__`` links keep
+        # surfacing as ``410 Gone`` even on a broken build that shipped
+        # ``index.html`` without ``index.txt`` — operators get the same
+        # "this isn't a real trace id" signal as the HTML route.
         if trace_id == placeholder_trace_id:
             raise HTTPException(
                 status_code=410, detail="trace placeholder is not a real id"
             )
+        if selected_trace_rsc is None:
+            raise HTTPException(status_code=404)
         return FileResponse(selected_trace_rsc, media_type="text/x-component")
 
     @app.get("/admin/traces/{trace_id}/index.txt", include_in_schema=False)

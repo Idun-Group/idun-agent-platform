@@ -163,6 +163,23 @@ async def test_rsc_route_404s_when_payload_missing(shell_ui_dir_no_rsc: Path) ->
 
 
 @pytest.mark.asyncio
+async def test_placeholder_410_still_wins_on_broken_build(
+    shell_ui_dir_no_rsc: Path,
+) -> None:
+    """Placeholder ``__trace__`` returns ``410`` even when no RSC payload
+    exists. The placeholder check must run before the missing-RSC check
+    so stale links keep surfacing the operator-friendly Gone signal
+    instead of a generic ``404``."""
+    app = _build_app(shell_ui_dir_no_rsc)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        rsc_dir = await client.get("/admin/traces/__trace__/index.txt")
+        rsc_file = await client.get("/admin/traces/__trace__.txt")
+    assert rsc_dir.status_code == 410
+    assert rsc_file.status_code == 410
+
+
+@pytest.mark.asyncio
 async def test_legacy_trace_directory_is_resolved(shell_ui_dir_legacy: Path) -> None:
     """Unrenamed ``__trace__/`` (raw ``pnpm build`` output) is the
     fallback for direct-build workflows like ``e2e/boot-standalone.sh``."""
