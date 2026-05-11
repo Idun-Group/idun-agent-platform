@@ -20,7 +20,7 @@ idun_agent_standalone/
 ├── api/v1/
 │   ├── deps.py               # SessionDep, ReloadCallableDep, require_auth, reload_disabled
 │   ├── errors.py             # AdminAPIError + register_admin_exception_handlers
-│   └── routers/              # agent, memory, guardrails, mcp_servers, observability, integrations, prompts, auth (/me stub)
+│   └── routers/              # agent, memory, guardrails, mcp_servers, observability, integrations, prompts, auth (/me stub), traces, dashboard
 ├── services/
 │   ├── reload.py             # commit_with_reload, _reload_mutex, ReloadInitFailed
 │   ├── engine_config.py      # assemble_engine_config — DB rows → EngineConfig
