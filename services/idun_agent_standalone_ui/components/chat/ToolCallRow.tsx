@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { CopyButton } from "@/components/common/CopyButton";
 import type { ToolCall } from "@/lib/agui";
 import { oneLiner, parseArgs } from "./ReasoningPanel";
 
@@ -75,38 +76,70 @@ export function ToolCallRow({ n, call }: Props) {
         <div id={bodyId} className="border-t border-border">
           {parsed.code !== undefined ? (
             parsed.code ? (
-              <SyntaxHighlighter
-                language="python"
-                style={codeStyle as Record<string, Record<string, unknown>>}
-                PreTag="div"
-              >
-                {parsed.code}
-              </SyntaxHighlighter>
+              <div className="relative">
+                <SyntaxHighlighter
+                  language="python"
+                  style={codeStyle as Record<string, Record<string, unknown>>}
+                  PreTag="div"
+                >
+                  {parsed.code}
+                </SyntaxHighlighter>
+                <CopyButton
+                  value={parsed.code}
+                  label="Copy code"
+                  className="absolute right-2 top-2 bg-card/80 backdrop-blur"
+                />
+              </div>
             ) : (
               <div className="bg-foreground px-4 py-2 font-mono text-[11px] text-muted-foreground">
                 …
               </div>
             )
           ) : (
-            <pre className="chat-code overflow-x-auto bg-canvas px-3 py-2 text-foreground/80">
-              <code>
-                {typeof parsed.obj === "string"
-                  ? parsed.obj
-                  : JSON.stringify(parsed.obj, null, 2)}
-              </code>
-            </pre>
+            <div className="relative">
+              <pre className="chat-code overflow-x-auto bg-canvas px-3 py-2 pr-16 text-foreground/80">
+                <code>
+                  {typeof parsed.obj === "string"
+                    ? parsed.obj
+                    : JSON.stringify(parsed.obj, null, 2)}
+                </code>
+              </pre>
+              <CopyButton
+                value={
+                  typeof parsed.obj === "string"
+                    ? parsed.obj
+                    : JSON.stringify(parsed.obj, null, 2)
+                }
+                label="Copy arguments"
+                className="absolute right-2 top-2"
+              />
+            </div>
           )}
           {(call.result || call.error) && (
             <div className="border-t border-border px-3 py-2">
               {call.error && (
-                <pre className="chat-code mb-2 overflow-x-auto rounded bg-rose-50 px-2 py-1.5 text-rose-800">
-                  {call.error}
-                </pre>
+                <div className="relative mb-2">
+                  <pre className="chat-code overflow-x-auto rounded bg-rose-50 px-2 py-1.5 pr-16 text-rose-800">
+                    {call.error}
+                  </pre>
+                  <CopyButton
+                    value={call.error}
+                    label="Copy error"
+                    className="absolute right-1.5 top-1.5"
+                  />
+                </div>
               )}
               {call.result && (
-                <pre className="chat-code max-h-56 overflow-auto rounded bg-canvas px-2 py-1.5 text-foreground/80">
-                  {call.result}
-                </pre>
+                <div className="relative">
+                  <pre className="chat-code max-h-56 overflow-auto rounded bg-canvas px-2 py-1.5 pr-16 text-foreground/80">
+                    {call.result}
+                  </pre>
+                  <CopyButton
+                    value={call.result}
+                    label="Copy result"
+                    className="absolute right-1.5 top-1.5"
+                  />
+                </div>
               )}
             </div>
           )}
