@@ -49,7 +49,10 @@ RUN uv build --out-dir /dist
 # ---- Runtime ----
 FROM python:3.12-slim AS runtime
 
-# Set IDUN_ADMIN_AUTH_MODE=password or IDUN_ALLOW_OPEN_ADMIN=1 at deploy time.
+# REQUIRED at deploy: set IDUN_ADMIN_AUTH_MODE=password (plus IDUN_SESSION_SECRET)
+# or IDUN_ALLOW_OPEN_ADMIN=1. With IDUN_HOST=0.0.0.0 below, startup will fail
+# fast without one of these — the bind-all + no-auth combination is rejected
+# by the standalone settings validator.
 ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     IDUN_IN_CONTAINER=1 \
