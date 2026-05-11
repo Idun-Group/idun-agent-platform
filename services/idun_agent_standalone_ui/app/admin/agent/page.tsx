@@ -2,13 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RotateCcw, Wifi, WifiOff } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { stringify as stringifyYaml } from "yaml";
 import { z } from "zod";
 
+import { ConnectionCard } from "@/components/admin/ConnectionCard";
 import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
 import { ProviderPicker } from "@/components/admin/ProviderPicker";
 import {
@@ -137,7 +138,12 @@ export default function AgentPage() {
     queryKey: ["admin-agent-graph"],
     queryFn: () => api.getAgentGraph(),
     retry: (failureCount, err) => {
-      if (err instanceof ApiError && err.status === 404) return false;
+      if (
+        err instanceof ApiError &&
+        (err.status === 404 || err.status === 503)
+      ) {
+        return false;
+      }
       return failureCount < 2;
     },
   });
@@ -148,61 +154,6 @@ export default function AgentPage() {
   const [activeTab, setActiveTab] = useState<Framework>(initialFramework);
   const [yamlOpen, setYamlOpen] = useState(false);
   const [restartRequired, setRestartRequired] = useState(false);
-
-  type VerifyStatus = "idle" | "checking" | "connected" | "failed";
-  const VERIFY_MAX_ATTEMPTS = 4;
-  const VERIFY_INTERVAL_MS = 5000;
-  const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>("idle");
-  const [verifyAttempt, setVerifyAttempt] = useState(0);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
-  const [verifiedName, setVerifiedName] = useState<string | null>(null);
-  const verifyAbort = useRef<AbortController | null>(null);
-
-  useEffect(
-    () => () => {
-      verifyAbort.current?.abort();
-    },
-    [],
-  );
-
-  async function verifyConnection() {
-    verifyAbort.current?.abort();
-    const controller = new AbortController();
-    verifyAbort.current = controller;
-    setVerifyStatus("checking");
-    setVerifyError(null);
-    setVerifiedName(null);
-
-    for (let i = 0; i < VERIFY_MAX_ATTEMPTS; i++) {
-      if (controller.signal.aborted) return;
-      setVerifyAttempt(i + 1);
-      try {
-        const health = await api.checkAgentHealth();
-        if (controller.signal.aborted) return;
-        if (health.status === "ok") {
-          setVerifiedName(health.agent_name ?? null);
-          setVerifyStatus("connected");
-          return;
-        }
-      } catch (e) {
-        if (controller.signal.aborted) return;
-        const detail =
-          e instanceof ApiError
-            ? ((e.detail as { error?: { message?: string } } | undefined)
-                ?.error?.message ?? `Engine returned ${e.status}.`)
-            : e instanceof Error
-              ? e.message
-              : "Unreachable.";
-        setVerifyError(detail);
-      }
-      if (i < VERIFY_MAX_ATTEMPTS - 1) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, VERIFY_INTERVAL_MS),
-        );
-      }
-    }
-    if (!controller.signal.aborted) setVerifyStatus("failed");
-  }
 
   useEffect(() => {
     setActiveTab(initialFramework);
@@ -330,69 +281,7 @@ export default function AgentPage() {
         </Alert>
       )}
 
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
-          <div className="space-y-1">
-            <CardTitle>Connection</CardTitle>
-            <CardDescription>
-              Probe the engine&apos;s health endpoint. Useful after a restart or
-              a config change.
-            </CardDescription>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={verifyConnection}
-            disabled={verifyStatus === "checking"}
-          >
-            {verifyStatus === "checking" ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Checking…
-              </>
-            ) : (
-              <>
-                <Wifi className="mr-2 h-4 w-4" />
-                Verify connection
-              </>
-            )}
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {verifyStatus === "idle" && (
-            <p className="text-sm text-muted-foreground">
-              Click <em>Verify connection</em> to probe <code>/health</code>.
-            </p>
-          )}
-          {verifyStatus === "checking" && (
-            <p className="text-sm text-muted-foreground italic">
-              Attempt {verifyAttempt} of {VERIFY_MAX_ATTEMPTS}, retrying every{" "}
-              {VERIFY_INTERVAL_MS / 1000}s…
-            </p>
-          )}
-          {verifyStatus === "connected" && (
-            <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
-              <Wifi />
-              <AlertTitle>Agent is healthy</AlertTitle>
-              <AlertDescription>
-                {verifiedName
-                  ? `Engine reports the running agent as "${verifiedName}".`
-                  : "Engine is responsive."}
-              </AlertDescription>
-            </Alert>
-          )}
-          {verifyStatus === "failed" && (
-            <Alert variant="destructive">
-              <WifiOff />
-              <AlertTitle>Could not reach the agent</AlertTitle>
-              <AlertDescription>
-                {verifyError ??
-                  `No response after ${VERIFY_MAX_ATTEMPTS} attempts. Make sure the engine is running.`}
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
+      <ConnectionCard />
 
       <Card>
         <CardHeader>
@@ -506,15 +395,19 @@ export default function AgentPage() {
           )}
           {graphQuery.isError &&
             graphQuery.error instanceof ApiError &&
-            graphQuery.error.status === 404 && (
+            (graphQuery.error.status === 404 ||
+              graphQuery.error.status === 503) && (
               <p className="text-sm text-muted-foreground">
-                Graph view isn&apos;t available for this agent type yet.
+                {graphQuery.error.status === 503
+                  ? "Agent isn't ready yet. The graph will appear once the engine finishes booting."
+                  : "Graph view isn't available for this agent type yet."}
               </p>
             )}
           {graphQuery.isError &&
             !(
               graphQuery.error instanceof ApiError &&
-              graphQuery.error.status === 404
+              (graphQuery.error.status === 404 ||
+                graphQuery.error.status === 503)
             ) && (
               <Alert>
                 <AlertTitle>Graph unavailable</AlertTitle>
