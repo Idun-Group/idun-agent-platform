@@ -1,0 +1,203 @@
+---
+title: "Writing a custom framework adapter"
+description: "Extend the engine to support a new agent framework by subclassing BaseAgent. Covers the abstract surface, lifecycle, capability discovery, history hooks, and the (currently hardcoded) factory registry."
+keywords: ["BaseAgent", "custom adapter", "framework adapter", "extension", "subclass", "agent SDK", "capability discovery"]
+---
+
+The engine ships adapters for LangGraph and Google ADK. If you run a different framework — CrewAI, LlamaIndex, AutoGen, or your own runtime — you can wrap it as an Idun adapter by subclassing `BaseAgent`. This page covers the abstract surface, the lifecycle the engine expects, and the limits of the extension point today.
+
+<Note>
+  The adapter factory in `idun_agent_engine.core.config_builder.ConfigBuilder.initialize_agent_from_config` is currently a hardcoded `if/elif` over the `AgentFramework` enum. Wiring a new adapter into the engine therefore requires a small upstream change — either a fork or a PR. There is no Python entry-point hook today. This is on the roadmap; please open an issue if you need a stable plugin API.
+</Note>
+
+## The base class
+
+`BaseAgent` lives in [`libs/idun_agent_engine/src/idun_agent_engine/agent/base.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/agent/base.py). It is an `ABC` with the following surface:
+
+### Required overrides
+
+| Member | Kind | What you return |
+|---|---|---|
+| `id` | property | A stable string identifier for this adapter instance |
+| `agent_type` | property | A short label (e.g. `"LangGraph"`, `"ADK"`, `"CrewAI"`) |
+| `agent_instance` | property | The underlying framework's compiled agent object |
+| `copilotkit_agent_instance` | property | A CopilotKit-compatible wrapper, or the same instance if not applicable |
+| `infos` | property | A diagnostic dict surfaced via `/_engine/info` |
+| `initialize(config, observability=None)` | async method | Parse config, instantiate the framework agent, wire observability |
+| `invoke(message)` | async method | One-shot non-streaming run. Returns the framework's native response |
+| `stream(message)` | async generator | AG-UI event stream. Yields `BaseEvent` instances |
+| `discover_capabilities()` | method | Return `AgentCapabilities` describing input/output schemas |
+
+### Optional overrides
+
+| Member | Default behaviour |
+|---|---|
+| `history_capabilities()` | Returns `HistoryCapabilities(can_list=False, can_get=False)` |
+| `list_sessions(user_id=None)` | Raises `NotImplementedError`. Override to expose session history. |
+| `get_session(session_id, user_id=None)` | Raises `NotImplementedError`. Override to fetch a single session. |
+| `get_graph_ir()` | Raises `NotImplementedError`. Override to enable the admin panel's live graph visualisation. |
+| `draw_mermaid()` | Renders `get_graph_ir()` as Mermaid. Override only if you have a faster path. |
+| `draw_ascii()` | Renders `get_graph_ir()` as ASCII. Same. |
+
+### Constructor
+
+Your `__init__` must call `super().__init__()` to populate `self.run_event_observers: RunEventObserverRegistry`. Run-event observers are how the standalone trace pipeline subscribes to AG-UI events for the local trace store.
+
+## Minimal adapter sketch
+
+```python my_adapter.py
+from __future__ import annotations
+
+import uuid
+from typing import Any, AsyncGenerator
+
+from ag_ui_core import BaseEvent, RunStartedEvent, RunFinishedEvent
+from idun_agent_engine.agent.base import BaseAgent
+from idun_agent_schema.engine.agent import AgentCapabilities, HistoryCapabilities
+
+
+class MyAdapter(BaseAgent):
+    def __init__(self) -> None:
+        super().__init__()  # critical — wires run_event_observers
+        self._id = str(uuid.uuid4())
+        self._instance: Any = None
+
+    @property
+    def id(self) -> str:
+        return self._id
+
+    @property
+    def agent_type(self) -> str:
+        return "MyFramework"
+
+    @property
+    def agent_instance(self) -> Any:
+        if self._instance is None:
+            raise RuntimeError("Agent not initialized")
+        return self._instance
+
+    @property
+    def copilotkit_agent_instance(self) -> Any:
+        # If your framework has no CopilotKit wrapper, return the same object.
+        # Browser clients calling /agent/run still work via the engine's
+        # AG-UI translation layer below.
+        return self.agent_instance
+
+    @property
+    def infos(self) -> dict[str, Any]:
+        return {"framework": "MyFramework", "version": "0.1.0"}
+
+    async def initialize(
+        self,
+        config: dict,
+        observability: list | None = None,
+    ) -> None:
+        # 1. Validate config against your Pydantic model
+        # 2. Instantiate your framework's agent
+        # 3. Wire observability callbacks if your framework supports them
+        from my_framework import build_agent
+
+        self._instance = build_agent(config)
+
+    async def invoke(self, message: Any) -> Any:
+        return await self._instance.run(message)
+
+    async def stream(self, message: Any) -> AsyncGenerator[BaseEvent, None]:
+        run_id = str(uuid.uuid4())
+        yield RunStartedEvent(thread_id=message.thread_id, run_id=run_id)
+        async for chunk in self._instance.stream(message):
+            # translate chunk → AG-UI events
+            ...
+        yield RunFinishedEvent(thread_id=message.thread_id, run_id=run_id)
+
+    def discover_capabilities(self) -> AgentCapabilities:
+        return AgentCapabilities(
+            input={"mode": "chat"},
+            output={"mode": "chat"},
+        )
+
+    def history_capabilities(self) -> HistoryCapabilities:
+        return HistoryCapabilities(can_list=False, can_get=False)
+```
+
+## Lifecycle
+
+1. **Boot.** The engine reads `config.yaml`, validates the `agent.type` field against the `AgentFramework` enum, and instantiates your adapter class.
+2. **`initialize(config, observability)`.** Called once. Use this to parse `agent.config`, instantiate your framework, and register callbacks. Raise an exception to abort boot.
+3. **`discover_capabilities()`.** Called by the engine to populate `/agent/capabilities`. The standalone admin UI uses the result to choose between the chat input and the structured-JSON input.
+4. **`run_event_observers` registration.** The engine subscribes its trace pipeline before serving the first request. Your `stream()` method does not need to know about observers — `BaseAgent` handles dispatch when AG-UI events are yielded.
+5. **`stream(message)` / `invoke(message)`.** Called per request. The HTTP layer is `POST /agent/run`, which uses `stream()`. The deprecated `/agent/invoke` and `/agent/stream` routes are compatibility shims.
+
+## Capability discovery
+
+`AgentCapabilities` describes what your adapter accepts and returns. The standalone UI uses this to render the right input control.
+
+```python
+from idun_agent_schema.engine.agent import AgentCapabilities
+
+# Chat-mode agent (LangGraph default)
+caps = AgentCapabilities(
+    input={"mode": "chat"},
+    output={"mode": "chat"},
+)
+
+# Structured-input agent
+caps = AgentCapabilities(
+    input={"mode": "structured", "schema": {...JSON Schema...}},
+    output={"mode": "structured", "schema": {...JSON Schema...}},
+)
+```
+
+When `input.mode == "structured"`, the standalone chat surface validates that `messages[-1].content` is JSON matching the schema before forwarding to your adapter.
+
+## Wiring the adapter into the engine
+
+Until a plugin API ships, you need to register your adapter in two places.
+
+### 1. Add an enum value
+
+In your fork of `idun_agent_schema`, extend `AgentFramework`:
+
+```python
+class AgentFramework(str, Enum):
+    LANGGRAPH = "langgraph"
+    ADK = "adk"
+    MY_FRAMEWORK = "my_framework"  # add this
+```
+
+### 2. Add a branch in `ConfigBuilder.initialize_agent_from_config`
+
+```python
+elif agent_type == AgentFramework.MY_FRAMEWORK:
+    agent = MyAdapter()
+    await agent.initialize(
+        engine_config.agent.config.model_dump(mode="json"),
+        observability=engine_config.observability or [],
+    )
+    return agent
+```
+
+Then in your `config.yaml`:
+
+```yaml
+agent:
+  type: "MY_FRAMEWORK"
+  config:
+    # your framework-specific fields
+```
+
+## Reference adapter: LangGraph
+
+The LangGraph adapter at [`libs/idun_agent_engine/src/idun_agent_engine/agent/langgraph/langgraph.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/agent/langgraph/langgraph.py) is the most complete worked example. Reading it end-to-end is the fastest way to see how:
+
+- `_load_graph_builder` resolves the `graph_definition` string (file path first, module fallback)
+- `_setup_persistence` configures `InMemorySaver` / `AsyncSqliteSaver` / `AsyncPostgresSaver` based on the checkpointer config
+- `discover_capabilities()` reads `graph.input_schema` and `graph.output_schema` to detect chat vs structured mode
+- `stream()` maps LangGraph's `astream_events(v2)` to AG-UI events (`RunStarted`, `StepStarted`, `TextMessageStart/Content/End`, `ToolCallStart/Args/End`, `ThinkingStart/End`, `RunFinished`)
+- `get_graph_ir()` introspects the compiled graph and emits a framework-agnostic `AgentGraph` for the admin panel
+
+## What's next
+
+- [Custom observability handler](/observability/custom-handler) — the same extension pattern for tracing providers
+- [Agent route protection](/auth/overview) — JWT validation works for any adapter
+- [Troubleshooting](/troubleshooting) — common boot failures

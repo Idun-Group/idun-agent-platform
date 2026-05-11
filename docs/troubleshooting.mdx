@@ -1,0 +1,132 @@
+---
+title: "Troubleshooting"
+description: "Diagnose common Idun runtime errors: agent_not_ready, boot engine layer skipped, graph load failures, reload-pipeline rollbacks, and validation errors."
+keywords: ["troubleshooting", "errors", "agent_not_ready", "reload failed", "graph_definition", "validation", "RELOAD_FAILED", "RESTART_REQUIRED"]
+---
+
+This page covers the runtime errors and log messages you are most likely to hit, what each one means, and how to recover. The error strings below come directly from the engine and standalone source.
+
+## `agent_not_ready` — HTTP 503 from `/agent/*`
+
+**Symptom.** A POST to `/agent/invoke`, `/agent/stream`, or `/agent/copilotkit/stream` returns:
+
+```json
+{ "detail": "agent_not_ready" }
+```
+
+**Cause.** The standalone server is running, but no agent has been materialised yet. This is the first-run state before the wizard completes.
+
+**Fix.** Open `http://<host>:<port>/` in a browser. The chat root detects the unconfigured state and redirects to `/onboarding/`, which scaffolds an agent and seeds the DB. After the wizard completes, the next `/agent/*` call returns 200.
+
+If you expected an agent to be configured, check the admin panel at `/admin/agent/` to confirm the agent row exists.
+
+## `boot engine layer skipped, admin only mode` log line
+
+**Symptom.** At startup the log contains:
+
+```
+boot engine layer skipped, admin only mode reason=<AssemblyError ...>
+```
+
+followed by:
+
+```
+boot engine app started unconfigured (no agent yet — wizard will materialize)
+```
+
+**Cause.** The standalone read the DB and could not assemble an `EngineConfig` from the stored rows — usually because no agent row exists yet, or because the seeded YAML failed validation. The server still boots so you can reach `/admin/` and `/onboarding/`, but the `/agent/*` routes will return `agent_not_ready` until the agent is materialised.
+
+**Fix.** Either complete the onboarding wizard, or check the `AssemblyError` reason printed in the log. If your `config.yaml` was supposed to seed an agent on first boot, the YAML failed schema validation; fix the validation error and rerun `idun setup`.
+
+## Reload pipeline outcomes
+
+Every admin-panel save flows through the three-round validation and reload pipeline in `libs/idun_agent_standalone/src/idun_agent_standalone/services/reload.py`. The response includes one of three outcomes:
+
+| Outcome | Meaning | What you see |
+|---|---|---|
+| `RELOADED` | Validation and engine reload both succeeded. | Toast: "Saved and reloaded." |
+| `RESTART_REQUIRED` | The change touched `agent.type` or `agent.config.graph_definition`, which requires a full process restart. | Toast: "Saved. Restart required to apply." |
+| `RELOAD_FAILED` | The engine refused to re-initialise with the new config. The DB write was rolled back. | Toast: "Engine reload failed; config not saved." Error detail attached. |
+
+### `RELOAD_FAILED` — the engine refused to reload
+
+**Cause.** One of:
+
+- The new `graph_definition` path is wrong or the variable does not export a `StateGraph`.
+- A guardrail config references a guard type the engine cannot instantiate (e.g. missing Guardrails Hub validator).
+- An MCP server is unreachable and the engine could not discover its tools.
+- An observability provider rejected the credentials at init time.
+
+**Fix.** Read the error detail in the toast (or in the standalone log). The previous config is still active — your agent did not break. Fix the underlying issue in the admin form and resave.
+
+### Round 2 validation failures (HTTP 422)
+
+A save that fails Round 2 returns:
+
+```json
+{
+  "detail": {
+    "code": "VALIDATION_FAILED",
+    "field_errors": [
+      { "loc": ["memory", "type"], "msg": "..." }
+    ]
+  }
+}
+```
+
+**Common causes:**
+
+- **Framework mismatch** — e.g. setting `agent.type=langgraph` but configuring an ADK `SessionService` for memory. Each framework has its own valid memory and checkpointer set.
+- **Missing required field** for the chosen `agent.type`. The admin UI surfaces these inline; if you hit a 422 via API, the `field_errors` array points at the offending field.
+
+**Fix.** Resolve the field error and resave. The Round 2 check runs against the *assembled* config (DB rows merged into a synthetic `EngineConfig`), so the error may reference a field that lives in a different admin sub-page than the one you just edited.
+
+## Graph load errors
+
+**Symptom.** At startup or after a `RESTART_REQUIRED` reboot, the engine fails to initialise with an exception like:
+
+```
+FileNotFoundError: graph_definition path does not exist: <path>
+ModuleNotFoundError: No module named '<module>'
+ImportError: cannot import name '<variable>' from '<module>'
+TypeError: graph_definition must resolve to a StateGraph or CompiledStateGraph
+```
+
+**Cause.** `agent.config.graph_definition` is parsed as `<path_or_module>:<variable_name>` and must resolve to a `StateGraph` (or a `CompiledStateGraph`, from which the engine extracts `.builder`).
+
+The engine tries the file-path interpretation first, then falls back to Python module import. So `my_agent.py:app` works if `my_agent.py` is in the current directory, and `my_pkg.agents.router:graph` works if `my_pkg` is importable.
+
+**Fix:**
+
+- Confirm the path or module exists and exports the named variable.
+- Confirm the variable is a `StateGraph` from `langgraph.graph`, not a custom wrapper or a function. If you have a builder function, call it before assigning to the module-level variable.
+- Confirm `langgraph` is installed in the same environment as `idun-agent-engine`.
+
+For a worked example, see [Connect your existing agent](/guides/connect-your-agent).
+
+## How to verify the graph loaded
+
+If the engine boots without error but you are not sure your graph is the one running:
+
+1. `GET /health` returns the engine version and `agent_name` field. A non-null `agent_name` means an agent was successfully instantiated.
+2. `GET /_engine/info` (engine-only deployments) returns more detail, including the framework type.
+3. In the admin panel, open `/admin/agent/`. The live LangGraph visualisation reflects the currently loaded graph; if it shows your graph's nodes and edges, the graph is loaded.
+4. Open a trace from `/admin/traces/` and inspect the span tree. The root span name corresponds to your graph's entry node.
+
+## CLI startup warnings
+
+Three deprecation warnings appear on every CLI invocation today:
+
+```
+LangChain allowed_objects deprecation
+LiteLLM Bedrock missing
+LiteLLM SageMaker missing
+```
+
+These are noise from upstream packages and do not affect functionality. They will be filtered in a future release.
+
+## What's next
+
+- [Connect your existing agent](/guides/connect-your-agent) — minimal config for an existing `StateGraph`
+- [Production hardening](/deployment/hardening) — production env-var checklist
+- [Agent route protection](/auth/overview) — require an OIDC JWT on `/agent/*`

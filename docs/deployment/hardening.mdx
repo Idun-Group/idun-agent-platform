@@ -1,0 +1,143 @@
+---
+title: "Production hardening"
+description: "Production deployment checklist for the standalone server: bind address, admin auth, session secret, cookie security, TLS termination, secrets management, and trace retention."
+keywords: ["deployment", "hardening", "security", "production", "TLS", "session secret", "IDUN_HOST", "IDUN_ADMIN_AUTH_MODE", "bcrypt", "secrets manager"]
+---
+
+This page lists the minimum production configuration for the standalone server. Every item here applies to any deployment exposed beyond `localhost`.
+
+The settings model is in [`libs/idun_agent_standalone/src/idun_agent_standalone/core/settings.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_standalone/src/idun_agent_standalone/core/settings.py). All values below are validated at startup; missing or undersized secrets cause the process to refuse to boot.
+
+## Required production values
+
+| Env var | Default | Production value |
+|---|---|---|
+| `IDUN_HOST` | `0.0.0.0` | `0.0.0.0` (containers) or `127.0.0.1` (behind a reverse proxy on the same host) |
+| `IDUN_ADMIN_AUTH_MODE` | `none` | `password` |
+| `IDUN_SESSION_SECRET` | `""` | A random string, min 32 chars, from a secrets manager |
+| `IDUN_ADMIN_PASSWORD_HASH` | `""` | A bcrypt hash from `idun hash-password`, set once at first boot |
+| `IDUN_SESSION_TTL_HOURS` | `24` | `24` or shorter; `8` is reasonable for desk-staff admins |
+| `DATABASE_URL` | SQLite file | Postgres async URL (`postgresql+asyncpg://...`) |
+| `IDUN_TRACE_RETENTION_DAYS` | `14` | `14` to `90`, depending on your compliance window |
+
+<Warning>
+  `IDUN_HOST` defaults to `0.0.0.0`. On a laptop or single-tenant box without a reverse proxy, set `IDUN_HOST=127.0.0.1` so the admin panel is not reachable from your LAN.
+</Warning>
+
+## Step 1 — Switch admin auth to password mode
+
+Generate the hash once on a workstation, never on the server:
+
+```bash
+idun hash-password
+# Password: ********
+# Confirm:  ********
+# $2b$12$abc...  ← copy this
+```
+
+Set it as `IDUN_ADMIN_PASSWORD_HASH` on the server. The hash is consumed only at first boot to seed the singleton admin row. Subsequent boots ignore the env var; rotate the password through the admin UI or by truncating the `standalone_admin_user` table and rebooting.
+
+## Step 2 — Generate a session secret
+
+The session secret signs the `idun_session` cookie. Use any 32+ char random string:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Store the value in your secrets manager (AWS Secrets Manager, GCP Secret Manager, Vault, Doppler, 1Password, etc.) and inject it as `IDUN_SESSION_SECRET` at deploy time. **Do not commit it to source control or your `.env` file.**
+
+A secret shorter than 32 chars in `password` mode causes the process to fail at startup.
+
+## Step 3 — Set the bind address
+
+<Tabs>
+  <Tab title="Behind a reverse proxy">
+    Bind to localhost and terminate TLS at your proxy (Nginx, Caddy, Traefik, GCP Load Balancer, AWS ALB):
+
+    ```bash
+    IDUN_HOST=127.0.0.1
+    IDUN_PORT=8000
+    ```
+
+    The proxy adds `X-Forwarded-Proto: https` and the standalone sets the `Secure` flag on the session cookie automatically when it sees that header (or when the request scheme is `https`).
+  </Tab>
+  <Tab title="Cloud Run / containers">
+    Cloud Run injects a `$PORT` env var and routes HTTPS traffic directly to your container. Bind to all interfaces:
+
+    ```bash
+    IDUN_HOST=0.0.0.0
+    IDUN_PORT=$PORT
+    ```
+
+    Cloud Run terminates TLS at the load balancer and forwards `X-Forwarded-Proto: https` to the container, so the `Secure` cookie flag activates correctly.
+  </Tab>
+</Tabs>
+
+## Step 4 — Switch the database to Postgres
+
+SQLite is the default and fine for evaluation, but production deployments should use Postgres for concurrency and external backup:
+
+```bash
+DATABASE_URL=postgresql+asyncpg://idun:strong-password@db.internal:5432/idun
+```
+
+The standalone runs Alembic migrations automatically at boot via `idun setup`. Run it once against the new database:
+
+```bash
+idun setup
+```
+
+For backups, run `pg_dump` against the database; Idun stores admin state and trace events there.
+
+## Step 5 — Trace retention
+
+By default, trace rows older than 14 days are dropped by a daily scheduler. Tune this to your compliance window:
+
+```bash
+IDUN_TRACE_RETENTION_DAYS=30
+```
+
+Per-attribute byte cap (defends against unbounded trace row size from large LLM outputs):
+
+```bash
+IDUN_TRACES_INPUT_VALUE_MAX_BYTES=65536
+```
+
+## Cookie security
+
+The standalone sets cookie flags automatically:
+
+- `HttpOnly` — always set, blocks JavaScript access to the session cookie
+- `SameSite=Lax` — always set, blocks cross-site cookie use except top-level navigations
+- `Secure` — set when the request is over HTTPS (scheme `https` or `X-Forwarded-Proto: https`)
+
+If your reverse proxy is not forwarding `X-Forwarded-Proto`, the `Secure` flag will not activate and the cookie can leak over plain HTTP. Verify your proxy config.
+
+## Engine route protection
+
+Admin-panel auth (`IDUN_ADMIN_AUTH_MODE=password`) gates the `/admin/*` UI and admin REST. It does **not** gate the `/agent/*` runtime routes. To require an OIDC JWT on the agent API, enable per-agent SSO. See [Agent route protection](/auth/overview).
+
+## CORS
+
+The engine ships with a wildcard CORS allowlist for local development. Tighten it before exposing the runtime to a browser on a different origin. Configure your reverse proxy to strip permissive CORS headers, or set the allowlist in the engine config.
+
+## Pre-flight checklist
+
+Before a production deploy:
+
+- [ ] `IDUN_ADMIN_AUTH_MODE=password`
+- [ ] `IDUN_SESSION_SECRET` is set to a 32+ char random string from your secrets manager
+- [ ] `IDUN_ADMIN_PASSWORD_HASH` is generated via `idun hash-password` and the plaintext is not stored anywhere
+- [ ] `IDUN_HOST` matches your deployment topology (localhost behind a proxy, `0.0.0.0` in a container)
+- [ ] TLS terminates at a reverse proxy or managed load balancer
+- [ ] `X-Forwarded-Proto: https` is forwarded so the `Secure` cookie flag activates
+- [ ] `DATABASE_URL` points at Postgres (not SQLite on ephemeral disk)
+- [ ] Backups run against the database
+- [ ] `IDUN_TRACE_RETENTION_DAYS` matches your compliance window
+- [ ] `/agent/*` routes are gated by per-agent SSO if the runtime is exposed to untrusted callers
+
+## What's next
+
+- [Agent route protection](/auth/overview) — require an OIDC JWT on the agent API
+- [Troubleshooting](/troubleshooting) — what to do when reload fails or the admin panel says `agent_not_ready`

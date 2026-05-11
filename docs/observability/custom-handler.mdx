@@ -1,0 +1,208 @@
+---
+title: "Writing a custom observability handler"
+description: "Extend the engine to support a new tracing or observability provider by subclassing ObservabilityHandlerBase. Covers the abstract surface, callback vs global instrumentation patterns, and the factory registry."
+keywords: ["ObservabilityHandlerBase", "custom observability", "tracing", "OpenTelemetry", "callbacks", "instrumentation", "extension"]
+---
+
+The engine ships handlers for Langfuse, Arize Phoenix, LangSmith, Google Cloud Trace, and Google Cloud Logging. If you run a different observability stack — Datadog, Honeycomb, Grafana Tempo, a custom OTLP collector — you can wrap it as an Idun handler by subclassing `ObservabilityHandlerBase`.
+
+<Note>
+  Like the agent adapter factory, the observability factory in `idun_agent_engine.observability.base.create_observability_handler` is currently a hardcoded `if/elif` over the `ObservabilityProvider` enum. Wiring a new handler requires a small upstream change. There is no Python entry-point hook today.
+</Note>
+
+## The base class
+
+`ObservabilityHandlerBase` lives in [`libs/idun_agent_engine/src/idun_agent_engine/observability/base.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/base.py). It is small — three members and one optional helper:
+
+| Member | Kind | Purpose |
+|---|---|---|
+| `provider` | class attribute | Lowercase provider identifier (e.g. `"langfuse"`, `"phoenix"`) |
+| `__init__(options)` | method | Read your provider's API keys and config from `options`, initialise the client |
+| `get_callbacks()` | method | Return a list of LangChain `BaseCallbackHandler` instances (can be empty) |
+| `get_run_name()` | method | Optional. Return a run name from `options`, or `None` |
+
+That's it. The minimal handler is fifteen lines.
+
+## Two integration patterns
+
+Observability providers fall into one of two categories. Your handler should pick one.
+
+### Pattern A — LangChain callbacks (Langfuse-style)
+
+For providers that expose a LangChain `BaseCallbackHandler`. Return your callback list from `get_callbacks()` and the engine attaches them to every agent invocation:
+
+```python langfuse_like.py
+from langfuse.callback import CallbackHandler
+from idun_agent_engine.observability.base import ObservabilityHandlerBase
+
+
+class LangfuseLikeHandler(ObservabilityHandlerBase):
+    provider = "langfuse"
+
+    def __init__(self, options: dict | None = None) -> None:
+        options = options or {}
+        host = self._resolve_env(options.get("host"))
+        public_key = self._resolve_env(options.get("public_key"))
+        secret_key = self._resolve_env(options.get("secret_key"))
+
+        self._callbacks: list = []
+        try:
+            self._callbacks.append(
+                CallbackHandler(
+                    host=host,
+                    public_key=public_key,
+                    secret_key=secret_key,
+                )
+            )
+        except Exception:
+            # Init failure should not block agent boot. Log and continue.
+            pass
+
+    def get_callbacks(self) -> list:
+        return self._callbacks
+```
+
+Use this pattern for: Langfuse, LangSmith via the LangChain integration, Helicone, Comet Opik.
+
+### Pattern B — Global OpenTelemetry instrumentation (Phoenix-style)
+
+For providers that hook into the global OpenTelemetry SDK. Configure your tracer provider and exporter inside `__init__`, then return an empty list from `get_callbacks()` — the agent runtime will be auto-instrumented globally:
+
+```python phoenix_like.py
+import os
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from openinference.instrumentation.langchain import LangChainInstrumentor
+
+from idun_agent_engine.observability.base import ObservabilityHandlerBase
+
+
+class OTLPHandler(ObservabilityHandlerBase):
+    provider = "otlp"
+
+    def __init__(self, options: dict | None = None) -> None:
+        options = options or {}
+        endpoint = self._resolve_env(options.get("endpoint"))
+        api_key = self._resolve_env(options.get("api_key"))
+
+        provider = TracerProvider()
+        exporter = OTLPSpanExporter(
+            endpoint=endpoint,
+            headers={"authorization": f"Bearer {api_key}"} if api_key else None,
+        )
+        provider.add_span_processor(BatchSpanProcessor(exporter))
+
+        # LangChainInstrumentor wires the global provider for LangGraph / LangChain
+        LangChainInstrumentor().instrument(tracer_provider=provider)
+
+    def get_callbacks(self) -> list:
+        return []
+```
+
+Use this pattern for: any OTLP-compatible backend (Honeycomb, Tempo, Jaeger, Datadog OTLP, NewRelic OTLP), GCP Trace, Arize Phoenix.
+
+## The `_resolve_env` helper
+
+Both reference handlers define a static `_resolve_env` helper for the `${ENV_VAR}` syntax users can put in their YAML:
+
+```python
+@staticmethod
+def _resolve_env(value: str | None) -> str | None:
+    if value and value.startswith("${") and value.endswith("}"):
+        return os.environ.get(value[2:-1])
+    return value
+```
+
+Copy this verbatim. It lets users keep secrets in env vars and reference them in `config.yaml`:
+
+```yaml
+observability:
+  - provider: "OTLP"
+    enabled: true
+    config:
+      endpoint: "${OTLP_ENDPOINT}"
+      api_key: "${OTLP_API_KEY}"
+```
+
+## Init failures should not crash boot
+
+Following the engine's CLAUDE.md guidance: telemetry must never alter command or runtime semantics. Wrap your handler's init in `try/except Exception` and log the failure. The engine continues without the failed provider rather than aborting the agent boot.
+
+```python
+def __init__(self, options: dict | None = None) -> None:
+    try:
+        # ... init client ...
+        self._callbacks = [build_callback()]
+    except Exception as exc:
+        logger.exception("Failed to init my observability provider: %s", exc)
+        self._callbacks = []
+```
+
+## Wiring the handler into the engine
+
+Until a plugin API ships, register your handler in two places.
+
+### 1. Add an enum value
+
+In your fork of `idun_agent_schema`, extend `ObservabilityProvider`:
+
+```python
+class ObservabilityProvider(str, Enum):
+    LANGFUSE = "LANGFUSE"
+    PHOENIX = "PHOENIX"
+    LANGSMITH = "LANGSMITH"
+    GCP_TRACE = "GCP_TRACE"
+    GCP_LOGGING = "GCP_LOGGING"
+    OTLP = "OTLP"  # add this
+```
+
+### 2. Add a branch in `create_observability_handler`
+
+In `libs/idun_agent_engine/src/idun_agent_engine/observability/base.py`:
+
+```python
+elif provider_upper == ObservabilityProvider.OTLP:
+    handler = OTLPHandler(options)
+    return handler, {"enabled": True, "provider": provider}
+```
+
+Then in your `config.yaml`:
+
+```yaml
+observability:
+  - provider: "OTLP"
+    enabled: true
+    config:
+      endpoint: "https://otlp.example.com/v1/traces"
+      api_key: "${OTLP_API_KEY}"
+```
+
+## The local trace pipeline (standalone)
+
+The standalone runtime ships its own local trace store backed by SQLite or Postgres. It uses the same OpenTelemetry SpanProcessor hook as Pattern B, registered via `attach_span_processor()` from `idun_agent_engine.observability.otel_lifecycle`. Your handler does not need to do anything for the local pipeline to work — it runs alongside whatever provider the user has configured.
+
+If you want your handler to *interoperate* with the local pipeline (e.g. share the same TracerProvider), call `attach_span_processor()` rather than instantiating your own `TracerProvider`:
+
+```python
+from idun_agent_engine.observability.otel_lifecycle import init_otel, attach_span_processor
+
+def __init__(self, options: dict | None = None) -> None:
+    init_otel()  # idempotent
+    attach_span_processor(BatchSpanProcessor(OTLPSpanExporter(...)))
+```
+
+## Reference handlers
+
+The five shipping handlers cover both patterns. Read them in this order:
+
+- **Langfuse** ([`observability/langfuse/langfuse_handler.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/langfuse/langfuse_handler.py)) — simplest Pattern A handler. Env-var resolution, lazy client init, auth check.
+- **Phoenix** ([`observability/phoenix/phoenix_handler.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/phoenix/phoenix_handler.py)) — simplest Pattern B handler. `phoenix.otel.register()` + `LangChainInstrumentor().instrument()`.
+- **GCP Trace** ([`observability/gcp_trace/`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/gcp_trace/)) — Pattern B with multiple instrumentors (LangChain, Guardrails, VertexAI, MCP).
+- **LangSmith** ([`observability/langsmith/`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/observability/langsmith/)) — env-var-only handler that returns no callbacks; LangChain auto-traces from `LANGSMITH_*` env vars.
+
+## What's next
+
+- [Observability overview](/observability/overview) — built-in providers and configuration
+- [Custom framework adapter](/frameworks/custom-adapter) — the same extension pattern for agent frameworks
+- [Troubleshooting](/troubleshooting) — diagnosing observability init failures in the log
