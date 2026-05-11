@@ -86,17 +86,24 @@ export function WizardManyDetected({
           >
             Re-scan
           </button>
-          <Button
-            onClick={() => {
-              const detection = byKey.get(selectedKey);
-              if (detection) {
-                onConfirm(detection);
-              }
-            }}
-            disabled={selectedKey === ""}
-          >
-            Use selected agent
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <Button
+              onClick={() => {
+                const detection = byKey.get(selectedKey);
+                if (detection) {
+                  onConfirm(detection);
+                }
+              }}
+              disabled={selectedKey === ""}
+            >
+              Use selected agent
+            </Button>
+            {selectedKey === "" && (
+              <p className="text-xs text-muted-foreground">
+                Select an agent to continue
+              </p>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

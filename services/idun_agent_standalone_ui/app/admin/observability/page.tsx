@@ -11,6 +11,7 @@ import { z } from "zod";
 
 import { EditYamlSheet } from "@/components/admin/EditYamlSheet";
 import { ProviderPicker } from "@/components/admin/ProviderPicker";
+import { SecretInput } from "@/components/admin/SecretInput";
 import { cn } from "@/lib/utils";
 import {
   GcpLoggingIcon,
@@ -482,10 +483,8 @@ export default function ObservabilityPage() {
                       <FormItem>
                         <FormLabel>Secret key</FormLabel>
                         <FormControl>
-                          <Input
+                          <SecretInput
                             {...field}
-                            type="password"
-                            autoComplete="off"
                             placeholder="sk-lf-..."
                           />
                         </FormControl>
@@ -558,10 +557,8 @@ export default function ObservabilityPage() {
                       <FormItem>
                         <FormLabel>API key</FormLabel>
                         <FormControl>
-                          <Input
+                          <SecretInput
                             {...field}
-                            type="password"
-                            autoComplete="off"
                             placeholder="ls-..."
                           />
                         </FormControl>

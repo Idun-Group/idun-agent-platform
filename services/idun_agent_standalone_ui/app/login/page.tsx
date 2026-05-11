@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ApiError, api } from "@/lib/api";
+import { getRuntimeConfig } from "@/lib/runtime-config";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,20 @@ function LoginForm() {
   const params = useSearchParams();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // When admin auth is disabled the password form does nothing on submit.
+  // Redirect to the chat root so the user isn't stuck on a non-functional
+  // page. Honor ?next=<path> if it's same-origin, otherwise go to "/".
+  const authMode =
+    typeof window !== "undefined" ? getRuntimeConfig().authMode : "password";
+  const authDisabled = authMode === "none";
+  useEffect(() => {
+    if (!authDisabled) return;
+    const raw = params?.get("next") ?? "/";
+    const next = isSafeNext(raw) ? raw : "/";
+    router.replace(next);
+  }, [authDisabled, params, router]);
+  if (authDisabled) return null;
 
   return (
     <div className="grid place-items-center min-h-screen bg-background p-6">
