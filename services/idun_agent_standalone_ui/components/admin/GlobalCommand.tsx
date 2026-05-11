@@ -46,8 +46,8 @@ type PageEntry = {
 
 const PAGES: PageEntry[] = [
   { href: "/admin/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/traces/", label: "Traces", icon: Activity },
-  { href: "/logs/", label: "Logs", icon: FileText },
+  { href: "/admin/traces/", label: "Traces", icon: Activity },
+  { href: "/admin/logs/", label: "Logs", icon: FileText },
   { href: "/admin/agent/", label: "Configuration", icon: Cog },
   { href: "/admin/guardrails/", label: "Guardrails", icon: Shield },
   { href: "/admin/memory/", label: "Memory", icon: Database },
@@ -147,7 +147,7 @@ export function GlobalCommand({ open, onOpenChange }: Props) {
                     key={s.id}
                     value={`trace ${label} ${s.id}`}
                     onSelect={() =>
-                      go(`/traces/session/?id=${encodeURIComponent(s.id)}`)
+                      go(`/admin/traces/session/?id=${encodeURIComponent(s.id)}`)
                     }
                   >
                     <Activity className="mr-2 h-4 w-4" />
