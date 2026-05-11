@@ -178,9 +178,7 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
                         instrumentor,
                         separate_trace_from_runtime_context=True,
                     )
-                    logger.info(
-                        "trace pipeline: self-installed LangChainInstrumentor"
-                    )
+                    logger.info("trace pipeline: self-installed LangChainInstrumentor")
                 else:
                     otel_lifecycle.attach_instrumentor(instrumentor)
                     instrumentor_status = "kwarg_unsupported"

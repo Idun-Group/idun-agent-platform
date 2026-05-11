@@ -45,9 +45,7 @@ async def _wait_for(predicate, *, timeout_s: float = _DRAIN_TIMEOUT_S) -> bool:
 
 
 @pytest.mark.asyncio
-async def test_runtime_context_leak_still_produces_trace_row(
-    tmp_path, monkeypatch
-):
+async def test_runtime_context_leak_still_produces_trace_row(tmp_path, monkeypatch):
     url = f"sqlite+aiosqlite:///{tmp_path / 'leak.db'}"
     monkeypatch.setenv("DATABASE_URL", url)
     await asyncio.to_thread(command.upgrade, _alembic_config(), "head")
@@ -61,9 +59,7 @@ async def test_runtime_context_leak_still_produces_trace_row(
     await attach_trace_pipeline(app)
 
     try:
-        tracer = otel_lifecycle.get_tracer_provider().get_tracer(
-            "test.runtime_leak"
-        )
+        tracer = otel_lifecycle.get_tracer_provider().get_tracer("test.runtime_leak")
         with tracer.start_as_current_span("simulated_runtime_leak"):
             runnable = RunnableLambda(lambda x: x + 1).with_config(
                 run_name="leak_probe"
@@ -95,16 +91,15 @@ async def test_runtime_context_leak_still_produces_trace_row(
                 )
             ).all()
             assert any(
-                name == "leak_probe" and parent is None
-                for name, parent in rows
+                name == "leak_probe" and parent is None for name, parent in rows
             ), (
                 "expected RunnableLambda span with parent_span_id IS NULL; "
                 f"got {rows!r}"
             )
 
             trace_names = (
-                await session.execute(select(StandaloneTraceRow.name))
-            ).scalars().all()
+                (await session.execute(select(StandaloneTraceRow.name))).scalars().all()
+            )
             assert "leak_probe" in trace_names, (
                 "expected a trace row for the LangChain runnable; "
                 f"got {trace_names!r}"

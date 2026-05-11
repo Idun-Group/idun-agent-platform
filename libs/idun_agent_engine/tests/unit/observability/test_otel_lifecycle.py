@@ -133,7 +133,9 @@ class TestAttachSpanProcessor:
         provider.add_span_processor = _boom  # type: ignore[method-assign]
 
         with caplog.at_level(logging.ERROR):
-            otel_lifecycle.attach_span_processor(SimpleSpanProcessor(InMemorySpanExporter()))
+            otel_lifecycle.attach_span_processor(
+                SimpleSpanProcessor(InMemorySpanExporter())
+            )
 
         # Helper degraded gracefully: nothing tracked, no exception.
         assert otel_lifecycle._attached_processors == []

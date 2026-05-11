@@ -212,9 +212,7 @@ def attach_instrumentor(instrumentor: Any, **instrument_kwargs: Any) -> None:
         )
         return
     try:
-        instrumentor.instrument(
-            tracer_provider=_tracer_provider, **instrument_kwargs
-        )
+        instrumentor.instrument(tracer_provider=_tracer_provider, **instrument_kwargs)
     except Exception:
         logger.exception(
             "attach_instrumentor: %r .instrument() failed; not tracking",

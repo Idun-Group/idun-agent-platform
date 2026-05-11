@@ -226,7 +226,6 @@ async def test_attach_trace_pipeline_failopen_when_sessionmaker_missing():
     assert getattr(app.state, "trace_retention_task", None) is None
 
 
-
 @pytest.mark.asyncio
 async def test_attach_trace_pipeline_passes_separate_trace_flag(
     sessionmaker_factory, monkeypatch
