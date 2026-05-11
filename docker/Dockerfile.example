@@ -39,11 +39,11 @@ USER idun:idun
 EXPOSE 8000
 
 # Override defaults via env vars at deploy time:
-#   IDUN_ADMIN_AUTH_MODE=password
+#   IDUN_ADMIN_AUTH_MODE=password            (required with IDUN_HOST=0.0.0.0,
+#                                             or set IDUN_ALLOW_OPEN_ADMIN=1)
 #   IDUN_ADMIN_PASSWORD_HASH=<hash>          (use: idun hash-password)
 #   IDUN_SESSION_SECRET=<32-byte-hex>         (use: openssl rand -hex 32)
 #   DATABASE_URL=postgresql+asyncpg://<DB_USER>:<DB_PASSWORD>@<HOST>:5432/idun
 #   OPENAI_API_KEY=<your-key>                 (whatever your agent needs)
 
-# `idun serve` reads host/port from IDUN_HOST/IDUN_PORT env (defaults: 0.0.0.0:8000).
 CMD ["idun", "serve"]

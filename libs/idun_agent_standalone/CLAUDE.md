@@ -63,6 +63,8 @@ Two modes, gated by `IDUN_ADMIN_AUTH_MODE`:
 - `none` — open admin (laptop default). `require_auth` is a pass-through.
 - `password` — bcrypt-hashed admin password + signed session cookie. Strict-minimum scope: login / logout / change-password / me, no rate-limit, no CSRF token, no sliding renewal, no rotation invalidation of outstanding sessions.
 
+**Bind-all guardrail.** `core/settings.py` refuses to start when `IDUN_HOST` is `0.0.0.0` or `::` and `IDUN_ADMIN_AUTH_MODE=none`, unless `IDUN_ALLOW_OPEN_ADMIN=1`. Default host is `127.0.0.1`. Containers that need bind-all must either set `IDUN_ADMIN_AUTH_MODE=password` or opt in via `IDUN_ALLOW_OPEN_ADMIN=1`. **Why:** the prior default (`0.0.0.0` + `none`) exposed the admin REST surface on every network the host could reach with no authentication.
+
 <!-- VERIFY: env vars in libs/idun_agent_standalone/src/idun_agent_standalone/core/settings.py -->
 Required env vars in password mode:
 

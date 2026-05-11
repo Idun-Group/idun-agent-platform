@@ -58,3 +58,37 @@ def test_secret_validators_strip_trailing_newlines(monkeypatch):
     settings = StandaloneSettings()
     assert settings.session_secret == "x" * 64
     assert settings.admin_password_hash == "hash-value"
+
+
+def test_default_host_is_loopback(monkeypatch):
+    monkeypatch.delenv("IDUN_HOST", raising=False)
+    settings = StandaloneSettings()
+    assert settings.host == "127.0.0.1"
+
+
+@pytest.mark.parametrize("bind_all", ["0.0.0.0", "::"])
+def test_bind_all_with_auth_none_is_rejected(monkeypatch, bind_all: str):
+    monkeypatch.setenv("IDUN_HOST", bind_all)
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "none")
+    monkeypatch.delenv("IDUN_ALLOW_OPEN_ADMIN", raising=False)
+    with pytest.raises(ValidationError) as exc_info:
+        StandaloneSettings()
+    assert "IDUN_ALLOW_OPEN_ADMIN" in str(exc_info.value)
+
+
+def test_bind_all_with_auth_none_allowed_when_opted_in(monkeypatch):
+    monkeypatch.setenv("IDUN_HOST", "0.0.0.0")
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "none")
+    monkeypatch.setenv("IDUN_ALLOW_OPEN_ADMIN", "1")
+    settings = StandaloneSettings()
+    assert settings.host == "0.0.0.0"
+    assert settings.allow_open_admin is True
+
+
+def test_bind_all_with_password_auth_is_allowed(monkeypatch):
+    monkeypatch.setenv("IDUN_HOST", "0.0.0.0")
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", "password")
+    monkeypatch.setenv("IDUN_SESSION_SECRET", "x" * 32)
+    settings = StandaloneSettings()
+    assert settings.host == "0.0.0.0"
+    assert settings.auth_mode == AuthMode.PASSWORD

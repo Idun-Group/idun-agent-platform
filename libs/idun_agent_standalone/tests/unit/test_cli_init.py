@@ -191,6 +191,7 @@ def test_init_browser_url_maps_wildcard_host_to_localhost(
     must use 127.0.0.1 — browsers can't navigate to wildcard bind
     addresses. The server still binds wherever IDUN_HOST says."""
     monkeypatch.setenv("IDUN_HOST", "0.0.0.0")
+    monkeypatch.setenv("IDUN_ALLOW_OPEN_ADMIN", "1")
     runner = CliRunner()
     result = runner.invoke(main, ["init"])
     assert result.exit_code == 0, result.output

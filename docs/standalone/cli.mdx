@@ -19,11 +19,12 @@ Flags (all optional — env vars take precedence when unset on the CLI):
 | Flag | Env var | Default | Description |
 |------|---------|---------|-------------|
 | `--config <path>` | `IDUN_CONFIG_PATH` | `./config.yaml` | Bootstrap YAML file. |
-| `--host <addr>` | `IDUN_HOST` | `127.0.0.1` (laptop), `0.0.0.0` (container) | Bind address. |
+| `--host <addr>` | `IDUN_HOST` | `127.0.0.1` | Bind address. Set `0.0.0.0` for containers (requires `IDUN_ADMIN_AUTH_MODE=password` or `IDUN_ALLOW_OPEN_ADMIN=1`). |
 | `--port <int>` | `IDUN_PORT` | `8000` | Bind port. |
-| `--auth-mode <mode>` | `IDUN_ADMIN_AUTH_MODE` | `none` (laptop), `password` (container) | Admin gate. `oidc` is reserved for MVP-2. |
+| `--auth-mode <mode>` | `IDUN_ADMIN_AUTH_MODE` | `none` | Admin gate. `oidc` is reserved for MVP-2. |
 | `--ui-dir <path>` | `IDUN_UI_DIR` | bundled static export | Override the chat/admin UI directory. |
 | `--database-url <url>` | `DATABASE_URL` | `sqlite+aiosqlite:///./idun.db` | SQLAlchemy URL. Use `postgresql+asyncpg://…` for Postgres. |
+| (no flag) | `IDUN_ALLOW_OPEN_ADMIN` | `false` | Opt in to binding `0.0.0.0` with `auth_mode=none`. Containers and trusted networks only. |
 
 ## init
 
