@@ -25,7 +25,9 @@ export function RangePicker({
             key={r}
             type="button"
             aria-pressed={active}
-            onClick={() => onChange(r)}
+            onClick={() => {
+              if (!active) onChange(r);
+            }}
             className={cn(
               "px-3 py-1.5 text-xs font-medium",
               active

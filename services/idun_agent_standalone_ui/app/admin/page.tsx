@@ -61,6 +61,7 @@ export default function DashboardPage() {
   const graphQuery = useQuery({
     queryKey: ["admin-agent-graph"],
     queryFn: () => api.getAgentGraph(),
+    enabled: !!agentQuery.data,
     retry: (failureCount, err) => {
       if (
         err instanceof ApiError &&
@@ -75,6 +76,7 @@ export default function DashboardPage() {
   const dashboardQuery = useQuery({
     queryKey: ["dashboard", range],
     queryFn: () => api.getDashboard({ range }),
+    enabled: !!agentQuery.data,
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
@@ -104,6 +106,15 @@ export default function DashboardPage() {
         </p>
         {agentNotConfigured ? (
           <NoAgentConfiguredCard />
+        ) : agentQuery.isError ? (
+          <Alert variant="destructive">
+            <AlertTitle>Couldn&apos;t load agent</AlertTitle>
+            <AlertDescription>
+              {agentQuery.error instanceof Error
+                ? agentQuery.error.message
+                : "The agent endpoint returned an unexpected error."}
+            </AlertDescription>
+          </Alert>
         ) : agentQuery.data ? (
           <>
             <ConnectionCard />
