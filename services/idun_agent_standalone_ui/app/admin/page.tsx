@@ -1,19 +1,25 @@
-// @ts-nocheck — half-migration state per services/idun_agent_standalone_ui/CLAUDE.md. Backend feature deferred; remove this directive when the feature lands and update imports.
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import {
-  Activity,
-  AlertCircle,
-  ArrowUpRight,
-  Clock,
-  MessageSquare,
-} from "lucide-react";
-import Link from "next/link";
-import { useMemo } from "react";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useRef } from "react";
 
-import { ComingSoonBadge } from "@/components/common/ComingSoonBadge";
-import { Button } from "@/components/ui/button";
+import type { AgentGraph as AgentGraphIR } from "@/lib/api/types/graph";
+import type { DashboardResponse } from "@/lib/api/types/dashboard";
+
+import { ConnectionCard } from "@/components/admin/ConnectionCard";
+import { ConfigurationDisplay } from "@/components/admin/ConfigurationDisplay";
+import {
+  AgentGraphLazy,
+  type AgentGraphHandle,
+} from "@/components/graph/AgentGraphLazy";
+import { ExportMenu } from "@/components/graph/ExportMenu";
+import { KpiCard } from "@/components/dashboard/KpiCard";
+import { LatencyChart } from "@/components/dashboard/LatencyChart";
+import { RangePicker } from "@/components/dashboard/RangePicker";
+import { RequestsChart } from "@/components/dashboard/RequestsChart";
+import { TopErrorsTable } from "@/components/dashboard/TopErrorsTable";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardContent,
@@ -22,167 +28,298 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { api } from "@/lib/api";
+import { ApiError, type DashboardRange, api } from "@/lib/api";
 
-type Kpi = {
-  label: string;
-  value: string | number | null;
-  delta?: string;
-  icon: React.ComponentType<{ className?: string }>;
-  comingSoon?: boolean;
-};
+const VALID_RANGES: DashboardRange[] = ["1h", "24h", "7d", "30d"];
+
+function parseRange(raw: string | null): DashboardRange {
+  return VALID_RANGES.includes(raw as DashboardRange)
+    ? (raw as DashboardRange)
+    : "24h";
+}
 
 export default function DashboardPage() {
-  // Existing pattern — preserve it. There is no dedicated dashboard summary
-  // endpoint, so derive KPIs from the sessions list and badge the metrics
-  // that aren't yet wired (latency, errors).
-  const { data: sessions, isLoading } = useQuery({
-    queryKey: ["dashboard", "sessions"],
-    queryFn: () => api.listSessions({ limit: 25 }).catch(() => null),
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const range = parseRange(searchParams.get("range"));
+  const graphRef = useRef<AgentGraphHandle | null>(null);
+
+  const setRange = useCallback(
+    (next: DashboardRange) => {
+      const params = new URLSearchParams(searchParams);
+      params.set("range", next);
+      router.replace(`/admin?${params.toString()}`);
+    },
+    [router, searchParams],
+  );
+
+  const agentQuery = useQuery({
+    queryKey: ["agent"],
+    queryFn: api.getAgent,
   });
 
-  const sessionsToday = useMemo(() => {
-    if (!sessions?.items) return null;
-    const dayAgo = Date.now() - 86_400_000;
-    return sessions.items.filter(
-      (s) => new Date(s.last_event_at).getTime() >= dayAgo,
-    ).length;
-  }, [sessions]);
-
-  const kpis: Kpi[] = [
-    { label: "Sessions today", value: sessionsToday ?? 0, icon: MessageSquare },
-    {
-      label: "Total runs",
-      value: sessions?.items?.length ?? 0,
-      icon: Activity,
+  const graphQuery = useQuery({
+    queryKey: ["admin-agent-graph"],
+    queryFn: () => api.getAgentGraph(),
+    retry: (failureCount, err) => {
+      if (
+        err instanceof ApiError &&
+        (err.status === 404 || err.status === 503)
+      ) {
+        return false;
+      }
+      return failureCount < 2;
     },
-    { label: "Avg latency", value: null, icon: Clock, comingSoon: true },
-    { label: "Errors", value: null, icon: AlertCircle, comingSoon: true },
-  ];
+  });
+
+  const dashboardQuery = useQuery({
+    queryKey: ["dashboard", range],
+    queryFn: () => api.getDashboard({ range }),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+
+  const agentNotConfigured =
+    agentQuery.isError &&
+    agentQuery.error instanceof ApiError &&
+    agentQuery.error.status === 404;
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-6xl">
-      <header>
-        <h1 className="font-serif text-2xl font-medium text-foreground">
-          Dashboard
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Overview of your standalone agent.
-        </p>
+      <header className="flex items-end justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-medium text-foreground">
+            Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Overview of your standalone agent.
+          </p>
+        </div>
+        <RangePicker value={range} onChange={setRange} />
       </header>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {kpis.map((k) => (
-          <Card key={k.label}>
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {k.label}
-              </CardTitle>
-              <k.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {k.comingSoon ? (
-                <ComingSoonBadge variant="preview" />
-              ) : isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <div className="text-2xl font-serif text-foreground">
-                  {k.value}
-                </div>
-              )}
-              {k.delta && (
-                <p className="text-xs text-muted-foreground mt-1">{k.delta}</p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <section aria-label="Configuration" className="flex flex-col gap-4">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          Configuration
+        </p>
+        {agentNotConfigured ? (
+          <NoAgentConfiguredCard />
+        ) : agentQuery.data ? (
+          <>
+            <ConnectionCard />
+            <ConfigurationDisplay agent={agentQuery.data} />
+            <AgentGraphCard graphRef={graphRef} graphQuery={graphQuery} agentName={agentQuery.data.name} />
+          </>
+        ) : (
+          <Skeleton className="h-32 w-full" />
+        )}
+      </section>
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <div>
-            <CardTitle>Recent activity</CardTitle>
-            <CardDescription>Latest chat sessions.</CardDescription>
-          </div>
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/admin/traces/">
-              View all
-              <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="p-6 space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : !sessions?.items?.length ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              No sessions yet.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Session</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Last activity</TableHead>
-                  <TableHead className="w-20"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sessions.items.slice(0, 8).map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-mono text-xs">
-                      {s.id.slice(0, 8)}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {s.title || (
-                        <span className="text-muted-foreground">Untitled</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {relativeTime(s.last_event_at)}
-                    </TableCell>
-                    <TableCell>
-                      <Button asChild variant="ghost" size="sm">
-                        <Link
-                          href={`/admin/traces/session/?id=${encodeURIComponent(s.id)}`}
-                        >
-                          Open
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {!agentNotConfigured && (
+        <section aria-label="Activity" className="flex flex-col gap-4">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Activity · last {range}
+          </p>
+          <ActivityGrid query={dashboardQuery} />
+        </section>
+      )}
     </div>
   );
 }
 
-function relativeTime(iso: string): string {
-  const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return "";
-  const diff = Date.now() - t;
-  if (diff < 60_000) return "just now";
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)}d ago`;
-  return new Date(iso).toLocaleDateString();
+function NoAgentConfiguredCard() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>No agent configured</CardTitle>
+        <CardDescription>
+          Finish the onboarding wizard to start running an agent.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <a
+          href="/onboarding/"
+          className="inline-block rounded-md bg-foreground px-4 py-2 text-sm text-background"
+        >
+          Start the wizard →
+        </a>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AgentGraphCard({
+  graphRef,
+  graphQuery,
+  agentName,
+}: {
+  graphRef: React.MutableRefObject<AgentGraphHandle | null>;
+  graphQuery: UseQueryResult<AgentGraphIR, unknown>;
+  agentName: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+        <div className="space-y-1">
+          <CardTitle>Agent graph</CardTitle>
+          <CardDescription>
+            A visual map of this agent&apos;s sub-agents and tools.
+          </CardDescription>
+        </div>
+        <ExportMenu
+          graphRef={graphRef}
+          agentName={agentName}
+          disabled={
+            graphQuery.isLoading || graphQuery.isError || !graphQuery.data
+          }
+        />
+      </CardHeader>
+      <CardContent>
+        {graphQuery.isLoading && (
+          <div className="h-[320px] animate-pulse rounded-md bg-muted" />
+        )}
+        {graphQuery.isError &&
+          graphQuery.error instanceof ApiError &&
+          (graphQuery.error.status === 404 || graphQuery.error.status === 503) && (
+            <p className="text-sm text-muted-foreground">
+              {graphQuery.error.status === 503
+                ? "Agent isn't ready yet. The graph will appear once the engine finishes booting."
+                : "Graph view isn't available for this agent type yet."}
+            </p>
+          )}
+        {graphQuery.data && (
+          <AgentGraphLazy ref={graphRef} graph={graphQuery.data} height={320} />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ActivityGrid({
+  query,
+}: {
+  query: UseQueryResult<DashboardResponse, unknown>;
+}) {
+  if (query.isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Couldn&apos;t load activity</AlertTitle>
+        <AlertDescription>
+          The dashboard endpoint returned an error. Try again in a moment.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  const data = query.data;
+  const loading = query.isLoading || !data;
+
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
+          label="Requests"
+          value={loading ? undefined : data!.requests.total.toLocaleString()}
+          deltaLabel={deltaLabel(data?.requests.deltaPct)}
+          deltaDirection={direction(data?.requests.deltaPct)}
+          loading={loading}
+        />
+        <KpiCard
+          label="p50 / p95 latency"
+          value={
+            loading
+              ? undefined
+              : `${formatMs(data!.latency.p50Ms)} / ${formatMs(data!.latency.p95Ms)}`
+          }
+          deltaLabel={deltaLabel(data?.latency.p95DeltaPct, "p95")}
+          deltaDirection={direction(data?.latency.p95DeltaPct, /*invert=*/ true)}
+          loading={loading}
+        />
+        <KpiCard
+          label="Error rate"
+          value={loading ? undefined : `${(data!.errorRate.valuePct * 100).toFixed(2)}%`}
+          deltaLabel={ppLabel(data?.errorRate.deltaPp)}
+          deltaDirection={direction(data?.errorRate.deltaPp, /*invert=*/ true)}
+          loading={loading}
+        />
+        <KpiCard
+          label="Total cost"
+          value={loading ? undefined : `$${data!.cost.totalUsd.toFixed(2)}`}
+          deltaLabel={deltaLabel(data?.cost.deltaPct)}
+          deltaDirection={direction(data?.cost.deltaPct)}
+          loading={loading}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Requests / min</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : (
+              <RequestsChart series={data!.requests.series} />
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Latency p50 / p95</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : (
+              <LatencyChart series={data!.latency.series} />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Top errors</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-6 space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : (
+            <TopErrorsTable rows={data!.topErrors} />
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+function formatMs(v: number | null): string {
+  return v == null ? "—" : `${Math.round(v)}ms`;
+}
+
+function deltaLabel(value: number | null | undefined, marker?: string): string | null {
+  if (value == null) return null;
+  const arrow = value >= 0 ? "↑" : "↓";
+  const pct = Math.abs(value * 100).toFixed(1);
+  return `${arrow} ${pct}% ${marker ? `(${marker}) ` : ""}vs prior`;
+}
+
+function ppLabel(value: number | null | undefined): string | null {
+  if (value == null) return null;
+  const arrow = value >= 0 ? "↑" : "↓";
+  const pp = Math.abs(value * 100).toFixed(2);
+  return `${arrow} ${pp} pp vs prior`;
+}
+
+function direction(
+  value: number | null | undefined,
+  invert = false,
+): "up" | "down" | "neutral" {
+  if (value == null || value === 0) return "neutral";
+  const positive = value > 0;
+  if (invert) return positive ? "down" : "up";
+  return positive ? "up" : "down";
 }
