@@ -34,7 +34,13 @@ def _sync_url(url: str) -> str:
 
 
 def test_sqlite_migration_up_down_reup(tmp_path, monkeypatch) -> None:
-    """SQLite: upgrade head -> downgrade -1 -> upgrade head clean."""
+    """SQLite: upgrade head -> downgrade past traces -> upgrade head clean.
+
+    Downgrades to the revision *before* the trace tables were introduced
+    (``73f9ed38d018`` — SSO table) rather than ``-1`` so the smoke remains
+    pinned to the trace-tables migration as new migrations land on top
+    (e.g. ``4559f983ab43`` dashboard indexes).
+    """
     url = f"sqlite+aiosqlite:///{tmp_path / 'trace.db'}"
     monkeypatch.setenv("DATABASE_URL", url)
 
@@ -47,8 +53,8 @@ def test_sqlite_migration_up_down_reup(tmp_path, monkeypatch) -> None:
         assert "standalone_trace" in tables
         assert "standalone_span" in tables
 
-        # Downgrade one revision and re-upgrade to head must succeed.
-        command.downgrade(_alembic_config(), "-1")
+        # Downgrade to the revision before traces and re-upgrade to head.
+        command.downgrade(_alembic_config(), "73f9ed38d018")
         with inspect_engine.connect() as conn:
             tables_after_down = set(inspect(conn).get_table_names())
         assert "standalone_trace" not in tables_after_down
@@ -99,7 +105,7 @@ def test_pg_migration_up_down_reup(monkeypatch) -> None:
             assert "standalone_trace" in partitioned
             assert "standalone_span" in partitioned
 
-            command.downgrade(_alembic_config(), "-1")
+            command.downgrade(_alembic_config(), "73f9ed38d018")
             upgrade_head()
         finally:
             inspect_engine.dispose()

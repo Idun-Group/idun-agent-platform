@@ -20,7 +20,7 @@ A Next.js 15 + Tailwind v4 + React 19 SPA shipped as a static export. Bundled in
 | `/admin/traces` | Trace list with cursor pagination + filter Selects (auto-populated from observed values) — wired to `/admin/api/v1/traces` |
 | `/admin/traces/[traceId]` | Trace detail: header metric strip, span tree (W3C ARIA, ↑↓→← keyboard nav), waterfall (sticky time-axis ruler, ↑↓ keyboard nav, root-to-leaf critical-path emphasis), span-detail rail (Info/Tool/Input/Output/Attributes/Events tabs with Pretty/Raw segmented control + JSON dark theme + Copy-all). Wired to `/admin/api/v1/traces/{trace_id}`. URL-stateful via `?view=tree|waterfall&span=<id>`. Mobile (<lg) renders the rail as a Sheet. |
 | `/admin/settings` | Theme + password sections — **runtime 404** (deferred backend; see "Deferred features") |
-| `/admin` | Dashboard with sessions list — **runtime 404** (sessions route deferred) |
+| `/admin` | Dashboard landing — reuses ConnectionCard, ConfigurationDisplay (read-only), and AgentGraphLazy from the agent page, plus five trace-driven activity widgets backed by `/admin/api/v1/dashboard`. URL-stateful `?range=1h\|24h\|7d\|30d` (default `24h`), 60 s auto-refresh. |
 | `/login` | Password sign-in — **runtime 404** (SPA wiring deferred; standalone backend exists) |
 | `/logs` | Live tail of recent events — **runtime 404** (no backend route) |
 
@@ -79,7 +79,6 @@ Unit tests live in the top-level `__tests__/` directory, organized by surface (`
 | Page / feature | Status | Notes |
 | --- | --- | --- |
 | `/admin/settings` (theme + password) | Runtime 404 | Backend deferred. Page references will typecheck-fail until restored or deleted. |
-| `/admin` dashboard with sessions list | Runtime 404 | Sessions backend deferred. |
 | `/login` password sign-in | Runtime 404 | Standalone backend implements password auth in strict-minimum scope; the SPA login page wiring is on a separate branch. |
 | `/logs` live tail | Runtime 404 | No backend route. |
 | `/admin/integrations` (still uses old `kind` field) | Half-migrated | Update to current `IntegrationConfig` shape when revisiting messaging integrations. |

@@ -19,6 +19,17 @@ from .common import (  # noqa: F401
 from .config import (  # noqa: F401
     StandaloneMaterializedConfig,
 )
+from .dashboard import (  # noqa: F401
+    CostBlock,
+    DashboardRange,
+    DashboardResponse,
+    ErrorRateBlock,
+    LatencyBlock,
+    LatencyBucketPoint,
+    RequestsBlock,
+    TimeBucketPoint,
+    TopErrorRow,
+)
 from .diagnostics import (  # noqa: F401
     StandaloneConnectionCheck,
     StandaloneReadyzCheckStatus,
