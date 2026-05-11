@@ -3,15 +3,24 @@
 Skipped unless ``PYTEST_POSTGRES_URL`` is set. Uses real partitioned
 trace + span tables so we exercise ``percentile_cont`` and
 ``date_trunc`` rather than the SQLite fallbacks.
+
+Schema setup mirrors ``tests/integration/db/test_writer_pg_copy_path.py``:
+runs the packaged Alembic migrations against the env-supplied PG URL so
+production and tests share the same DDL path
+(``idun_agent_standalone.db.migrate.upgrade_head``). The alembic env
+runs ``asyncio.run`` internally, so we hop through ``asyncio.to_thread``
+to give it a dedicated worker thread and avoid nesting event loops.
 """
 
 from __future__ import annotations
 
+import asyncio
 import os
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from idun_agent_schema.standalone.dashboard import DashboardRange
+from idun_agent_standalone.db.migrate import downgrade_base, upgrade_head
 from idun_agent_standalone.infrastructure.db.models.span import (
     StandaloneSpanRow,  # noqa: F401
 )
@@ -25,14 +34,25 @@ POSTGRES_URL = os.environ.get("PYTEST_POSTGRES_URL")
 
 
 @pytest.fixture
-async def pg_session():
+async def pg_session(monkeypatch):
     if not POSTGRES_URL:
         pytest.skip("PYTEST_POSTGRES_URL not set")
+    monkeypatch.setenv("DATABASE_URL", POSTGRES_URL)
+    # Reset state before upgrade so a previous test that crashed mid-run
+    # cannot leave dirty schema for this one. ``downgrade_base`` is a
+    # no-op on an empty / unstamped database, so this is safe to call
+    # unconditionally as a setup-time fence.
+    await asyncio.to_thread(downgrade_base)
+    await asyncio.to_thread(upgrade_head)
     engine = create_async_engine(POSTGRES_URL)
     sm = async_sessionmaker(engine, expire_on_commit=False)
-    async with sm() as session:
-        yield session
-    await engine.dispose()
+    try:
+        async with sm() as session:
+            yield session
+    finally:
+        await engine.dispose()
+        # Leave the DB in a clean state for the next test run.
+        await asyncio.to_thread(downgrade_base)
 
 
 async def test_requests_aggregation_returns_count_and_series(pg_session):

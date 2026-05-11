@@ -172,7 +172,9 @@ async def compute_dashboard(
 _PG_REQUESTS_SQL = text(
     """
     SELECT
-      date_trunc('seconds', started_at) AT TIME ZONE 'UTC' AS bucket,
+      to_timestamp(
+        floor(extract(epoch FROM started_at) / :bucket) * :bucket
+      ) AT TIME ZONE 'UTC' AS bucket,
       COUNT(*)::bigint AS c
     FROM standalone_trace
     WHERE started_at >= :start AND started_at < :end
@@ -182,17 +184,28 @@ _PG_REQUESTS_SQL = text(
 )
 
 
-async def _postgres_requests(session, start, end, prior_start, bucket) -> RequestsBlock:
-    rows = (await session.execute(_PG_REQUESTS_SQL, {"start": start, "end": end})).all()
+async def _postgres_requests(
+    session: AsyncSession,
+    start: datetime,
+    end: datetime,
+    prior_start: datetime,
+    bucket: int,
+) -> RequestsBlock:
+    rows = (
+        await session.execute(
+            _PG_REQUESTS_SQL, {"start": start, "end": end, "bucket": bucket}
+        )
+    ).all()
     prior = (
-        await session.execute(_PG_REQUESTS_SQL, {"start": prior_start, "end": start})
+        await session.execute(
+            _PG_REQUESTS_SQL,
+            {"start": prior_start, "end": start, "bucket": bucket},
+        )
     ).all()
     total = sum(r.c for r in rows)
     prior_total = sum(r.c for r in prior)
     delta = _delta_pct(total, prior_total)
-    series = [
-        TimeBucketPoint(t=_bucket_floor(r.bucket, bucket), v=float(r.c)) for r in rows
-    ]
+    series = [TimeBucketPoint(t=r.bucket, v=float(r.c)) for r in rows]
     return RequestsBlock(total=total, delta_pct=delta, series=series)
 
 
@@ -230,7 +243,13 @@ _PG_LATENCY_HEADLINE_SQL = text(
 )
 
 
-async def _postgres_latency(session, start, end, prior_start, bucket) -> LatencyBlock:
+async def _postgres_latency(
+    session: AsyncSession,
+    start: datetime,
+    end: datetime,
+    prior_start: datetime,
+    bucket: int,
+) -> LatencyBlock:
     head_row = (
         await session.execute(_PG_LATENCY_HEADLINE_SQL, {"start": start, "end": end})
     ).first()
@@ -295,7 +314,11 @@ _PG_ERROR_RATE_HEADLINE_SQL = text(
 
 
 async def _postgres_error_rate(
-    session, start, end, prior_start, bucket
+    session: AsyncSession,
+    start: datetime,
+    end: datetime,
+    prior_start: datetime,
+    bucket: int,
 ) -> ErrorRateBlock:
     head = (
         await session.execute(_PG_ERROR_RATE_HEADLINE_SQL, {"start": start, "end": end})
@@ -344,7 +367,13 @@ _PG_COST_HEADLINE_SQL = text(
 )
 
 
-async def _postgres_cost(session, start, end, prior_start, bucket) -> CostBlock:
+async def _postgres_cost(
+    session: AsyncSession,
+    start: datetime,
+    end: datetime,
+    prior_start: datetime,
+    bucket: int,
+) -> CostBlock:
     head = (
         await session.execute(_PG_COST_HEADLINE_SQL, {"start": start, "end": end})
     ).scalar()
@@ -396,15 +425,20 @@ _PG_TOP_ERRORS_SQL = text(
 )
 
 
-async def _postgres_top_errors(session, start, end):
+async def _postgres_top_errors(
+    session: AsyncSession,
+    start: datetime,
+    end: datetime,
+) -> list[TopErrorRow]:
     rows = (
         await session.execute(_PG_TOP_ERRORS_SQL, {"start": start, "end": end})
     ).all()
-    # Filter out rows where the JOIN missed (no matching trace -- can
-    # happen for transient writes that landed in the span table but
-    # whose parent trace hadn't finalized yet). These rows still count
-    # toward the error tally but cannot offer a sample trace, so we
-    # drop them; the next reload will surface them once finalize runs.
+    # Drop rows where the JOIN missed (no matching trace -- can happen for
+    # transient writes that landed in the span table before the parent trace
+    # finalized). The dropped rows lose their count contribution; the next
+    # refresh will surface them once finalize runs. This is acceptable
+    # because finalize lag is bounded by the BatchSpanProcessor's
+    # ``schedule=2s`` delay, well under the dashboard's 60s polling cadence.
     rows = [r for r in rows if r.sample_trace_hex is not None]
     collapsed: dict[str, dict] = {}
     for r in rows:
@@ -429,23 +463,49 @@ async def _postgres_top_errors(session, start, end):
 # --- SQLite implementations (stubbed -- Task T1.5 fills them in) ---
 
 
-async def _sqlite_requests(session, start, end, prior_start, bucket) -> RequestsBlock:
+async def _sqlite_requests(
+    session: AsyncSession,
+    start: datetime,
+    end: datetime,
+    prior_start: datetime,
+    bucket: int,
+) -> RequestsBlock:
     raise NotImplementedError("Task T1.5")
 
 
-async def _sqlite_latency(session, start, end, prior_start, bucket) -> LatencyBlock:
+async def _sqlite_latency(
+    session: AsyncSession,
+    start: datetime,
+    end: datetime,
+    prior_start: datetime,
+    bucket: int,
+) -> LatencyBlock:
     raise NotImplementedError("Task T1.5")
 
 
 async def _sqlite_error_rate(
-    session, start, end, prior_start, bucket
+    session: AsyncSession,
+    start: datetime,
+    end: datetime,
+    prior_start: datetime,
+    bucket: int,
 ) -> ErrorRateBlock:
     raise NotImplementedError("Task T1.5")
 
 
-async def _sqlite_cost(session, start, end, prior_start, bucket) -> CostBlock:
+async def _sqlite_cost(
+    session: AsyncSession,
+    start: datetime,
+    end: datetime,
+    prior_start: datetime,
+    bucket: int,
+) -> CostBlock:
     raise NotImplementedError("Task T1.5")
 
 
-async def _sqlite_top_errors(session, start, end):
+async def _sqlite_top_errors(
+    session: AsyncSession,
+    start: datetime,
+    end: datetime,
+) -> list[TopErrorRow]:
     raise NotImplementedError("Task T1.5")
