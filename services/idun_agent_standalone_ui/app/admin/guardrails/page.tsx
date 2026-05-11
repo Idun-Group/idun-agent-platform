@@ -2,12 +2,26 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import {
+  Ban,
+  Globe,
+  Lock,
+  Pencil,
+  RotateCcw,
+  Scale,
+  ShieldAlert,
+  Skull,
+  Target,
+  Trash2,
+  Trophy,
+  Type,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { ProviderPicker, type ProviderOption } from "@/components/admin/ProviderPicker";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -46,6 +60,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -90,6 +105,63 @@ const GUARD_LABELS: Record<GuardId, string> = {
   correct_language: "Correct Language",
   restrict_to_topic: "Restrict to Topic",
 };
+
+const GUARD_CATALOG: ProviderOption<GuardId>[] = [
+  {
+    id: "ban_list",
+    label: GUARD_LABELS.ban_list,
+    description: "Block messages containing forbidden words or phrases.",
+    icon: <Ban size={44} className="text-foreground/70" />,
+  },
+  {
+    id: "detect_pii",
+    label: GUARD_LABELS.detect_pii,
+    description: "Catch emails, phone numbers, credit cards, and other personal data.",
+    icon: <Lock size={44} className="text-foreground/70" />,
+  },
+  {
+    id: "nsfw_text",
+    label: GUARD_LABELS.nsfw_text,
+    description: "Block adult or sexual content.",
+    icon: <ShieldAlert size={44} className="text-foreground/70" />,
+  },
+  {
+    id: "toxic_language",
+    label: GUARD_LABELS.toxic_language,
+    description: "Filter slurs, harassment, and threats from inputs and outputs.",
+    icon: <Skull size={44} className="text-foreground/70" />,
+  },
+  {
+    id: "gibberish_text",
+    label: GUARD_LABELS.gibberish_text,
+    description: "Reject inputs that don't form coherent language.",
+    icon: <Type size={44} className="text-foreground/70" />,
+  },
+  {
+    id: "bias_check",
+    label: GUARD_LABELS.bias_check,
+    description: "Detect biased or stereotyping language.",
+    icon: <Scale size={44} className="text-foreground/70" />,
+  },
+  {
+    id: "competition_check",
+    label: GUARD_LABELS.competition_check,
+    description: "Block mentions of competitors you've listed.",
+    icon: <Trophy size={44} className="text-foreground/70" />,
+  },
+  {
+    id: "correct_language",
+    label: GUARD_LABELS.correct_language,
+    description: "Validate that the output is in the expected language.",
+    icon: <Globe size={44} className="text-foreground/70" />,
+  },
+  {
+    id: "restrict_to_topic",
+    label: GUARD_LABELS.restrict_to_topic,
+    description: "Keep the conversation on the topics you allow.",
+    icon: <Target size={44} className="text-foreground/70" />,
+  },
+];
 
 const PII_ENTITIES = [
   "Email",
@@ -252,12 +324,28 @@ function formGuardToWire(g: GuardFormValues): Record<string, unknown> {
 }
 
 function emptyRowForm(): RowFormValues {
+  return emptyRowFormFor("ban_list");
+}
+
+function emptyRowFormFor(guardId: GuardId): RowFormValues {
+  const d = GUARD_DEFAULTS[guardId];
   return {
     name: "",
     enabled: true,
     position: "input",
     sortOrder: 0,
-    guard: { config_id: "ban_list", api_key: "", reject_message: "ban!!", banned_words: "" },
+    guard: {
+      config_id: guardId,
+      api_key: "",
+      reject_message: d.reject_message ?? "",
+      banned_words: d.banned_words ?? "",
+      pii_entities: d.pii_entities ?? "",
+      competitors: d.competitors ?? "",
+      expected_languages: d.expected_languages ?? "",
+      valid_topics: d.valid_topics ?? "",
+      invalid_topics: d.invalid_topics ?? "",
+      threshold: d.threshold,
+    },
   };
 }
 
@@ -326,6 +414,16 @@ function GuardFields({
             <FormDescription>
               Stored on the row and forwarded to the engine on save. If left
               empty, the engine falls back to the GUARDRAILS_API_KEY env var.
+              Get a key from{" "}
+              <a
+                href="https://guardrailsai.com/hub/keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                guardrailsai.com/hub/keys
+              </a>
+              .
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -545,6 +643,7 @@ export default function GuardrailsPage() {
 
   const [working, setWorking] = useState<GuardrailRow[]>(initialList);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetType, setSheetType] = useState<GuardId | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [confirmIdx, setConfirmIdx] = useState<number | null>(null);
   const [restartRequired, setRestartRequired] = useState(false);
@@ -566,24 +665,33 @@ export default function GuardrailsPage() {
 
   const watchedGuardId = form.watch("guard.config_id");
 
-  function openSheetFor(index: number | null) {
+  function openCreate(guardId: GuardId) {
+    setSheetType(guardId);
+    setEditingIdx(null);
+    form.reset(emptyRowFormFor(guardId));
+    setSheetOpen(true);
+  }
+
+  function openEdit(index: number) {
+    const row = working[index];
+    if (!row) return;
+    const guardId: GuardId = isGuardId(row.guardrail.config_id)
+      ? row.guardrail.config_id
+      : "ban_list";
+    setSheetType(guardId);
     setEditingIdx(index);
-    if (index === null) {
-      form.reset(emptyRowForm());
-    } else {
-      const row = working[index];
-      form.reset({
-        name: row.name,
-        enabled: row.enabled,
-        position: row.position,
-        sortOrder: row.sortOrder,
-        guard: wireGuardToForm(row.guardrail),
-      });
-    }
+    form.reset({
+      name: row.name,
+      enabled: row.enabled,
+      position: row.position,
+      sortOrder: row.sortOrder,
+      guard: wireGuardToForm(row.guardrail),
+    });
     setSheetOpen(true);
   }
 
   function closeSheet() {
+    setSheetType(null);
     setSheetOpen(false);
     setEditingIdx(null);
   }
@@ -721,18 +829,24 @@ export default function GuardrailsPage() {
         </Alert>
       )}
 
+      <ProviderPicker
+        aria-label="Choose guard type"
+        value={sheetType ?? ("" as GuardId)}
+        onChange={openCreate}
+        options={GUARD_CATALOG}
+        columns={3}
+      />
+
+      <Separator />
+
       <Card>
-        <CardHeader className="flex-row items-center justify-between">
+        <CardHeader>
           <div className="space-y-1">
             <CardTitle>Configured guards</CardTitle>
             <CardDescription>
               {working.length} guard{working.length === 1 ? "" : "s"}
             </CardDescription>
           </div>
-          <Button onClick={() => openSheetFor(null)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add guard
-          </Button>
         </CardHeader>
         <CardContent>
           {working.length === 0 ? (
@@ -796,7 +910,7 @@ export default function GuardrailsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => openSheetFor(i)}
+                          onClick={() => openEdit(i)}
                           aria-label={`Edit ${row.name}`}
                         >
                           <Pencil className="h-4 w-4" />
@@ -837,7 +951,9 @@ export default function GuardrailsPage() {
         >
           <SheetHeader className="border-b border-border px-6 py-4">
             <SheetTitle>
-              {editingIdx === null ? "Add guard" : "Edit guard"}
+              {editingIdx === null
+                ? `Add ${sheetType ? GUARD_LABELS[sheetType] : "guard"}`
+                : `Edit ${sheetType ? GUARD_LABELS[sheetType] : "guard"}`}
             </SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -943,64 +1059,6 @@ export default function GuardrailsPage() {
                     )}
                   />
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="guard.config_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Guard type</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={(next) => {
-                          const id = next as GuardId;
-                          field.onChange(id);
-                          const d = GUARD_DEFAULTS[id];
-                          form.setValue(
-                            "guard.reject_message",
-                            d.reject_message ?? "",
-                          );
-                          form.setValue(
-                            "guard.banned_words",
-                            d.banned_words ?? "",
-                          );
-                          form.setValue(
-                            "guard.pii_entities",
-                            d.pii_entities ?? "",
-                          );
-                          form.setValue("guard.competitors", d.competitors ?? "");
-                          form.setValue(
-                            "guard.expected_languages",
-                            d.expected_languages ?? "",
-                          );
-                          form.setValue(
-                            "guard.valid_topics",
-                            d.valid_topics ?? "",
-                          );
-                          form.setValue(
-                            "guard.invalid_topics",
-                            d.invalid_topics ?? "",
-                          );
-                          form.setValue("guard.threshold", d.threshold);
-                        }}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {GUARD_IDS.map((id) => (
-                            <SelectItem key={id} value={id}>
-                              {GUARD_LABELS[id]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <GuardFields
                   control={form.control}

@@ -215,6 +215,55 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
     app.state.trace_instrumentor_status = instrumentor_status
     app.state.trace_instrumentor_message = instrumentor_message
 
+    # Best-effort Gemini detail capture. ``langchain-google-genai`` (the
+    # path most operators reach Gemini through) doesn't fill OpenInference
+    # ``llm.token_count.prompt_details.cache_read`` / ``.cache_write`` —
+    # see ``infrastructure/traces/_attrs.py`` for the runtime warning.
+    # The dedicated ``openinference-instrumentation-google-genai``
+    # instruments the underlying ``google-genai`` SDK and emits a child
+    # span with the missing detail buckets, giving cost dashboards
+    # accurate cache-hit numbers without operator action.
+    #
+    # Gated on the same OTel-bypassing branch as LangChainInstrumentor:
+    # the GCP Trace / Phoenix handlers install their own instrumentors
+    # and we don't want to double-wrap there. Silent best-effort because
+    # this is enrichment, not a primary capture path — a dep conflict
+    # leaves the existing warning loop intact instead of degrading the
+    # /_health surface.
+    if not providers or all(p in _OTEL_BYPASSING_PROVIDERS for p in providers):
+        try:
+            from openinference.instrumentation.google_genai import (
+                GoogleGenAIInstrumentor,
+            )
+
+            genai_instrumentor = GoogleGenAIInstrumentor()
+            genai_conflict_check = getattr(
+                genai_instrumentor, "_check_dependency_conflicts", None
+            )
+            genai_conflict = (
+                genai_conflict_check() if callable(genai_conflict_check) else None
+            )
+            if genai_conflict is not None:
+                logger.warning(
+                    "trace pipeline: GoogleGenAIInstrumentor dependency "
+                    "conflict — Gemini detail buckets will fall back to "
+                    "the LangChain capture: %s",
+                    genai_conflict,
+                )
+            else:
+                otel_lifecycle.attach_instrumentor(genai_instrumentor)
+                logger.info("trace pipeline: self-installed GoogleGenAIInstrumentor")
+        except ImportError:
+            logger.debug(
+                "trace pipeline: openinference.instrumentation.google_genai not "
+                "installed; Gemini detail buckets unavailable"
+            )
+        except Exception:  # noqa: BLE001 — telemetry must never block
+            logger.exception(
+                "trace pipeline: GoogleGenAIInstrumentor install failed; "
+                "continuing without Gemini detail buckets"
+            )
+
     # 5. Reuse the previously-built exporter when present so its
     #    bounded queue (and any buffered spans) survive reload.
     exporter = getattr(app.state, "trace_exporter", None)

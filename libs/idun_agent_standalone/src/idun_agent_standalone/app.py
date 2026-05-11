@@ -278,14 +278,30 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
 def _register_trace_detail_routes(app: FastAPI, ui_dir: Path) -> None:
     """Wire the SPA-rewrite routes for ``/admin/traces/{trace_id}``.
 
-    Both URL forms (``/admin/traces/<id>`` and ``/admin/traces/<id>/``)
-    need explicit route declarations. FastAPI's ``redirect_slashes=True``
-    only redirects ``/foo/`` back to ``/foo`` for routes declared
-    without the trailing slash, *not* the inverse — and once
-    ``StaticFiles(html=True)`` is mounted at ``/``, the slashed form is
-    consumed by the static handler before the dynamic route sees it,
-    yielding ``404`` on every link-share / Slack-unfurl form. Declaring
-    the slashed sibling route fixes that.
+    Four URL flavors need explicit declarations:
+
+    * ``/admin/traces/<id>`` and ``/admin/traces/<id>/`` — HTML shell.
+      FastAPI's ``redirect_slashes=True`` only redirects ``/foo/`` back
+      to ``/foo`` for routes declared without the trailing slash, *not*
+      the inverse — and once ``StaticFiles(html=True)`` is mounted at
+      ``/``, the slashed form is consumed by the static handler before
+      the dynamic route sees it, yielding ``404`` on every link-share /
+      Slack-unfurl form. Declaring the slashed sibling route fixes that.
+    * ``/admin/traces/<id>/index.txt`` and ``/admin/traces/<id>.txt`` —
+      RSC payload. Next 15 in ``output: "export"`` mode prefetches the
+      React Flight stream from these paths on hover (``/index.txt``) and
+      on ``router.replace`` query-string-only navigations (``.txt``).
+      Without an explicit handler the directory form ``404``s and the
+      file form gets absorbed by the ``{trace_id}`` HTML route (trace_id
+      ends up as ``<id>.txt``), which serves HTML to a client expecting a
+      Flight stream — the client then bails to a full hard navigation,
+      re-firing ``/runtime-config.js``, ``/sso/info``, ``/auth/me`` and
+      the trace fetch on every span click. Serving the placeholder's
+      RSC payload here keeps client navigation in-app.
+
+      The ``.txt`` routes are declared **before** the HTML routes so
+      FastAPI matches them more specifically — otherwise the
+      ``{trace_id}`` path param greedily absorbs the ``.txt`` suffix.
 
     The selected SPA shell is resolved once at boot (the file layout
     cannot change at runtime and the request handler is on the async
@@ -295,6 +311,10 @@ def _register_trace_detail_routes(app: FastAPI, ui_dir: Path) -> None:
     falls back to the legacy ``__trace__/`` directory when the static
     export was produced by ``pnpm build`` directly (no rename pass),
     and falls back to the root ``index.html`` when neither exists.
+    The RSC payload follows the same resolution; when no ``.txt`` is
+    present the route returns ``404`` rather than fabricating one — a
+    missing RSC payload signals a broken build and shouldn't be papered
+    over by serving the HTML shell with the wrong content type.
 
     The literal ``__trace__`` segment is the build-time placeholder
     path. Even after the rename it remains reachable via the dynamic
@@ -321,6 +341,16 @@ def _register_trace_detail_routes(app: FastAPI, ui_dir: Path) -> None:
     else:
         selected_trace_shell = spa_root_shell
 
+    trace_rsc_renamed = ui_dir / "admin" / "traces" / "_shell" / "index.txt"
+    trace_rsc_legacy = ui_dir / "admin" / "traces" / "__trace__" / "index.txt"
+    selected_trace_rsc: Path | None
+    if trace_rsc_renamed.is_file():
+        selected_trace_rsc = trace_rsc_renamed
+    elif trace_rsc_legacy.is_file():
+        selected_trace_rsc = trace_rsc_legacy
+    else:
+        selected_trace_rsc = None
+
     placeholder_trace_id = "__trace__"
 
     def _serve_or_410(trace_id: str) -> FileResponse:
@@ -329,6 +359,27 @@ def _register_trace_detail_routes(app: FastAPI, ui_dir: Path) -> None:
                 status_code=410, detail="trace placeholder is not a real id"
             )
         return FileResponse(selected_trace_shell)
+
+    def _serve_rsc_or_410(trace_id: str) -> FileResponse:
+        # Placeholder check runs first so stale ``__trace__`` links keep
+        # surfacing as ``410 Gone`` even on a broken build that shipped
+        # ``index.html`` without ``index.txt`` — operators get the same
+        # "this isn't a real trace id" signal as the HTML route.
+        if trace_id == placeholder_trace_id:
+            raise HTTPException(
+                status_code=410, detail="trace placeholder is not a real id"
+            )
+        if selected_trace_rsc is None:
+            raise HTTPException(status_code=404)
+        return FileResponse(selected_trace_rsc, media_type="text/x-component")
+
+    @app.get("/admin/traces/{trace_id}/index.txt", include_in_schema=False)
+    async def _trace_detail_rsc_dir(trace_id: str) -> FileResponse:
+        return _serve_rsc_or_410(trace_id)
+
+    @app.get("/admin/traces/{trace_id}.txt", include_in_schema=False)
+    async def _trace_detail_rsc_file(trace_id: str) -> FileResponse:
+        return _serve_rsc_or_410(trace_id)
 
     @app.get("/admin/traces/{trace_id}", include_in_schema=False)
     async def _trace_detail_spa_shell(trace_id: str) -> FileResponse:

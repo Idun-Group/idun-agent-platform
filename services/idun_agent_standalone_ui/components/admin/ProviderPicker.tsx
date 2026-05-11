@@ -19,6 +19,8 @@ type ProviderPickerProps<T extends string = string> = {
   options: ProviderOption<T>[];
   columns?: 2 | 3 | 4;
   className?: string;
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
 };
 
 export function ProviderPicker<T extends string = string>({
@@ -27,10 +29,14 @@ export function ProviderPicker<T extends string = string>({
   options,
   columns = 3,
   className,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
 }: ProviderPickerProps<T>) {
   return (
     <div
       role="radiogroup"
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       className={cn(
         "grid gap-3",
         columns === 2 && "sm:grid-cols-2",

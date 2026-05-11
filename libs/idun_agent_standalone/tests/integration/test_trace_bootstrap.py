@@ -188,8 +188,12 @@ async def test_attach_trace_pipeline_surfaces_instrumentor_dependency_conflict(
 
         assert app.state.trace_instrumentor_status == "dependency_conflict"
         assert "langchain_core" in (app.state.trace_instrumentor_message or "")
-        # The bootstrap must skip attach entirely on conflict.
-        assert attach_calls == []
+        # The bootstrap must skip the LangChainInstrumentor attach on
+        # conflict. The Gemini-detail GoogleGenAIInstrumentor runs from
+        # the same gate as a best-effort enrichment; its attach (or
+        # absence in the test env) is independent of the LangChain
+        # conflict so we only assert LangChain wasn't installed.
+        assert not any(isinstance(c, LangChainInstrumentor) for c in attach_calls)
         # Writer + exporter still spawn — the failure is per-instrumentor,
         # not per-pipeline. (Some operator paths run alternative
         # instrumentors via env or observability provider; the writer
@@ -197,6 +201,144 @@ async def test_attach_trace_pipeline_surfaces_instrumentor_dependency_conflict(
         assert isinstance(app.state.trace_exporter, StandaloneSpanExporter)
     finally:
         monkeypatch.setattr(_ol, "attach_instrumentor", original_attach)
+        if getattr(app.state, "trace_writer_task", None) is not None:
+            await app.state.trace_writer_task.stop()
+        if getattr(app.state, "trace_retention_task", None) is not None:
+            await app.state.trace_retention_task.stop()
+
+
+@pytest.mark.asyncio
+async def test_attach_trace_pipeline_attaches_genai_instrumentor_alongside_langchain(
+    sessionmaker_factory, monkeypatch
+):
+    """No-provider case attaches both LangChain and GoogleGenAI instrumentors.
+
+    The Gemini-detail capture relies on the dedicated
+    ``openinference-instrumentation-google-genai`` package wrapping the
+    ``google-genai`` SDK directly — ``langchain-google-genai`` doesn't
+    fill ``llm.token_count.prompt_details.cache_read`` / ``.cache_write``
+    on its own (see ``infrastructure/traces/_attrs.py``). The bootstrap
+    must auto-attach the GenAI instrumentor alongside LangChain so cost
+    dashboards get accurate cache numbers without operator action.
+    """
+    from idun_agent_engine.observability import otel_lifecycle as _ol
+    from openinference.instrumentation.google_genai import GoogleGenAIInstrumentor
+    from openinference.instrumentation.langchain import LangChainInstrumentor
+
+    attach_calls: list[object] = []
+    original_attach = _ol.attach_instrumentor
+
+    def _track(inst):
+        attach_calls.append(inst)
+        original_attach(inst)
+
+    monkeypatch.setattr(_ol, "attach_instrumentor", _track)
+
+    app = FastAPI()
+    app.state.sessionmaker = sessionmaker_factory
+    app.state.engine_config = None  # no provider → self-install path
+
+    try:
+        await attach_trace_pipeline(app)
+
+        assert any(
+            isinstance(c, LangChainInstrumentor) for c in attach_calls
+        ), f"LangChain instrumentor missing from {attach_calls}"
+        assert any(
+            isinstance(c, GoogleGenAIInstrumentor) for c in attach_calls
+        ), f"GenAI instrumentor missing from {attach_calls}"
+    finally:
+        if getattr(app.state, "trace_writer_task", None) is not None:
+            await app.state.trace_writer_task.stop()
+        if getattr(app.state, "trace_retention_task", None) is not None:
+            await app.state.trace_retention_task.stop()
+
+
+@pytest.mark.asyncio
+async def test_attach_trace_pipeline_skips_genai_when_otel_provider_active(
+    sessionmaker_factory, monkeypatch
+):
+    """Active OTel-installing provider (Phoenix/GCP) skips self-install path.
+
+    Those provider handlers already register their own instrumentors;
+    self-installing both LangChain and GoogleGenAI on top would create
+    duplicate spans. The gate is the same as the existing LangChain
+    self-install — we just verify GenAI honours it too.
+    """
+    from idun_agent_engine.observability import otel_lifecycle as _ol
+    from openinference.instrumentation.google_genai import GoogleGenAIInstrumentor
+    from openinference.instrumentation.langchain import LangChainInstrumentor
+
+    attach_calls: list[object] = []
+    monkeypatch.setattr(
+        _ol, "attach_instrumentor", lambda inst: attach_calls.append(inst)
+    )
+
+    class _ObservabilityEntry:
+        enabled = True
+        provider = "PHOENIX"  # not in _OTEL_BYPASSING_PROVIDERS
+
+    class _Cfg:
+        observability = [_ObservabilityEntry()]
+
+    app = FastAPI()
+    app.state.sessionmaker = sessionmaker_factory
+    app.state.engine_config = _Cfg()
+
+    try:
+        await attach_trace_pipeline(app)
+
+        assert not any(
+            isinstance(c, LangChainInstrumentor) for c in attach_calls
+        ), "LangChain attached despite Phoenix provider being active"
+        assert not any(
+            isinstance(c, GoogleGenAIInstrumentor) for c in attach_calls
+        ), "GenAI attached despite Phoenix provider being active"
+    finally:
+        if getattr(app.state, "trace_writer_task", None) is not None:
+            await app.state.trace_writer_task.stop()
+        if getattr(app.state, "trace_retention_task", None) is not None:
+            await app.state.trace_retention_task.stop()
+
+
+@pytest.mark.asyncio
+async def test_attach_trace_pipeline_handles_genai_dep_conflict(
+    sessionmaker_factory, monkeypatch, caplog
+):
+    """GenAI dep conflict logs a warning but never blocks the pipeline.
+
+    Best-effort enrichment: a conflict on the optional GenAI
+    instrumentor must not flip the primary ``trace_instrumentor_status``
+    (LangChain remains the source-of-truth for /_health) and must not
+    surface to the operator dashboard.
+    """
+    from openinference.instrumentation.google_genai import GoogleGenAIInstrumentor
+
+    fake_conflict = "requested: google-genai>=1.0 but found: google-genai 0.5.0"
+    monkeypatch.setattr(
+        GoogleGenAIInstrumentor,
+        "_check_dependency_conflicts",
+        lambda self: fake_conflict,
+        raising=False,
+    )
+
+    app = FastAPI()
+    app.state.sessionmaker = sessionmaker_factory
+    app.state.engine_config = None
+
+    try:
+        with caplog.at_level(logging.WARNING):
+            await attach_trace_pipeline(app)
+
+        # LangChain still attached cleanly — its health field reflects that.
+        assert app.state.trace_instrumentor_status == "ok"
+        # The GenAI conflict surfaced as a warning log, not as an error
+        # that affects the primary status surface.
+        assert any(
+            "GoogleGenAIInstrumentor dependency conflict" in rec.message
+            for rec in caplog.records
+        ), "expected GenAI conflict warning to be logged"
+    finally:
         if getattr(app.state, "trace_writer_task", None) is not None:
             await app.state.trace_writer_task.stop()
         if getattr(app.state, "trace_retention_task", None) is not None:

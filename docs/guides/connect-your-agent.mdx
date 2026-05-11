@@ -1,0 +1,175 @@
+---
+title: "Connect your existing agent"
+description: "Wrap an existing LangGraph or ADK agent in an Idun engine service. Write a minimal config.yaml that points at your StateGraph, install idun-agent-engine, and run."
+keywords: ["LangGraph", "StateGraph", "graph_definition", "connect agent", "existing agent", "config.yaml", "tutorial"]
+---
+
+You already have an agent. Maybe it's a LangGraph `StateGraph` in `my_agent.py`, or an ADK `Agent` in a Python package. This guide shows the smallest possible step from "I have an agent" to "I have an HTTP service with a chat UI, traces, and admin panel."
+
+## Prerequisites
+
+- Python 3.12 or newer
+- Your agent code, with a top-level variable that holds the graph (LangGraph) or agent (ADK)
+- `pip install idun-agent-engine` (this ships the `idun` CLI and the bundled standalone admin UI)
+
+## Example: a LangGraph echo agent
+
+Assume you have `my_agent.py` in the current directory:
+
+```python my_agent.py
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
+
+
+class State(TypedDict):
+    messages: list
+
+
+def echo(state: State) -> dict:
+    last = state["messages"][-1]
+    text = last.content if hasattr(last, "content") else str(last)
+    return {"messages": state["messages"] + [{"role": "assistant", "content": text}]}
+
+
+builder = StateGraph(State)
+builder.add_node("echo", echo)
+builder.add_edge(START, "echo")
+builder.add_edge("echo", END)
+
+graph = builder  # <-- this is what Idun will load
+```
+
+<Note>
+  Assign an uncompiled `StateGraph` to the top-level variable. The engine compiles it with its own checkpointer and store. A `CompiledStateGraph` is also accepted (the engine extracts its `.builder` and recompiles), but you'll see a deprecation warning.
+</Note>
+
+## Step 1: Write a minimal config.yaml
+
+```yaml config.yaml
+server:
+  api:
+    port: 8000
+
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "My agent"
+    graph_definition: "./my_agent.py:graph"
+```
+
+Three fields do all the work:
+
+- `agent.type`: `"LANGGRAPH"` or `"ADK"` (case-insensitive). Determines which adapter wraps your code.
+- `agent.config.name`: display name shown in the admin panel.
+- `agent.config.graph_definition`: `"<path>:<variable>"` for LangGraph. For ADK, the equivalent field is `agent.config.agent`.
+
+### `graph_definition` format
+
+The string is parsed as `<path_or_module>:<variable_name>`. The engine tries file-path resolution first, then falls back to Python module import:
+
+```yaml
+# File path (relative or absolute)
+graph_definition: "./my_agent.py:graph"
+graph_definition: "src/agents/router.py:app"
+
+# Python module path (when your package is importable)
+graph_definition: "my_package.agents.router:graph"
+```
+
+Common variable names: `graph`, `app`, `agent`. Anything that resolves to a `StateGraph` works.
+
+## Step 2: Run
+
+For evaluation and local development, use the standalone launcher:
+
+```bash
+idun init
+```
+
+`idun init` runs Alembic migrations, seeds the DB from your `config.yaml`, opens your browser, and serves on `http://localhost:8000`. Subsequent boots only need:
+
+```bash
+idun serve
+```
+
+By default, `IDUN_CONFIG_PATH` points at `./config.yaml`. Override with `--config` or the env var if your config lives elsewhere:
+
+```bash
+idun setup --config ./prod/config.yaml
+idun serve
+```
+
+### Or run programmatically (engine-only)
+
+If you don't want the admin panel and DB-backed config, use the engine SDK directly. No CLI, no DB, no UI:
+
+```python serve.py
+from idun_agent_engine import run_server_from_config
+
+run_server_from_config("config.yaml")
+```
+
+```bash
+python serve.py
+```
+
+The engine reads the YAML, instantiates your graph, and serves the AG-UI streaming endpoint at `POST /agent/run`. You bring your own admin tooling.
+
+## Step 3: Test the agent
+
+Open `http://localhost:8000/` in a browser. The chat UI streams your agent's responses.
+
+Or call the API directly:
+
+```bash
+curl -X POST http://localhost:8000/agent/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "thread_id": "test-1",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'
+```
+
+You'll receive a server-sent event stream of AG-UI events.
+
+## What you got for free
+
+By writing eight lines of YAML, you now have:
+
+- A FastAPI service at `/agent/run` with AG-UI streaming
+- A chat UI at `/`
+- An admin panel at `/admin/` for editing guardrails, memory, MCP servers, observability, and integrations
+- A trace viewer at `/admin/traces/` with a waterfall span tree
+- An OpenAPI schema at `/docs`
+
+To add guardrails, observability, MCP servers, or per-agent SSO, edit the YAML or use the admin panel: no agent code change required.
+
+## ADK agents
+
+The flow is identical, with `agent.type: "ADK"` and the `agent` field instead of `graph_definition`:
+
+```yaml config.yaml
+server:
+  api:
+    port: 8000
+
+agent:
+  type: "ADK"
+  config:
+    name: "My ADK agent"
+    agent: "./my_adk_agent.py:root_agent"
+    session_service:
+      type: "in_memory"
+    memory_service:
+      type: "in_memory"
+```
+
+See [ADK frameworks reference](/frameworks/adk) for full configuration options.
+
+## What's next
+
+- [Production hardening](/deployment/hardening): before exposing this beyond localhost
+- [Guardrails overview](/guardrails/overview): add input and output guards
+- [Observability overview](/observability/overview): wire Langfuse, Phoenix, or LangSmith
+- [Tool governance](/tool-governance/overview): attach MCP servers
+- [Troubleshooting](/troubleshooting): graph load errors, reload failures

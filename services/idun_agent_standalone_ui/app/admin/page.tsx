@@ -115,7 +115,7 @@ export default function DashboardPage() {
             <CardDescription>Latest chat sessions.</CardDescription>
           </div>
           <Button asChild variant="ghost" size="sm">
-            <Link href="/traces/">
+            <Link href="/admin/traces/">
               View all
               <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
             </Link>
@@ -159,7 +159,7 @@ export default function DashboardPage() {
                     <TableCell>
                       <Button asChild variant="ghost" size="sm">
                         <Link
-                          href={`/traces/session/?id=${encodeURIComponent(s.id)}`}
+                          href={`/admin/traces/session/?id=${encodeURIComponent(s.id)}`}
                         >
                           Open
                         </Link>

@@ -31,9 +31,9 @@ Edit `agent.py` and `config.yaml` to point at your real agent. The default agent
 idun-standalone serve
 ```
 
-- **Chat**: <http://localhost:8000/>
-- **Admin**: <http://localhost:8000/admin/>
-- **Traces**: <http://localhost:8000/traces/>
+- **Chat**: `http://localhost:8000/`
+- **Admin**: `http://localhost:8000/admin/`
+- **Traces**: `http://localhost:8000/traces/`
 
 By default, auth is `none` on a laptop — admin is open. When deployed inside a container the published image sets `IDUN_IN_CONTAINER=1`, defaulting to `password` and requiring `IDUN_ADMIN_PASSWORD_HASH` and `IDUN_SESSION_SECRET`.
 
@@ -49,7 +49,7 @@ IDUN_SESSION_SECRET="$SECRET" \
 idun-standalone serve
 ```
 
-Sign in at <http://localhost:8000/login/> with the password you typed into `hash-password`.
+Sign in at `http://localhost:8000/login/` with the password you typed into `hash-password`.
 
 ## 5. Edit the agent live
 

@@ -51,6 +51,60 @@ from idun_agent_engine.identity import current_user_id
 logger = logging.getLogger(__name__)
 
 
+class _SilenceFalsePositiveAppNameMismatch(logging.Filter):
+    """Drop ADK's app-name-mismatch warning when its origin is ADK's own ``agents/`` dir.
+
+    ``google.adk.runners.Runner.__init__`` calls
+    ``_enforce_app_name_alignment`` which walks
+    ``agent.__class__.__module__.__file__`` and compares the parent
+    directory name against the configured ``app_name``. When the user
+    instantiates the stock ``Agent`` class from ``google.adk.agents``
+    and their venv lives under ``Path.cwd()`` (typical local-dev
+    scenario), the heuristic resolves to ADK's own ``agents/``
+    directory and emits a "App name mismatch detected" warning that
+    has nothing to do with the operator's config — no value of
+    ``app_name`` short of literally ``"agents"`` will satisfy it.
+
+    Match on the full ``site-packages/google/adk/agents`` path segment
+    (with separators normalised to ``/`` so Windows backslash paths are
+    also handled) so genuine mismatches in the operator's own project
+    directory remain visible. A user project at
+    ``~/projects/python-adk/agents/main.py`` shares the substring
+    ``adk/agents`` but is NOT inside ``site-packages`` — its warning
+    must still surface.
+    """
+
+    _MARKER = "site-packages/google/adk/agents"
+    _PREFIX = "App name mismatch detected"
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        if not msg.startswith(self._PREFIX):
+            return True
+        normalised = msg.replace("\\", "/")
+        return self._MARKER not in normalised
+
+
+_app_name_mismatch_filter_installed = False
+
+
+def _install_app_name_mismatch_filter() -> None:
+    """Install the ADK app-name-mismatch filter once per process.
+
+    Idempotent: subsequent calls (engine reloads, multiple AdkAgent
+    instances) skip the install so we don't stack filters on the
+    target logger. The filter is process-lived because the logger
+    itself is module-level inside ``google.adk.runners``.
+    """
+    global _app_name_mismatch_filter_installed
+    if _app_name_mismatch_filter_installed:
+        return
+    logging.getLogger("google_adk.google.adk.runners").addFilter(
+        _SilenceFalsePositiveAppNameMismatch()
+    )
+    _app_name_mismatch_filter_installed = True
+
+
 def _event_text_parts(event: Any) -> list[str]:
     """Extract non-empty text fragments from an ADK event's content parts."""
     content = getattr(event, "content", None)
@@ -204,6 +258,7 @@ class AdkAgent(agent_base.BaseAgent):
         observability_config: list[ObservabilityConfig] | None = None,
     ) -> None:
         """Initialize the ADK agent asynchronously."""
+        _install_app_name_mismatch_filter()
         self._configuration = AdkAgentConfig.model_validate(config)
 
         self._name = self._configuration.app_name or "Unnamed ADK Agent"

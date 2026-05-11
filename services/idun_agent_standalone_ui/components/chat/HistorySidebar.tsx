@@ -90,7 +90,14 @@ export function HistorySidebar({
     enabled: canListHistory,
   });
 
-  const items = data ?? [];
+  // Sort by lastUpdateTime descending so the newest conversation lands at
+  // the top. The engine's /agent/sessions endpoint returns insertion order
+  // (LangGraph checkpointer order), which buries a new row at the bottom.
+  const items = (data ?? []).slice().sort((a, b) => {
+    const ta = a.lastUpdateTime ?? 0;
+    const tb = b.lastUpdateTime ?? 0;
+    return tb - ta;
+  });
 
   const [ssoInfo, setSsoInfo] = useState<SsoInfo | null>(null);
   useEffect(() => {

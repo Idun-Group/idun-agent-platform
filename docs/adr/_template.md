@@ -1,8 +1,8 @@
-# NNNN. <decision title>
+# NNNN. `<decision title>`
 
 - **Status:** Proposed | Accepted | Superseded by [NNNN](NNNN-other.md)
 - **Date:** YYYY-MM-DD
-- **Authors:** <names>
+- **Authors:** `<names>`
 - **Affected packages:** schema | engine | standalone | manager | UI | infra
 
 ## Context
