@@ -224,3 +224,44 @@ async def test_attach_trace_pipeline_failopen_when_sessionmaker_missing():
     # exception.
     assert getattr(app.state, "trace_writer_task", None) is None
     assert getattr(app.state, "trace_retention_task", None) is None
+
+
+
+@pytest.mark.asyncio
+async def test_attach_trace_pipeline_passes_separate_trace_flag(
+    sessionmaker_factory, monkeypatch
+):
+    """The self-install LangChainInstrumentor path must pass
+    ``separate_trace_from_runtime_context=True`` so a leaked active span
+    in OTel runtime context never parents a top-level LangChain run.
+
+    Without this flag, ``_finalizer.build_trace_rows`` never emits trace
+    rows for agents whose imports/init leave a span in OTel runtime
+    context (live regression on idun-assistant: Gemini + four MCP
+    servers, 2026-05-11).
+    """
+    from idun_agent_engine.observability import otel_lifecycle as _ol
+
+    recorded_kwargs: dict[str, object] = {}
+    original_attach = _ol.attach_instrumentor
+
+    def _recorder(instrumentor, **kwargs):
+        recorded_kwargs.update(kwargs)
+        recorded_kwargs["__instrumentor"] = instrumentor
+
+    monkeypatch.setattr(_ol, "attach_instrumentor", _recorder)
+
+    app = FastAPI()
+    app.state.sessionmaker = sessionmaker_factory
+    app.state.engine_config = None
+
+    try:
+        await attach_trace_pipeline(app)
+        assert recorded_kwargs.get("separate_trace_from_runtime_context") is True
+        assert recorded_kwargs.get("__instrumentor") is not None
+    finally:
+        monkeypatch.setattr(_ol, "attach_instrumentor", original_attach)
+        if getattr(app.state, "trace_writer_task", None) is not None:
+            await app.state.trace_writer_task.stop()
+        if getattr(app.state, "trace_retention_task", None) is not None:
+            await app.state.trace_retention_task.stop()

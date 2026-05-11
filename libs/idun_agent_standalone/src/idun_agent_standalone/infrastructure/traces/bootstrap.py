@@ -149,7 +149,10 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
                     conflict,
                 )
             else:
-                otel_lifecycle.attach_instrumentor(instrumentor)
+                otel_lifecycle.attach_instrumentor(
+                    instrumentor,
+                    separate_trace_from_runtime_context=True,
+                )
                 logger.info("trace pipeline: self-installed LangChainInstrumentor")
         except ImportError:
             instrumentor_status = "attach_failed"
