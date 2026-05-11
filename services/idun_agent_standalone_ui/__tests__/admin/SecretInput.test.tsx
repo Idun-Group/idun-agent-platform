@@ -45,4 +45,43 @@ describe("SecretInput", () => {
     expect(input).toHaveAttribute("autocomplete", "off");
     expect(input).toHaveAttribute("spellcheck", "false");
   });
+
+  it("links the toggle to the input via aria-controls (F7)", () => {
+    render(<SecretInput aria-label="secret" id="my-secret" />);
+    const input = screen.getByLabelText("secret");
+    const toggle = screen.getByRole("button", { name: /show secret/i });
+    expect(input).toHaveAttribute("id", "my-secret");
+    expect(toggle).toHaveAttribute("aria-controls", "my-secret");
+  });
+
+  it("auto-derives an id when none is provided so aria-controls still points somewhere", () => {
+    render(<SecretInput aria-label="secret" />);
+    const input = screen.getByLabelText("secret");
+    const toggle = screen.getByRole("button", { name: /show secret/i });
+    const inputId = input.getAttribute("id");
+    expect(inputId).toBeTruthy();
+    expect(toggle).toHaveAttribute("aria-controls", inputId!);
+  });
+
+  describe("when the input is disabled (F2)", () => {
+    it("disables the toggle button so the secret cannot be revealed", () => {
+      render(<SecretInput aria-label="secret" defaultValue="hunter2" disabled />);
+      const input = screen.getByLabelText("secret");
+      const toggle = screen.getByRole("button", { name: /show secret/i });
+      expect(input).toBeDisabled();
+      expect(toggle).toBeDisabled();
+      expect(toggle).toHaveAttribute("aria-disabled", "true");
+      expect(toggle).toHaveAttribute("tabindex", "-1");
+    });
+
+    it("does not flip type=password even if the toggle is somehow clicked", () => {
+      render(<SecretInput aria-label="secret" defaultValue="hunter2" disabled />);
+      const input = screen.getByLabelText("secret");
+      const toggle = screen.getByRole("button", { name: /show secret/i });
+      // Defensive: even if a stylesheet override let the user click, the
+      // onClick handler must guard.
+      fireEvent.click(toggle);
+      expect(input).toHaveAttribute("type", "password");
+    });
+  });
 });

@@ -95,11 +95,17 @@ export function WizardManyDetected({
                 }
               }}
               disabled={selectedKey === ""}
+              aria-describedby={
+                selectedKey === "" ? "many-continue-help" : undefined
+              }
             >
               Use selected agent
             </Button>
             {selectedKey === "" && (
-              <p className="text-xs text-muted-foreground">
+              <p
+                id="many-continue-help"
+                className="text-xs text-muted-foreground"
+              >
                 Select an agent to continue
               </p>
             )}

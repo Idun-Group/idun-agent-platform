@@ -56,11 +56,12 @@ export function FrameworkPicker({ onContinue, onRescan }: FrameworkPickerProps) 
           <Button
             onClick={() => selected && onContinue(selected)}
             disabled={!selected}
+            aria-describedby={!selected ? "fw-continue-help" : undefined}
           >
             Continue
           </Button>
           {!selected && (
-            <p className="text-xs text-muted-foreground">
+            <p id="fw-continue-help" className="text-xs text-muted-foreground">
               Select a framework to continue
             </p>
           )}

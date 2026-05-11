@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ApiError, api } from "@/lib/api";
-import { getRuntimeConfig } from "@/lib/runtime-config";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,23 +15,35 @@ function isSafeNext(next: string): boolean {
   return next.startsWith("/") && !next.startsWith("//");
 }
 
+// Pick the post-login destination. Same-origin paths are honored, except
+// /login itself — redirecting to /login would loop. Falls back to "/".
+function pickPostLoginPath(raw: string): string {
+  const candidate = isSafeNext(raw) ? raw : "/";
+  if (candidate === "/login" || candidate.startsWith("/login/")) return "/";
+  return candidate;
+}
+
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // When admin auth is disabled the password form does nothing on submit.
-  // Redirect to the chat root so the user isn't stuck on a non-functional
-  // page. Honor ?next=<path> if it's same-origin, otherwise go to "/".
-  const authMode =
-    typeof window !== "undefined" ? getRuntimeConfig().authMode : "password";
-  const authDisabled = authMode === "none";
+  // When admin auth is disabled the password form does nothing on submit,
+  // so redirect to the chat root. Read window.__IDUN_CONFIG__.authMode
+  // directly (not via getRuntimeConfig, which defaults to "none" when the
+  // runtime-config.js hasn't loaded yet — that fallback would lock
+  // operators out if the bootstrap script ever fails). Treat undefined as
+  // "config not loaded yet, show the form" rather than auto-redirecting.
+  const configuredAuthMode =
+    typeof window !== "undefined"
+      ? window.__IDUN_CONFIG__?.authMode
+      : undefined;
+  const authDisabled = configuredAuthMode === "none";
   useEffect(() => {
     if (!authDisabled) return;
     const raw = params?.get("next") ?? "/";
-    const next = isSafeNext(raw) ? raw : "/";
-    router.replace(next);
+    router.replace(pickPostLoginPath(raw));
   }, [authDisabled, params, router]);
   if (authDisabled) return null;
 
@@ -53,8 +64,7 @@ function LoginForm() {
             try {
               await api.login(password);
               const raw = params?.get("next") ?? "/";
-              const next = isSafeNext(raw) ? raw : "/";
-              router.replace(next);
+              router.replace(pickPostLoginPath(raw));
             } catch (err) {
               const status = err instanceof ApiError ? err.status : 0;
               toast.error(
