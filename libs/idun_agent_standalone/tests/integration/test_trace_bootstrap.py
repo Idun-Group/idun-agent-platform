@@ -265,3 +265,63 @@ async def test_attach_trace_pipeline_passes_separate_trace_flag(
             await app.state.trace_writer_task.stop()
         if getattr(app.state, "trace_retention_task", None) is not None:
             await app.state.trace_retention_task.stop()
+
+
+@pytest.mark.asyncio
+async def test_attach_trace_pipeline_falls_back_when_kwarg_unsupported(
+    sessionmaker_factory, monkeypatch, caplog
+):
+    """A downgraded/forked ``LangChainInstrumentor`` without the
+    ``separate_trace_from_runtime_context`` kwarg must degrade gracefully:
+    skip the kwarg (spans still capture), but flip
+    ``trace_instrumentor_status`` so /_health surfaces the regression.
+    """
+    from idun_agent_engine.observability import otel_lifecycle as _ol
+    from openinference.instrumentation.langchain import _tracer as _oi_tracer
+
+    recorded_kwargs: dict[str, object] = {}
+    original_attach = _ol.attach_instrumentor
+
+    def _recorder(instrumentor, **kwargs):
+        recorded_kwargs.update(kwargs)
+        recorded_kwargs["__instrumentor"] = instrumentor
+
+    monkeypatch.setattr(_ol, "attach_instrumentor", _recorder)
+
+    # Simulate an OpenInference downgrade that dropped the kwarg from
+    # OpenInferenceTracer.__init__ — bootstrap's signature probe should
+    # detect the regression and skip the flag.
+    def _stub_init(self, tracer, *args, **kwargs):  # noqa: ANN001
+        return
+
+    monkeypatch.setattr(
+        _oi_tracer.OpenInferenceTracer,
+        "__init__",
+        _stub_init,
+        raising=False,
+    )
+
+    app = FastAPI()
+    app.state.sessionmaker = sessionmaker_factory
+    app.state.engine_config = None
+
+    try:
+        with caplog.at_level(logging.WARNING):
+            await attach_trace_pipeline(app)
+
+        assert "separate_trace_from_runtime_context" not in recorded_kwargs
+        assert recorded_kwargs.get("__instrumentor") is not None
+        assert app.state.trace_instrumentor_status == "kwarg_unsupported"
+        assert "separate_trace_from_runtime_context" in (
+            app.state.trace_instrumentor_message or ""
+        )
+        assert any(
+            "separate_trace_from_runtime_context" in rec.message
+            for rec in caplog.records
+        )
+    finally:
+        monkeypatch.setattr(_ol, "attach_instrumentor", original_attach)
+        if getattr(app.state, "trace_writer_task", None) is not None:
+            await app.state.trace_writer_task.stop()
+        if getattr(app.state, "trace_retention_task", None) is not None:
+            await app.state.trace_retention_task.stop()

@@ -30,6 +30,7 @@ Locked design:
 
 from __future__ import annotations
 
+import inspect
 import logging
 
 from fastapi import FastAPI
@@ -55,6 +56,29 @@ _SCHEDULE_DELAY_MILLIS = 2000
 # these (or no provider at all) we self-install LangChainInstrumentor
 # so the standalone trace store still captures.
 _OTEL_BYPASSING_PROVIDERS = frozenset({"LANGFUSE", "LANGSMITH"})
+
+
+def _langchain_instrumentor_supports_separate_trace() -> bool:
+    """Return True if the installed OpenInference LangChain tracer
+    declares ``separate_trace_from_runtime_context`` on its constructor.
+
+    ``LangChainInstrumentor._instrument`` accepts ``**kwargs`` blindly,
+    so a signature probe there always passes. The kwarg is actually
+    forwarded to ``OpenInferenceTracer.__init__`` — that's where we
+    check. Guards against an OpenInference downgrade or fork that drops
+    the flag: without this probe a silent ``**kwargs`` consumer would
+    swallow it and we'd regress to the runtime-context-leak bug with no
+    operator signal.
+    """
+    try:
+        from openinference.instrumentation.langchain._tracer import (
+            OpenInferenceTracer,
+        )
+
+        params = inspect.signature(OpenInferenceTracer.__init__).parameters
+    except (ImportError, TypeError, ValueError):
+        return False
+    return "separate_trace_from_runtime_context" in params
 
 
 async def attach_trace_pipeline(app: FastAPI) -> None:
@@ -149,11 +173,29 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
                     conflict,
                 )
             else:
-                otel_lifecycle.attach_instrumentor(
-                    instrumentor,
-                    separate_trace_from_runtime_context=True,
-                )
-                logger.info("trace pipeline: self-installed LangChainInstrumentor")
+                if _langchain_instrumentor_supports_separate_trace():
+                    otel_lifecycle.attach_instrumentor(
+                        instrumentor,
+                        separate_trace_from_runtime_context=True,
+                    )
+                    logger.info(
+                        "trace pipeline: self-installed LangChainInstrumentor"
+                    )
+                else:
+                    otel_lifecycle.attach_instrumentor(instrumentor)
+                    instrumentor_status = "kwarg_unsupported"
+                    instrumentor_message = (
+                        "openinference-instrumentation-langchain dropped the "
+                        "separate_trace_from_runtime_context kwarg; trace rows "
+                        "will be missing for agents whose runtime OTel "
+                        "context leaks a parent span. Pin a compatible "
+                        "version."
+                    )
+                    logger.warning(
+                        "trace pipeline: self-installed LangChainInstrumentor "
+                        "without separate_trace_from_runtime_context "
+                        "(kwarg not in installed version)"
+                    )
         except ImportError:
             instrumentor_status = "attach_failed"
             instrumentor_message = (
