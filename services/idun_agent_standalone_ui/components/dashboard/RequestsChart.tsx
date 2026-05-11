@@ -49,9 +49,9 @@ export function RequestsChart({ series }: { series: TimeBucketPoint[] }) {
           <Line
             type="monotone"
             dataKey="v"
-            stroke="hsl(var(--primary))"
+            stroke="var(--primary)"
             strokeWidth={2}
-            dot={{ r: 2, fill: "hsl(var(--primary))", strokeWidth: 0 }}
+            dot={{ r: 2, fill: "var(--primary)", strokeWidth: 0 }}
             activeDot={{ r: 4 }}
             isAnimationActive={false}
           />

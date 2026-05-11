@@ -52,9 +52,9 @@ export function LatencyChart({ series }: { series: LatencyBucketPoint[] }) {
             type="monotone"
             name="p50"
             dataKey="p50"
-            stroke="hsl(var(--primary))"
+            stroke="var(--primary)"
             strokeWidth={2}
-            dot={{ r: 2, fill: "hsl(var(--primary))", strokeWidth: 0 }}
+            dot={{ r: 2, fill: "var(--primary)", strokeWidth: 0 }}
             activeDot={{ r: 4 }}
             isAnimationActive={false}
             connectNulls
@@ -63,9 +63,9 @@ export function LatencyChart({ series }: { series: LatencyBucketPoint[] }) {
             type="monotone"
             name="p95"
             dataKey="p95"
-            stroke="hsl(var(--destructive))"
+            stroke="var(--destructive)"
             strokeWidth={2}
-            dot={{ r: 2, fill: "hsl(var(--destructive))", strokeWidth: 0 }}
+            dot={{ r: 2, fill: "var(--destructive)", strokeWidth: 0 }}
             activeDot={{ r: 4 }}
             isAnimationActive={false}
             connectNulls
