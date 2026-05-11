@@ -7,9 +7,9 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="../logo/light.svg">
-  <source media="(prefers-color-scheme: light)" srcset="../logo/dark.svg">
-  <img alt="Idun Agent Platform" src="../logo/dark.svg" width="200">
+  <source media="(prefers-color-scheme: dark)" srcset="../logo/light.svg" />
+  <source media="(prefers-color-scheme: light)" srcset="../logo/dark.svg" />
+  <img alt="Idun Agent Platform" src="../logo/dark.svg" width="200" />
 </picture>
 
 <br/>

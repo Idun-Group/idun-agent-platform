@@ -36,7 +36,7 @@ When facts conflict, trust in this order:
 5. **Existing MkDocs pages** — `/docs/` (reference only, may be stale)
 6. **Landing page** — `landing-page-idun-platform` repo (marketing, may overstate)
 
-Never invent capabilities. If you cannot verify a feature exists in code, do not document it. Mark unverified claims with `<!-- VERIFY: description -->` comments.
+Never invent capabilities. If you cannot verify a feature exists in code, do not document it. Mark unverified claims with a comment: use `{/* VERIFY: description */}` in `.mdx` files and `<!-- VERIFY: description -->` in plain `.md` files. The HTML-comment form does not parse inline in MDX (Mintlify rejects it as an unclosed tag).
 
 ## Writing standards
 
