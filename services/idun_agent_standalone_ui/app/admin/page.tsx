@@ -100,6 +100,15 @@ export default function DashboardPage() {
         <RangePicker value={range} onChange={setRange} />
       </header>
 
+      {!agentNotConfigured && (
+        <section aria-label="Activity" className="flex flex-col gap-4">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Activity · last {range}
+          </p>
+          <ActivityGrid query={dashboardQuery} />
+        </section>
+      )}
+
       <section aria-label="Configuration" className="flex flex-col gap-4">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">
           Configuration
@@ -125,15 +134,6 @@ export default function DashboardPage() {
           <Skeleton className="h-32 w-full" />
         )}
       </section>
-
-      {!agentNotConfigured && (
-        <section aria-label="Activity" className="flex flex-col gap-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            Activity · last {range}
-          </p>
-          <ActivityGrid query={dashboardQuery} />
-        </section>
-      )}
     </div>
   );
 }

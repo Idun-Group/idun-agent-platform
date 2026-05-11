@@ -54,8 +54,10 @@ export function LatencyChart({ series }: { series: LatencyBucketPoint[] }) {
             dataKey="p50"
             stroke="hsl(var(--primary))"
             strokeWidth={2}
-            dot={false}
+            dot={{ r: 2, fill: "hsl(var(--primary))", strokeWidth: 0 }}
+            activeDot={{ r: 4 }}
             isAnimationActive={false}
+            connectNulls
           />
           <Line
             type="monotone"
@@ -63,8 +65,10 @@ export function LatencyChart({ series }: { series: LatencyBucketPoint[] }) {
             dataKey="p95"
             stroke="hsl(var(--destructive))"
             strokeWidth={2}
-            dot={false}
+            dot={{ r: 2, fill: "hsl(var(--destructive))", strokeWidth: 0 }}
+            activeDot={{ r: 4 }}
             isAnimationActive={false}
+            connectNulls
           />
         </LineChart>
       </ResponsiveContainer>
