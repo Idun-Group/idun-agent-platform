@@ -1,29 +1,17 @@
-"""Regression: agent whose runtime OTel context leaks a parent must still
-produce a ``standalone_trace`` row.
-
-Reported live against ``idun-assistant`` (LangGraph + Gemini + 4 MCP
-servers) on 2026-05-11. Some library in that agent's import graph leaves
-an active OTel span in runtime context; the OpenInference LangChain
-instrumentor inherits it as parent for every top-level run, so
-``_finalizer.build_trace_rows`` (which requires ``parent_span_id IS None``
-in the batch) never emits a trace row.
-
-This test simulates the leak with ``tracer.start_as_current_span(...)``
-held active across a ``RunnableLambda.invoke()`` call. With the
-``separate_trace_from_runtime_context=True`` flag set by the bootstrap,
-the LangChain span ignores the leaked parent and starts a fresh trace,
-which the finalizer recognises and persists.
-"""
+"""Runtime-context leak: a top-level LangChain span whose runtime OTel
+context carries an unknown parent must still produce a trace row.
+PG-gated; mirrors ``db/test_writer_pg_copy_path`` harness."""
 
 from __future__ import annotations
 
 import asyncio
+import os
 
 import pytest
 from alembic import command
 from fastapi import FastAPI
 from idun_agent_engine.observability import otel_lifecycle
-from idun_agent_standalone.db.migrate import _alembic_config
+from idun_agent_standalone.db.migrate import _alembic_config, downgrade_base
 from idun_agent_standalone.infrastructure.db.models.span import StandaloneSpanRow
 from idun_agent_standalone.infrastructure.db.models.trace import StandaloneTraceRow
 from idun_agent_standalone.infrastructure.traces.bootstrap import attach_trace_pipeline
@@ -35,9 +23,26 @@ _DRAIN_TIMEOUT_S = 5.0
 _DRAIN_TICK_S = 0.05
 
 
+pytestmark = pytest.mark.skipif(
+    not os.getenv("STANDALONE_TEST_POSTGRES_URL"),
+    reason="STANDALONE_TEST_POSTGRES_URL not set; PG runtime-context-leak test skipped",
+)
+
+
+async def _make_pg_pipeline(monkeypatch):
+    url = os.environ["STANDALONE_TEST_POSTGRES_URL"]
+    monkeypatch.setenv("DATABASE_URL", url)
+    await asyncio.to_thread(downgrade_base)
+    await asyncio.to_thread(command.upgrade, _alembic_config(), "head")
+    engine = create_async_engine(url)
+    sm = async_sessionmaker(engine, expire_on_commit=False)
+    return engine, sm
+
+
 async def _wait_for(predicate, *, timeout_s: float = _DRAIN_TIMEOUT_S) -> bool:
-    deadline = asyncio.get_event_loop().time() + timeout_s
-    while asyncio.get_event_loop().time() < deadline:
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout_s
+    while loop.time() < deadline:
         if await predicate():
             return True
         await asyncio.sleep(_DRAIN_TICK_S)
@@ -45,12 +50,8 @@ async def _wait_for(predicate, *, timeout_s: float = _DRAIN_TIMEOUT_S) -> bool:
 
 
 @pytest.mark.asyncio
-async def test_runtime_context_leak_still_produces_trace_row(tmp_path, monkeypatch):
-    url = f"sqlite+aiosqlite:///{tmp_path / 'leak.db'}"
-    monkeypatch.setenv("DATABASE_URL", url)
-    await asyncio.to_thread(command.upgrade, _alembic_config(), "head")
-    engine = create_async_engine(url)
-    sm = async_sessionmaker(engine, expire_on_commit=False)
+async def test_runtime_context_leak_still_produces_trace_row(monkeypatch):
+    engine, sm = await _make_pg_pipeline(monkeypatch)
 
     otel_lifecycle.shutdown_otel()
     app = FastAPI()
@@ -77,10 +78,9 @@ async def test_runtime_context_leak_still_produces_trace_row(tmp_path, monkeypat
                 ).scalar_one()
                 return count >= 1
 
-        assert await _wait_for(_has_trace), (
-            "no trace row materialized within "
-            f"{_DRAIN_TIMEOUT_S}s — the leak fix did not take effect"
-        )
+        assert await _wait_for(
+            _has_trace
+        ), f"no trace row materialized within {_DRAIN_TIMEOUT_S}s"
 
         async with sm() as session:
             rows = (
@@ -92,18 +92,14 @@ async def test_runtime_context_leak_still_produces_trace_row(tmp_path, monkeypat
             ).all()
             assert any(
                 name == "leak_probe" and parent is None for name, parent in rows
-            ), (
-                "expected RunnableLambda span with parent_span_id IS NULL; "
-                f"got {rows!r}"
-            )
+            ), f"expected leak_probe span with parent IS NULL; got {rows!r}"
 
             trace_names = (
                 (await session.execute(select(StandaloneTraceRow.name))).scalars().all()
             )
-            assert "leak_probe" in trace_names, (
-                "expected a trace row for the LangChain runnable; "
-                f"got {trace_names!r}"
-            )
+            assert (
+                "leak_probe" in trace_names
+            ), f"expected a trace row for leak_probe; got {trace_names!r}"
     finally:
         if getattr(app.state, "trace_writer_task", None) is not None:
             await app.state.trace_writer_task.stop()
@@ -111,3 +107,4 @@ async def test_runtime_context_leak_still_produces_trace_row(tmp_path, monkeypat
             await app.state.trace_retention_task.stop()
         await engine.dispose()
         otel_lifecycle.shutdown_otel()
+        await asyncio.to_thread(downgrade_base)
