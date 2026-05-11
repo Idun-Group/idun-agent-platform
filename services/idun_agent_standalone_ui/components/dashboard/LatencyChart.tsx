@@ -23,7 +23,12 @@ export function LatencyChart({ series }: { series: LatencyBucketPoint[] }) {
   }
   const data = series.map((p) => ({ ts: p.t, p50: p.p50, p95: p.p95 }));
   return (
-    <div data-testid="latency-chart" className="h-48 w-full">
+    <div
+      data-testid="latency-chart"
+      className="h-48 w-full"
+      role="img"
+      aria-label="Latency over time showing p50 and p95 in milliseconds"
+    >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -57,5 +62,6 @@ export function LatencyChart({ series }: { series: LatencyBucketPoint[] }) {
 
 function shortTime(iso: string): string {
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }

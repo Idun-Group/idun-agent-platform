@@ -53,9 +53,11 @@ async def test_sqlite_latency_percentile_fallback(async_session):
     await async_session.commit()
 
     resp = await compute_dashboard(async_session, DashboardRange.h1, now=now)
-    # p50 of [100, 200, ..., 1000] via linear interpolation is 550; p95 is 955
-    assert resp.latency.p50_ms == pytest.approx(550.0, rel=0.1)
-    assert resp.latency.p95_ms == pytest.approx(950.0, rel=0.1)
+    # Window is [now - 1h, now); the i=0 trace at exactly `now` is
+    # excluded by the half-open boundary, leaving [200, 300, ..., 1000]
+    # (9 values). Linear interpolation: p50 = 600, p95 = 960.
+    assert resp.latency.p50_ms == pytest.approx(600.0, rel=0.01)
+    assert resp.latency.p95_ms == pytest.approx(960.0, rel=0.01)
 
 
 async def test_sqlite_top_errors_groups_on_span_name(async_session):

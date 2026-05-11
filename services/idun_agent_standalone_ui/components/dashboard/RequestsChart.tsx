@@ -22,7 +22,12 @@ export function RequestsChart({ series }: { series: TimeBucketPoint[] }) {
   }
   const data = series.map((p) => ({ ts: p.t, v: p.v }));
   return (
-    <div data-testid="requests-chart" className="h-48 w-full">
+    <div
+      data-testid="requests-chart"
+      className="h-48 w-full"
+      role="img"
+      aria-label="Requests per minute over time"
+    >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -45,5 +50,6 @@ export function RequestsChart({ series }: { series: TimeBucketPoint[] }) {
 
 function shortTime(iso: string): string {
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }

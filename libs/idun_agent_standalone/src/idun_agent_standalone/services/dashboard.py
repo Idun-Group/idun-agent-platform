@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 from datetime import UTC, datetime, timedelta
+from typing import TypedDict
 
 from idun_agent_schema.standalone.dashboard import (
     CostBlock,
@@ -30,6 +31,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from idun_agent_standalone.infrastructure.db.models.span import StandaloneSpanRow
 from idun_agent_standalone.infrastructure.db.models.trace import StandaloneTraceRow
+
+
+class _TopErrorAccumulator(TypedDict):
+    span_name: str
+    count: int
+    last_seen: datetime
+    sample_trace_id: str
+
 
 _RANGE_TO_SECONDS: dict[DashboardRange, int] = {
     DashboardRange.h1: 60 * 60,
@@ -461,7 +470,7 @@ async def _postgres_top_errors(
     # because finalize lag is bounded by the BatchSpanProcessor's
     # ``schedule=2s`` delay, well under the dashboard's 60s polling cadence.
     rows = [r for r in rows if r.sample_trace_hex is not None]
-    collapsed: dict[str, dict] = {}
+    collapsed: dict[str, _TopErrorAccumulator] = {}
     for r in rows:
         key = _normalize_span_name(r.span_name)
         existing = collapsed.get(key)
@@ -694,7 +703,7 @@ async def _sqlite_top_errors(
         )
     ).all()
 
-    collapsed: dict[str, dict] = {}
+    collapsed: dict[str, _TopErrorAccumulator] = {}
     for name, ts, tid_8 in span_rows:
         full_hex = suffix_to_hex.get(tid_8)
         if full_hex is None:

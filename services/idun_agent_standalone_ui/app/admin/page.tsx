@@ -187,6 +187,16 @@ function AgentGraphCard({
                 : "Graph view isn't available for this agent type yet."}
             </p>
           )}
+        {graphQuery.isError &&
+          !(
+            graphQuery.error instanceof ApiError &&
+            (graphQuery.error.status === 404 || graphQuery.error.status === 503)
+          ) && (
+            <Alert variant="destructive">
+              <AlertTitle>Graph unavailable</AlertTitle>
+              <AlertDescription>Try reloading the page.</AlertDescription>
+            </Alert>
+          )}
         {graphQuery.data && (
           <AgentGraphLazy ref={graphRef} graph={graphQuery.data} height={320} />
         )}
@@ -304,7 +314,8 @@ function deltaLabel(value: number | null | undefined, marker?: string): string |
   if (value == null) return null;
   const arrow = value >= 0 ? "↑" : "↓";
   const pct = Math.abs(value * 100).toFixed(1);
-  return `${arrow} ${pct}% ${marker ? `(${marker}) ` : ""}vs prior`;
+  const tag = marker ? `(${marker}) ` : "";
+  return `${arrow} ${pct}% ${tag}vs prior`;
 }
 
 function ppLabel(value: number | null | undefined): string | null {
