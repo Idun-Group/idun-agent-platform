@@ -356,6 +356,36 @@ test("Re-scan: EMPTY → user clicks Re-scan → backend returns ONE_DETECTED �
 test("Login redirect (password mode): /onboarding 401 → /login → submit → back to /onboarding", async ({
   page,
 }) => {
+  // The standalone server boots with auth_mode=none in this e2e suite, but
+  // this test exercises the password-mode flow (the 401 → /login → submit
+  // chain only matters when auth is enforced). With UI-011 the /login page
+  // now redirects to / when runtime authMode === "none", which removes the
+  // form the test needs to fill. Override the runtime config to mark this
+  // page as password-mode so the form renders.
+  await page.route("**/runtime-config.js", async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `window.__IDUN_CONFIG__ = ${JSON.stringify({
+        theme: {
+          appName: "Idun Agent",
+          greeting: "How can I help?",
+          starterPrompts: [],
+          logo: { text: "IA" },
+          layout: "branded",
+          radius: "0.625",
+          fontSans: "",
+          fontSerif: "",
+          fontMono: "",
+          defaultColorScheme: "system",
+          colors: { light: {}, dark: {} },
+        },
+        authMode: "password",
+        layout: "branded",
+      })};\n`,
+      headers: { "Cache-Control": "no-store" },
+    });
+  });
   let scanAttempts = 0;
   await page.route("**/admin/api/v1/agent", async (route: Route) => {
     await route.fulfill({

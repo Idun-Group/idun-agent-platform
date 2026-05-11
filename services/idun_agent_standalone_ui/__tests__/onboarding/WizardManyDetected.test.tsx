@@ -70,6 +70,23 @@ describe("WizardManyDetected", () => {
     ).toBeDisabled();
   });
 
+  it("shows helper text under the disabled button until a row is picked (UI-014)", () => {
+    render(
+      <WizardManyDetected
+        detections={detections}
+        onConfirm={vi.fn()}
+        onRescan={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByText(/select an agent to continue/i),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/B Agent/));
+    expect(
+      screen.queryByText(/select an agent to continue/i),
+    ).not.toBeInTheDocument();
+  });
+
   it("calls onConfirm with the picked detection", () => {
     const onConfirm = vi.fn();
     render(
