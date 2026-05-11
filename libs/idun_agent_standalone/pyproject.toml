@@ -63,3 +63,6 @@ filterwarnings = [
     # Drop the noise until FastAPI ships a fix.
     "ignore::pydantic.warnings.UnsupportedFieldAttributeWarning",
 ]
+markers = [
+    "requires_postgres: Test requires PostgreSQL (skipped unless PYTEST_POSTGRES_URL is set)",
+]
