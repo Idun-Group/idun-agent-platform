@@ -1,14 +1,10 @@
-<p align="center">
-  <strong>English</strong> | <a href="docs/readme/README.fr.md">Français</a> | <a href="docs/readme/README.es.md">Español</a> | <a href="docs/readme/README.zh.md">中文</a> | <a href="docs/readme/README.ar.md">العربية</a>
-</p>
-
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/logo/light.svg">
-  <source media="(prefers-color-scheme: light)" srcset="docs/logo/dark.svg">
-  <img alt="Idun Agent Platform" src="docs/logo/dark.svg" width="200">
-</picture>
+<img alt="Idun Agent Platform" src="docs/images/readme/banner.png">
+
+<p>
+  <strong>English</strong> | <a href="docs/readme/README.fr.md">Français</a> | <a href="docs/readme/README.es.md">Español</a> | <a href="docs/readme/README.zh.md">中文</a> | <a href="docs/readme/README.ar.md">العربية</a>
+</p>
 
 <br/>
 
