@@ -46,6 +46,13 @@ OPENAPI_TAGS: list[dict[str, str]] = [
             "delete, and pipeline-health for the standalone trace store."
         ),
     },
+    {
+        "name": "Dashboard",
+        "description": (
+            "Operator dashboard widgets — KPIs, time-series, top errors, "
+            "and configuration summary."
+        ),
+    },
 ]
 """Ordered tag groups exposed in /docs. Order = display order."""
 
