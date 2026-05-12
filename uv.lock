@@ -1840,7 +1840,7 @@ requires-dist = [
     { name = "itsdangerous", specifier = ">=2.2,<3" },
     { name = "jmespath", specifier = ">=1.0,<2.0" },
     { name = "langchain", specifier = ">=1.0.0,<2.0.0" },
-    { name = "langchain-core", specifier = ">=1.0.0,<1.4" },
+    { name = "langchain-core", specifier = ">=1.0.0,<2.0" },
     { name = "langchain-google-vertexai", specifier = ">=2.0.27,<4.0.0" },
     { name = "langchain-mcp-adapters", specifier = ">=0.2.0,<0.3.0" },
     { name = "langfuse", specifier = ">=2.60.8,<4.0.0" },
