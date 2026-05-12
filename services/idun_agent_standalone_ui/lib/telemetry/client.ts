@@ -1,3 +1,5 @@
+"use client";
+
 import type { CaptureResult, PostHog } from "posthog-js";
 import { getTelemetryConfig } from "./config";
 import { sanitize } from "./sanitize";
