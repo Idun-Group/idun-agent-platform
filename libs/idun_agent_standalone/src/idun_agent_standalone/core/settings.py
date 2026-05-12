@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 from pathlib import Path
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -41,7 +41,7 @@ class StandaloneSettings(BaseSettings):
     )
     auth_mode: AuthMode = Field(default=AuthMode.NONE, alias="IDUN_ADMIN_AUTH_MODE")
     telemetry_enabled: bool = Field(default=True, alias="IDUN_TELEMETRY_ENABLED")
-    telemetry_deployment_type: str = Field(
+    telemetry_deployment_type: Literal["cloud", "self-hosted", "dev"] = Field(
         default="self-hosted", alias="IDUN_DEPLOYMENT_TYPE"
     )
     telemetry_identify_users: bool = Field(
