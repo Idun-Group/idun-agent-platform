@@ -8,7 +8,10 @@ repos:
         # snapshot used by the standalone trace-cost calculator (see
         # tasks/trace-feature-08-05-2026/06-cost-token-capture.md). Refreshed
         # monthly via Dependabot-style chore PR.
-        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/|(^|/)libs/idun_agent_standalone/src/idun_agent_standalone/infrastructure/traces/data/litellm_prices\.json$
+        # docs/images/readme/demo.webp is the README hero asset (~5 MB animated
+        # WebP, replaced a 14.5 MB GIF). PyPI/GitHub render it inline; size is
+        # inherent to a multi-second product demo.
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/|(^|/)libs/idun_agent_standalone/src/idun_agent_standalone/infrastructure/traces/data/litellm_prices\.json$|(^|/)docs/images/readme/demo\.webp$
     -   id: check-ast
         name: "🐍 syntax · Check Python AST"
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
