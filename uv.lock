@@ -20,7 +20,7 @@ members = [
 
 [[package]]
 name = "ag-ui-adk"
-version = "0.5.1"
+version = "0.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ag-ui-protocol", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
@@ -29,11 +29,12 @@ dependencies = [
     { name = "fastapi", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "google-adk", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "pydantic", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
+    { name = "sse-starlette", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "uvicorn", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/90/2b924f5e32dde282f8ec93fedaeffea9d1528d8f1b5d41ad405b6c1e8a54/ag_ui_adk-0.5.1.tar.gz", hash = "sha256:53cc59583f5610cee908d00219f0a09241a0b9c6a004dcbc22afe4dcd1317ce2", size = 58496, upload-time = "2026-03-05T16:46:08.955Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a0/86/c8e98ed5882929f012f1b480f18b9ce0297536234e0e1d329fb8c2698de2/ag_ui_adk-0.6.1.tar.gz", hash = "sha256:9d55982a48b28e9dab7e3cff60735e53e82861fa0175688ea2b58ce4d7925a76", size = 73301, upload-time = "2026-04-30T04:47:56.804Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/0f/26434145864a523f3ad5e810b2790175da5cae5fc012ff4c285706134676/ag_ui_adk-0.5.1-py3-none-any.whl", hash = "sha256:e3343fa32e5d03da36010e75775f73491828e95d06cc18fc9dce0922f3154fed", size = 65239, upload-time = "2026-03-05T16:46:07.645Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/a9/f274078b048401427f0e9534aed78a1c5647b9a008938f706e17d3b85317/ag_ui_adk-0.6.1-py3-none-any.whl", hash = "sha256:72e465d0861eeaabe82cf76a9100acfee70bacfa8ec5e535216f5e0b4bc72890", size = 80044, upload-time = "2026-04-30T04:47:55.427Z" },
 ]
 
 [[package]]
@@ -1813,7 +1814,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ag-ui-adk", specifier = ">=0.3.4,<0.6.0" },
+    { name = "ag-ui-adk", specifier = ">=0.6.1,<0.7.0" },
     { name = "ag-ui-langgraph", specifier = "==0.0.35" },
     { name = "ag-ui-protocol", specifier = "==0.1.18" },
     { name = "aiosqlite", specifier = ">=0.21.0,<=0.22.1" },
