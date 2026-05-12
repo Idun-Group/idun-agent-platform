@@ -120,6 +120,13 @@ For service-specific test commands, see the service's CLAUDE.md.
 - If something feels off about a request or approach, say so and explain why. Push back with reasoning rather than complying silently.
 - If the user's suggestion would introduce a bug, reduce safety, or violate a best practice, flag it clearly before proceeding.
 
+### Telemetry
+
+- New user-visible UI flows must emit a corresponding PostHog `capture()` call. Reviewers reject PRs that add a button, route, or handler without telemetry.
+- The canonical event list lives in `services/idun_agent_standalone_ui/CLAUDE.md#telemetry`. New event names must be added there, in `lib/telemetry/events.ts`, and in `docs/observability/telemetry-events.mdx` in the same PR.
+- The single off-switch is `IDUN_TELEMETRY_ENABLED=false` — it kills both Python engine telemetry and the browser path.
+- Session replay masking conventions (`data-ph-mask`, `data-ph-no-capture`) are documented in the UI CLAUDE.md. New input elements receiving user content must use one of them.
+
 ## Documentation Workflow
 
 CLAUDE.md is part of the public contract — read by Claude, contributors, and AI indexers. Keep it current.
