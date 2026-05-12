@@ -270,7 +270,7 @@ Maintenu par [Idun Group](https://idunplatform.com). Nous aidons sur l'architect
 
 ## Télémétrie
 
-Métriques d'utilisation minimales et anonymes via PostHog. Aucune PII. [Voir le code source](../../libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Désactiver : `IDUN_TELEMETRY_ENABLED=false`
+Métriques d'utilisation minimales et anonymes + rediffusion de session masquée via PostHog. Aucun contenu de message, aucune PII au-delà de l'e-mail après connexion (définir `IDUN_TELEMETRY_IDENTIFY_USERS=false` pour désactiver). [Voir le code source](../../libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Désactiver : `IDUN_TELEMETRY_ENABLED=false`. Désactiver uniquement la rediffusion : `IDUN_TELEMETRY_SESSION_REPLAY=false`.
 
 ## Licence
 

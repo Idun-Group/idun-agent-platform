@@ -270,7 +270,7 @@ idun agent serve --source file --path config.yaml
 
 ## 遥测
 
-通过 PostHog 收集最少量、匿名的使用指标。不收集 PII。[查看源代码](../../libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py)。关闭：`IDUN_TELEMETRY_ENABLED=false`
+通过 PostHog 收集最少量、匿名的使用指标 + 已脱敏的会话回放。不收集消息内容，登录后除电子邮件外不收集任何 PII（设置 `IDUN_TELEMETRY_IDENTIFY_USERS=false` 可禁用）。[查看源代码](../../libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py)。关闭：`IDUN_TELEMETRY_ENABLED=false`。仅关闭会话回放：`IDUN_TELEMETRY_SESSION_REPLAY=false`。
 
 ## 许可证
 

@@ -270,7 +270,7 @@ idun agent serve --source file --path config.yaml
 
 ## القياس عن بُعد
 
-مقاييس استخدام بسيطة ومجهولة الهوية عبر PostHog. لا توجد PII. [اعرض الكود المصدري](../../libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). الإيقاف: `IDUN_TELEMETRY_ENABLED=false`
+مقاييس استخدام بسيطة ومجهولة الهوية + إعادة عرض الجلسة المقنّعة عبر PostHog. لا يُرسل محتوى الرسائل، ولا توجد PII سوى البريد الإلكتروني بعد تسجيل الدخول (اضبط `IDUN_TELEMETRY_IDENTIFY_USERS=false` للتعطيل). [اعرض الكود المصدري](../../libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). الإيقاف: `IDUN_TELEMETRY_ENABLED=false`. إيقاف إعادة العرض فقط: `IDUN_TELEMETRY_SESSION_REPLAY=false`.
 
 ## الترخيص
 
