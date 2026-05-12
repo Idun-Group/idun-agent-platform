@@ -77,8 +77,10 @@ repos:
         name: "🔒 security · Verify GitHub Actions are SHA-pinned"
         # Runs `pinact run --check`. Fails the commit if any workflow
         # references an action by tag/branch instead of a full commit SHA.
-        # Auto-rewrite locally with `pre-commit run pinact-fix --all-files`
-        # or `pinact run` if pinact is installed directly.
+        # To auto-rewrite locally, install pinact directly
+        # (`go install github.com/suzuki-shunsuke/pinact/v3/cmd/pinact@latest`
+        # or `brew install pinact`) and run `pinact run --fix`. The
+        # auto-rewrite hook isn't wired up on purpose — see PR #641.
 -   repo: local
     hooks:
     -   id: commitlint-advisory
