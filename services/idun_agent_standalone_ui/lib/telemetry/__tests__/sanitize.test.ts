@@ -65,4 +65,13 @@ describe("sanitize", () => {
       s: "ok",
     });
   });
+
+  it("handles circular references without infinite recursion", () => {
+    const obj: Record<string, unknown> = { name: "ok" };
+    obj.self = obj;
+    expect(() => sanitize(obj)).not.toThrow();
+    const out = sanitize(obj) as Record<string, unknown>;
+    expect(out.name).toBe("ok");
+    expect(out.self).toBe("[circular]");
+  });
 });
