@@ -48,7 +48,7 @@ export async function getClient(): Promise<PostHog | null> {
         }
         return event;
       },
-      loaded: (ph: PostHog) => {
+      loaded: (ph) => {
         ph.register({
           deployment_type: cfg.deploymentType,
         });
