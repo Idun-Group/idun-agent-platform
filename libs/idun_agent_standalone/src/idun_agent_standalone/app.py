@@ -29,6 +29,7 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute, Mount
 from fastapi.staticfiles import StaticFiles
 from idun_agent_engine import create_app as create_engine_app
+from idun_agent_engine.prompts.registry import set_active_prompts
 
 from idun_agent_standalone.api.v1._register import register_standalone_routers
 from idun_agent_standalone.api.v1.deps import reload_disabled, require_auth
@@ -152,6 +153,11 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         except AssemblyError as exc:
             logger.warning("boot engine layer skipped, admin only mode reason=%s", exc)
             engine_config = None
+
+    # Publish the DB-backed prompts to the engine's process-wide snapshot
+    # before the engine app boots — the LangGraph adapter's exec_module
+    # path runs user code that calls get_prompt() at import time.
+    set_active_prompts(engine_config.prompts if engine_config else None)
 
     # Always boot through the engine factory. When ``engine_config`` is
     # ``None`` (no agent in DB yet — first-run wizard hasn't materialized),

@@ -84,13 +84,30 @@ def get_prompts_from_api() -> list[PromptConfig]:
 
 
 def get_prompts(config_path: str | Path | None = None) -> list[PromptConfig]:
-    """Return prompts: config_path > IDUN_CONFIG_PATH env > Manager API.
+    """Resolve prompts.
 
-    Never raises on a missing or unreachable source. Callers receive
-    an empty list and decide whether to use a default prompt.
+    Resolution order:
+      1. Explicit ``config_path`` argument.
+      2. In-process snapshot (standalone, set via
+         :func:`~idun_agent_engine.prompts.registry.set_active_prompts`).
+      3. ``IDUN_CONFIG_PATH`` YAML file (bare engine).
+      4. Manager API (SaaS).
+
+    Steps 1 and 3 load a YAML file via :func:`get_prompts_from_file` and
+    will raise ``FileNotFoundError`` / ``yaml.YAMLError`` /
+    ``pydantic.ValidationError`` when the path is missing, the YAML is
+    malformed, or a prompt entry fails schema validation. Steps 2 and 4
+    are non-raising and return ``[]`` on any failure. Callers that pass
+    an explicit ``config_path`` are expected to handle those exceptions.
     """
+    from .registry import get_active_prompts
+
     if config_path:
         return get_prompts_from_file(config_path)
+
+    snapshot = get_active_prompts()
+    if snapshot is not None:
+        return snapshot
 
     env_config_path = os.environ.get("IDUN_CONFIG_PATH")
     if env_config_path:

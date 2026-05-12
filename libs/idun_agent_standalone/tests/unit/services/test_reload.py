@@ -343,3 +343,125 @@ async def test_runtime_state_full_shape_on_reload_failed(
     assert state.last_message == "Engine reload failed; config not saved."
     assert state.last_error == "engine boom"
     assert state.last_applied_config_hash is None
+
+
+# --- Prompt snapshot propagation through reload ----------------------
+
+
+async def _seed_prompt(async_session, prompt_id: str, content: str, version: int = 1):
+    """Seed a single prompt row so assemble_engine_config picks it up."""
+    from idun_agent_standalone.infrastructure.db.models.prompt import (
+        StandalonePromptRow,
+    )
+
+    row = StandalonePromptRow(
+        prompt_id=prompt_id,
+        version=version,
+        content=content,
+        tags=[],
+    )
+    async_session.add(row)
+    await async_session.flush()
+    return row
+
+
+@pytest.mark.asyncio
+async def test_reload_publishes_prompts_snapshot_before_callable_runs(
+    async_session, frozen_now
+) -> None:
+    """The agent module re-execs inside reload_callable's runtime — the
+    snapshot must already hold the new prompts when that happens."""
+    from idun_agent_engine.prompts.registry import (
+        get_active_prompts,
+        set_active_prompts,
+    )
+
+    set_active_prompts(None)
+    await _seed_agent(async_session)
+    await _seed_prompt(async_session, "system_prompt", "new prompt body")
+
+    seen_during_callable: list = []
+
+    async def observing_callable(engine_config: EngineConfig) -> None:
+        snap = get_active_prompts()
+        seen_during_callable.extend(snap or [])
+
+    result = await commit_with_reload(
+        async_session,
+        reload_callable=observing_callable,
+        now=frozen_now,
+    )
+    assert result.status == StandaloneReloadStatus.RELOADED
+    assert [p.prompt_id for p in seen_during_callable] == ["system_prompt"]
+    assert [p.content for p in seen_during_callable] == ["new prompt body"]
+
+    snap_after = get_active_prompts()
+    assert snap_after is not None
+    assert [p.prompt_id for p in snap_after] == ["system_prompt"]
+    set_active_prompts(None)
+
+
+@pytest.mark.asyncio
+async def test_reload_rolls_back_prompts_snapshot_on_failure(
+    async_session, frozen_now
+) -> None:
+    """ReloadInitFailed → snapshot must revert to the prior value, matching
+    the DB rollback semantics for the rest of the pipeline."""
+    from idun_agent_engine.prompts.registry import (
+        get_active_prompts,
+        set_active_prompts,
+    )
+    from idun_agent_schema.engine.prompt import PromptConfig
+
+    prior = [
+        PromptConfig.model_validate(
+            {"prompt_id": "system_prompt", "version": 0, "content": "old prompt"}
+        )
+    ]
+    set_active_prompts(prior)
+
+    await _seed_agent(async_session)
+    await _seed_prompt(async_session, "system_prompt", "new prompt body")
+
+    failing = AsyncMock(side_effect=ReloadInitFailed("engine boom"))
+    with pytest.raises(AdminAPIError):
+        await commit_with_reload(async_session, reload_callable=failing, now=frozen_now)
+
+    rolled_back = get_active_prompts()
+    assert rolled_back is not None
+    assert [p.content for p in rolled_back] == ["old prompt"]
+    set_active_prompts(None)
+
+
+@pytest.mark.asyncio
+async def test_reload_rolls_back_prompts_snapshot_on_unexpected_exception(
+    async_session, frozen_now
+) -> None:
+    """An unexpected exception (not ReloadInitFailed) must also restore
+    the prior prompts snapshot and roll back the staged DB mutation."""
+    from idun_agent_engine.prompts.registry import (
+        get_active_prompts,
+        set_active_prompts,
+    )
+    from idun_agent_schema.engine.prompt import PromptConfig
+
+    prior = [
+        PromptConfig.model_validate(
+            {"prompt_id": "system_prompt", "version": 0, "content": "old prompt"}
+        )
+    ]
+    set_active_prompts(prior)
+
+    await _seed_agent(async_session)
+    await _seed_prompt(async_session, "system_prompt", "new prompt body")
+
+    failing = AsyncMock(side_effect=RuntimeError("unexpected boom"))
+    with pytest.raises(RuntimeError, match="unexpected boom"):
+        await commit_with_reload(
+            async_session, reload_callable=failing, now=frozen_now
+        )
+
+    rolled_back = get_active_prompts()
+    assert rolled_back is not None
+    assert [p.content for p in rolled_back] == ["old prompt"]
+    set_active_prompts(None)
