@@ -255,7 +255,11 @@ export default function MemoryPage() {
           agent_id: "default",
           section: "memory",
           duration_ms: Math.round(performance.now() - startedAt),
-          result: err instanceof z.ZodError ? "validation_error" : "server_error",
+          result:
+            (err instanceof ApiError && (err.status === 400 || err.status === 422)) ||
+            err instanceof z.ZodError
+              ? "validation_error"
+              : "server_error",
         });
         throw err;
       }

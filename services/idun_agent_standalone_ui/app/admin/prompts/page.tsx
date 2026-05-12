@@ -307,7 +307,11 @@ export default function PromptsPage() {
         agent_id: "default",
         section: "prompts",
         duration_ms: Math.round(performance.now() - startedAt),
-        result: e instanceof z.ZodError ? "validation_error" : "server_error",
+        result:
+          (e instanceof ApiError && (e.status === 400 || e.status === 422)) ||
+          e instanceof z.ZodError
+            ? "validation_error"
+            : "server_error",
       });
       const detail = e instanceof ApiError ? e.detail : undefined;
       const message =
