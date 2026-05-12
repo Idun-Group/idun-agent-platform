@@ -6,6 +6,7 @@ import { QueryProvider } from "@/lib/query-client";
 import { ThemeLoader } from "@/lib/theme-loader";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { TourProvider } from "@/components/tour/TourProvider";
+import { PostHogProvider } from "@/components/providers/PostHogProvider";
 import { fontSans, fontSerif, fontMono } from "@/lib/fonts";
 
 export const metadata = { title: "Idun Agent" };
@@ -50,9 +51,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           <ThemeLoader />
           <QueryProvider>
-            <Suspense fallback={null}>
-              <TourProvider>{children}</TourProvider>
-            </Suspense>
+            <PostHogProvider>
+              <Suspense fallback={null}>
+                <TourProvider>{children}</TourProvider>
+              </Suspense>
+            </PostHogProvider>
           </QueryProvider>
           <Toaster richColors position="top-right" />
         </ThemeProvider>
