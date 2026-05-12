@@ -84,8 +84,10 @@ Every flag has an env-var equivalent. Additional variables not exposed as flags:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `IDUN_ADMIN_PASSWORD_HASH` | — | Required when `auth_mode = password`. |
-| `IDUN_SESSION_SECRET` | — | 32-byte hex secret signing session cookies. Required when `auth_mode = password`. |
-| `IDUN_SESSION_TTL_SECONDS` | `86400` | Sliding-renewal cookie lifetime. |
-| `IDUN_TRACES_RETENTION_DAYS` | `30` | Hourly purge keeps the last N days of trace events. |
-| `IDUN_IN_CONTAINER` | unset | Set to `1` in container images to flip auth defaults to `password`. |
+| `IDUN_ADMIN_PASSWORD_HASH` | — | Bcrypt admin password hash. Consulted only on first boot to seed the admin row. Required when `auth_mode = password`. Generate with `idun hash-password`. |
+| `IDUN_SESSION_SECRET` | — | At least 32 characters. Signs the `idun_session` cookie. Required when `auth_mode = password`; startup fails fast when shorter. |
+| `IDUN_SESSION_TTL_HOURS` | `24` | Session cookie lifetime in hours (range `1..720`). |
+| `IDUN_ALLOW_OPEN_ADMIN` | `false` | Opt-in flag that lets `auth_mode=none` bind `0.0.0.0` / `::`. Containers and trusted networks only. |
+| `IDUN_TRACE_RETENTION_DAYS` | `14` | Days of trace events the daily retention task keeps before dropping. |
+| `IDUN_TRACES_INPUT_VALUE_MAX_BYTES` | `65536` | Per-attribute byte cap before the exporter truncates trace input/output values. |
+| `IDUN_PRICES_REFRESH` | `false` | When `true`, fetch the LiteLLM model-prices snapshot at boot (5 s timeout, snapshot fallback). |
