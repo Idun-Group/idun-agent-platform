@@ -10,7 +10,14 @@ caller doing ``JSON.parse`` on the response.
 
 from __future__ import annotations
 
+import asyncio
+from pathlib import Path
+
+import pytest
 from httpx import ASGITransport, AsyncClient
+from idun_agent_standalone.app import create_standalone_app
+from idun_agent_standalone.core.settings import AuthMode, StandaloneSettings
+from idun_agent_standalone.db.migrate import upgrade_head
 
 
 async def test_unmapped_admin_api_returns_json_404(standalone):
@@ -34,13 +41,62 @@ async def test_unmapped_admin_api_v2_also_404s(standalone):
     assert response.headers["content-type"].startswith("application/json")
 
 
-async def test_admin_spa_still_serves_html(standalone):
-    """``/admin/`` (the SPA root) is not shadowed by the API catch-all."""
-    transport = ASGITransport(app=standalone)
+async def test_admin_spa_still_serves_html(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """``/admin/`` (the SPA root) is not shadowed by the API catch-all.
+
+    Provisions a stub ``index.html`` and points ``IDUN_UI_DIR`` at it so
+    ``_resolve_ui_dir`` returns a real directory and ``StaticFiles`` is
+    mounted at ``/`` (matching production, where the wheel ships with a
+    bundled SPA). Without this stub, clean CI has no built UI and the
+    test would only exercise the unmounted-static path, never proving
+    the catch-all leaves the SPA root reachable.
+    """
+    db_path = tmp_path / "standalone.db"
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_path}")
+    await asyncio.to_thread(upgrade_head)
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", AuthMode.NONE.value)
+
+    ui_dir = tmp_path / "ui"
+    ui_dir.mkdir()
+    (ui_dir / "index.html").write_text("<!doctype html><title>stub</title>")
+    # StaticFiles(html=True) maps /admin/ to <ui_dir>/admin/index.html — the
+    # bundled Next.js export ships a per-route index.html; mirror that here.
+    (ui_dir / "admin").mkdir()
+    (ui_dir / "admin" / "index.html").write_text(
+        "<!doctype html><title>admin</title>"
+    )
+    monkeypatch.setenv("IDUN_UI_DIR", str(ui_dir))
+
+    settings = StandaloneSettings()
+    app = await create_standalone_app(settings)
+    try:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/admin/")
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/html")
+    finally:
+        await app.state.db_engine.dispose()
+
+
+async def test_unmapped_admin_api_under_password_mode_requires_auth(
+    standalone_password,
+):
+    """Unauth probes can't tell mapped from unmapped admin paths.
+
+    Regression for the route-enumeration leak: if the catch-all skipped
+    ``require_auth``, an unauthenticated caller would see ``401`` for
+    every real admin route and ``404`` for unmapped ones, mapping the
+    REST surface without credentials. Both must return ``401``.
+    """
+    transport = ASGITransport(app=standalone_password)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/admin/")
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("text/html")
+        real = await client.get("/admin/api/v1/agent")
+        unmapped = await client.get("/admin/api/v1/nonexistent")
+    assert real.status_code == 401
+    assert unmapped.status_code == 401
 
 
 async def test_real_admin_route_is_not_shadowed(standalone):

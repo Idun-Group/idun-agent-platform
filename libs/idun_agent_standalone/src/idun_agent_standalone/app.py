@@ -276,10 +276,16 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     # mounted at / below would otherwise return the SPA index.html for these
     # paths, which trips anything probing the REST surface (curl, Postman,
     # OpenAPI clients) into JSON-parsing HTML.
+    #
+    # Gated by require_auth for the same reason as the concrete admin
+    # routers: under password mode, an unauthenticated 401 on real routes
+    # and an unauthenticated 404 here would let a probe enumerate the
+    # admin REST surface without credentials.
     @app.api_route(
         "/admin/api/{rest_of_path:path}",
         methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
         include_in_schema=False,
+        dependencies=admin_auth,
     )
     async def _admin_api_not_found(rest_of_path: str) -> None:
         raise AdminAPIError(
