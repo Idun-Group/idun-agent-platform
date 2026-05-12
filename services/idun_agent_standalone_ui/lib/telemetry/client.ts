@@ -70,6 +70,7 @@ export async function getClient(): Promise<PostHog | null> {
 
 /** Test-only helper. Clears the singleton between tests. */
 export function _resetClientForTests(): void {
+  if (process.env.NODE_ENV !== "test") return;
   _client = null;
   _initialized = false;
 }
