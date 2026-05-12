@@ -47,10 +47,9 @@ async def test_real_admin_route_is_not_shadowed(standalone):
     """A concrete admin route resolves to its own handler, not the catch-all.
 
     With no agent row seeded, ``/admin/api/v1/agent`` returns 404 via the
-    real router's not-found path. The catch-all would have produced the
-    same status code but a different envelope (``code="not_found"`` with a
-    path-bearing message). Asserting on the real router's message proves
-    declaration order is preserving concrete routes ahead of the wildcard.
+    real router's not-found path. The catch-all uses a distinctive
+    ``"No admin API endpoint at ..."`` template, so asserting that string
+    is absent fails iff the wildcard shadowed the concrete route.
     """
     transport = ASGITransport(app=standalone)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -58,4 +57,4 @@ async def test_real_admin_route_is_not_shadowed(standalone):
     assert response.status_code == 404
     body = response.json()
     assert body["error"]["code"] == "not_found"
-    assert "nonexistent" not in body["error"]["message"].lower()
+    assert "No admin API endpoint at" not in body["error"]["message"]
