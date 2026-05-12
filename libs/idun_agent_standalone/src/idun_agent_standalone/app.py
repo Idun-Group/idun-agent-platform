@@ -30,11 +30,15 @@ from fastapi.routing import APIRoute, Mount
 from fastapi.staticfiles import StaticFiles
 from idun_agent_engine import create_app as create_engine_app
 from idun_agent_engine.prompts.registry import set_active_prompts
+from idun_agent_schema.standalone import StandaloneAdminError, StandaloneErrorCode
 from sqlalchemy import func, select
 
 from idun_agent_standalone.api.v1._register import register_standalone_routers
 from idun_agent_standalone.api.v1.deps import reload_disabled, require_auth
-from idun_agent_standalone.api.v1.errors import register_admin_exception_handlers
+from idun_agent_standalone.api.v1.errors import (
+    AdminAPIError,
+    register_admin_exception_handlers,
+)
 from idun_agent_standalone.api.v1.openapi import OPENAPI_TAGS
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.core.security import SESSION_COOKIE_NAME
@@ -267,6 +271,24 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.openapi_tags = OPENAPI_TAGS
     admin_auth = [Depends(require_auth)]
     register_standalone_routers(app, admin_auth=admin_auth)
+
+    # Catch-all 404 for unmapped /admin/api/* paths. StaticFiles(html=True)
+    # mounted at / below would otherwise return the SPA index.html for these
+    # paths, which trips anything probing the REST surface (curl, Postman,
+    # OpenAPI clients) into JSON-parsing HTML.
+    @app.api_route(
+        "/admin/api/{rest_of_path:path}",
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
+        include_in_schema=False,
+    )
+    async def _admin_api_not_found(rest_of_path: str) -> None:
+        raise AdminAPIError(
+            status_code=404,
+            error=StandaloneAdminError(
+                code=StandaloneErrorCode.NOT_FOUND,
+                message=f"No admin API endpoint at /admin/api/{rest_of_path}",
+            ),
+        )
 
     ui_dir = _resolve_ui_dir(settings)
     if ui_dir is not None:
