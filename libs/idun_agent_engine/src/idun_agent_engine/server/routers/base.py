@@ -22,6 +22,22 @@ class ReloadRequest(BaseModel):
     path: str | None = None
 
 
+class HealthResponse(BaseModel):
+    """Response shape for ``/health``.
+
+    ``reason`` is only emitted when an assembly failure handler set
+    ``app.state.boot_error``; the route uses ``response_model_exclude_unset``
+    so the field stays absent (not ``null``) on the happy path.
+    """
+
+    status: str
+    service: str
+    version: str
+    agent_ready: bool
+    agent_name: str | None
+    reason: str | None = None
+
+
 async def _reload_auth_dep(request: Request) -> None:
     """Resolve the optional /reload auth dependency from app state.
 
@@ -72,8 +88,12 @@ async def _reload_auth_dep(request: Request) -> None:
     return None
 
 
-@base_router.get("/health")
-def health_check(request: Request):
+@base_router.get(
+    "/health",
+    response_model=HealthResponse,
+    response_model_exclude_unset=True,
+)
+def health_check(request: Request) -> HealthResponse:
     """Health check endpoint for monitoring and load balancers.
 
     Returns ``status: "ok"`` only when an agent is registered and
@@ -91,7 +111,7 @@ def health_check(request: Request):
     boot_error = getattr(request.app.state, "boot_error", None)
     # TODO: return managed agent UUID (from manager API response) for stronger
     # identity validation. Currently agent_name is the only shared identifier.
-    response: dict[str, object] = {
+    fields: dict[str, object] = {
         "status": "ok" if agent_ready else "degraded",
         "service": "idun-agent-engine",
         "version": __version__,
@@ -99,8 +119,8 @@ def health_check(request: Request):
         "agent_name": agent_name,
     }
     if boot_error:
-        response["reason"] = boot_error
-    return response
+        fields["reason"] = str(boot_error)
+    return HealthResponse(**fields)
 
 
 @base_router.post("/reload")
