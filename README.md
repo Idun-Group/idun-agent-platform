@@ -53,7 +53,17 @@ cd my-agent && idun serve
 
 Open [http://localhost:8000](http://localhost:8000). Chat with your agent, then explore the admin at [/admin](http://localhost:8000/admin) and traces at [/admin/traces](http://localhost:8000/admin/traces).
 
-> **What `pip install idun-agent-engine` delivers.** A single wheel that bundles three Python packages: the engine SDK (`idun_agent_engine`), the standalone CLI + admin REST + chat / admin / traces UIs (`idun_agent_standalone`), and the Pydantic config schemas (`idun_agent_schema`). The `idun` command that lands on your `$PATH` after install (`idun setup`, `idun serve`, `idun init`, `idun hash-password`, `idun agent serve`) is provided by the bundled standalone — it is NOT a separately published package. You will not see `idun-agent-standalone` in this wheel's declared dependencies on PyPI because it ships as a co-installed package directory inside the wheel, not as a transitive dep. See [docs.idunplatform.com/architecture](https://docs.idunplatform.com/architecture) for the full layering.
+> **What `pip install idun-agent-engine` delivers**
+>
+> A single wheel that bundles three Python packages:
+>
+> - **`idun_agent_engine`** — the engine SDK (FastAPI app factory, MCP registry, observability, guardrails).
+> - **`idun_agent_standalone`** — the `idun` CLI, the admin REST API, and the chat / admin / traces UIs.
+> - **`idun_agent_schema`** — the Pydantic config schemas.
+>
+> The `idun` command on your `$PATH` (`setup`, `serve`, `init`, `hash-password`, `agent serve`) is provided by the bundled standalone — it is not a separately published package. You won't see `idun-agent-standalone` in the engine's declared PyPI dependencies because it ships co-installed inside the wheel, not as a transitive dep.
+>
+> See [docs.idunplatform.com/architecture](https://docs.idunplatform.com/architecture) for the full layering.
 
 ## What's inside
 
