@@ -39,8 +39,7 @@ import {
   type ThemeConfig,
   getRuntimeConfig,
 } from "@/lib/runtime-config";
-import { capture, reset } from "@/lib/telemetry";
-import { Events } from "@/lib/telemetry/events";
+import { logoutWithTelemetry } from "@/lib/telemetry";
 
 // ---------------------------------------------------------------------------
 // Constants — editorial defaults + shape metadata.
@@ -1076,9 +1075,7 @@ function PasswordForm() {
       // Brief delay so the toast is legible before the redirect.
       setTimeout(() => {
         // Password change forces a sign-out and only runs under password auth.
-        api.logout().finally(() => {
-          void capture(Events.AUTH_LOGOUT, { method: "basic" });
-          void reset();
+        logoutWithTelemetry("basic", () => api.logout()).finally(() => {
           window.location.href = "/login/";
         });
       }, 1500);

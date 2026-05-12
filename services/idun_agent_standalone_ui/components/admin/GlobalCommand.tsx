@@ -37,8 +37,7 @@ import {
 } from "@/components/ui/command";
 import { api } from "@/lib/api";
 import { getRuntimeConfig } from "@/lib/runtime-config";
-import { capture, reset } from "@/lib/telemetry";
-import { Events } from "@/lib/telemetry/events";
+import { logoutWithTelemetry } from "@/lib/telemetry";
 
 type PageEntry = {
   href: string;
@@ -111,12 +110,9 @@ export function GlobalCommand({ open, onOpenChange }: Props) {
     // GlobalCommand only surfaces the sign-out action when password auth is
     // active, so the method is always basic here.
     try {
-      await api.logout();
+      await logoutWithTelemetry("basic", () => api.logout());
     } catch {
       // Even if logout fails, redirect — the cookie may already be gone.
-    } finally {
-      void capture(Events.AUTH_LOGOUT, { method: "basic" });
-      void reset();
     }
     window.location.href = "/login/";
   };

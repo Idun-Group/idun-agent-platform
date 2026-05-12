@@ -14,8 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api";
 import { getRuntimeConfig } from "@/lib/runtime-config";
-import { capture, reset } from "@/lib/telemetry";
-import { Events } from "@/lib/telemetry/events";
+import { logoutWithTelemetry } from "@/lib/telemetry";
 
 export function UserMenu() {
   const [authMode, setAuthMode] = useState<string>("none");
@@ -26,12 +25,9 @@ export function UserMenu() {
   const handleLogout = async () => {
     // UserMenu only renders when authMode === "password".
     try {
-      await api.logout();
+      await logoutWithTelemetry("basic", () => api.logout());
     } catch {
       // Even if logout fails, redirect — cookie may already be gone.
-    } finally {
-      void capture(Events.AUTH_LOGOUT, { method: "basic" });
-      void reset();
     }
     window.location.href = "/login/";
   };
