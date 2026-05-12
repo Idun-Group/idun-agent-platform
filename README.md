@@ -53,6 +53,18 @@ cd my-agent && idun serve
 
 Open [http://localhost:8000](http://localhost:8000). Chat with your agent, then explore the admin at [/admin](http://localhost:8000/admin) and traces at [/admin/traces](http://localhost:8000/admin/traces).
 
+> **What `pip install idun-agent-engine` delivers**
+>
+> A single wheel that bundles three Python packages:
+>
+> - **`idun_agent_engine`** — the engine SDK (FastAPI app factory, MCP registry, observability, guardrails).
+> - **`idun_agent_standalone`** — the `idun` CLI, the admin REST API, and the chat / admin / traces UIs.
+> - **`idun_agent_schema`** — the Pydantic config schemas.
+>
+> The `idun` command on your `$PATH` (`setup`, `serve`, `init`, `hash-password`, `agent serve`) is provided by the bundled standalone — it is not a separately published package. You won't see `idun-agent-standalone` in the engine's declared PyPI dependencies because it ships co-installed inside the wheel, not as a transitive dep.
+>
+> See [docs.idunplatform.com/architecture](https://docs.idunplatform.com/architecture) for the full layering.
+
 ## What's inside
 
 <table>
@@ -185,6 +197,28 @@ flowchart LR
 
 ## Configuration
 
+### Components in this install
+
+After `pip install idun-agent-engine`, your `$PATH` and `site-packages` contain:
+
+| Module | Distributed via | Purpose |
+|---|---|---|
+| `idun_agent_engine` | declared in `requires_dist` | FastAPI app factory, MCP registry, observability, guardrails wiring |
+| `idun_agent_schema` | declared in `requires_dist` | Pydantic config models for `config.yaml` |
+| `idun_agent_standalone` | **co-bundled in the engine wheel** | `idun` CLI, admin REST under `/admin/api/v1/`, chat / admin / traces UIs at `/`, `/admin/`, `/admin/traces/` |
+| `idun` (console script) | `[project.scripts] idun = "idun_agent_standalone.cli:main"` | Subcommands: `setup`, `serve`, `init`, `hash-password`, `agent serve` |
+
+The bundled-install model means **you do not need to `pip install idun-agent-standalone` separately** — it isn't published. To verify your install carries everything:
+
+```bash
+python -c "import idun_agent_engine, idun_agent_standalone, idun_agent_schema; print('all 3 modules importable')"
+idun --help
+```
+
+Both checks are smoke-tested in the release pipeline before any wheel is published.
+
+### YAML reference
+
 Every agent is configured through a single YAML file. Here is a complete example with all features enabled:
 
 ```yaml
@@ -263,7 +297,7 @@ Maintained by [Idun Group](https://idunplatform.com). We help with platform arch
 
 ## Telemetry
 
-Minimal, anonymous usage metrics via PostHog. No PII. [View source](libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Opt out: `IDUN_TELEMETRY_ENABLED=false`
+Minimal, anonymous usage metrics + masked session replay via PostHog. No message content, no PII beyond email after sign-in (set `IDUN_TELEMETRY_IDENTIFY_USERS=false` to disable). [View source](libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Off: `IDUN_TELEMETRY_ENABLED=false`. Replay-only off: `IDUN_TELEMETRY_SESSION_REPLAY=false`.
 
 ## License
 

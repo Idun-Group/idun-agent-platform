@@ -131,5 +131,10 @@ For LangGraph, provide a `StateGraph` via `graph_definition` (`path/to/file.py:v
 | `IDUN_MANAGER_HOST` | Manager API base URL |
 | `IDUN_CONFIG_PATH` | Path to config.yaml (alternative to `--path` flag) |
 | `IDUN_TELEMETRY_ENABLED` | Set to `false` to disable anonymous usage telemetry |
+| `IDUN_DEPLOYMENT_TYPE` | Tag events with `cloud` or `self-hosted` |
+| `IDUN_TELEMETRY_IDENTIFY_USERS` | Set to `false` to keep all browser events anonymous (no email-level `identify`) |
+| `IDUN_TELEMETRY_SESSION_REPLAY` | Set to `false` to ship browser analytics without recording sessions |
 
 The engine resolves `${VAR_NAME}` references in YAML values at config load time, so you can keep secrets out of your config files.
+
+For the full list of browser events captured and PostHog masking conventions, see [Telemetry events](/observability/telemetry-events).

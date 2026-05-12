@@ -168,7 +168,10 @@ class TestHealthRoute:
             assert "version" in data
 
     def test_health_returns_null_agent_name_before_init(self):
-        """GET /health returns null agent_name when no agent is loaded."""
+        """GET /health reports degraded + agent_ready=false when no agent
+        is loaded. The endpoint must give monitoring an unambiguous signal
+        that /agent/* will 503 — see FIX 02 / L10-1.
+        """
         from fastapi import FastAPI
 
         from idun_agent_engine.server.routers.base import base_router
@@ -180,7 +183,8 @@ class TestHealthRoute:
             response = client.get("/health")
             assert response.status_code == 200
             data = response.json()
-            assert data["status"] == "ok"
+            assert data["status"] == "degraded"
+            assert data["agent_ready"] is False
             assert data["agent_name"] is None
 
 

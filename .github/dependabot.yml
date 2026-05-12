@@ -16,13 +16,13 @@ updates:
           - "version-update:semver-major"
 
   - package-ecosystem: "npm"
-    directory: "/services/idun_agent_web"
+    directory: "/services/idun_agent_standalone_ui"
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 1
     rebase-strategy: "disabled"
     groups:
-      web-all:
+      standalone-ui-all:
         patterns:
           - "*"
     ignore:

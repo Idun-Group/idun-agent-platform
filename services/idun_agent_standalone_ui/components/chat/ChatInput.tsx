@@ -82,6 +82,7 @@ export function ChatInput({
         rows={1}
         style={{ minHeight: `${MIN_HEIGHT}px`, maxHeight: `${MAX_HEIGHT}px` }}
         className="w-full resize-none rounded-3xl bg-transparent px-6 py-4 pr-16 text-[17px] leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
+        data-ph-mask=""
       />
       {showStop ? (
         <button

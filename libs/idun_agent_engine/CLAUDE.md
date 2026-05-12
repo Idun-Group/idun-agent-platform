@@ -56,6 +56,7 @@ idun_agent_engine/
 │   └── helpers         # get_langchain_tools(), get_adk_tools() — convenience functions
 ├── templates/          # Pre-built LangGraph agents (translation, correction, deep_research). Ignore.
 └── telemetry/          # Anonymous usage telemetry (PostHog). Opt-out: IDUN_TELEMETRY_ENABLED=false. Tag deployment: IDUN_DEPLOYMENT_TYPE=cloud|self-hosted
+                        # Browser-side counterpart: services/idun_agent_standalone_ui/lib/telemetry/ (same IDUN_TELEMETRY_ENABLED via /runtime-config.js)
 ```
 
 ## Public API

@@ -64,6 +64,7 @@ import {
   type MutationResponse,
   api,
 } from "@/lib/api";
+import { capture, Events } from "@/lib/telemetry";
 
 const PROVIDERS = [
   "SLACK",
@@ -540,7 +541,31 @@ export default function IntegrationsPage() {
   const watchedProvider = form.watch("provider");
 
   const create = useMutation({
-    mutationFn: api.createIntegration,
+    mutationFn: async (body: Parameters<typeof api.createIntegration>[0]) => {
+      const startedAt = performance.now();
+      try {
+        const resp = await api.createIntegration(body);
+        void capture(Events.AGENT_CONFIG_SAVED, {
+          agent_id: "default",
+          section: "integrations",
+          duration_ms: Math.round(performance.now() - startedAt),
+          result: "ok",
+        });
+        return resp;
+      } catch (err) {
+        void capture(Events.AGENT_CONFIG_SAVED, {
+          agent_id: "default",
+          section: "integrations",
+          duration_ms: Math.round(performance.now() - startedAt),
+          result:
+            (err instanceof ApiError && (err.status === 400 || err.status === 422)) ||
+            err instanceof z.ZodError
+              ? "validation_error"
+              : "server_error",
+        });
+        throw err;
+      }
+    },
     onSuccess: (resp) => {
       applyMutationToast(resp);
       qc.invalidateQueries({ queryKey: ["integrations"] });
@@ -560,8 +585,31 @@ export default function IntegrationsPage() {
   });
 
   const patchFromSheet = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof api.patchIntegration>[1] }) =>
-      api.patchIntegration(id, body),
+    mutationFn: async ({ id, body }: { id: string; body: Parameters<typeof api.patchIntegration>[1] }) => {
+      const startedAt = performance.now();
+      try {
+        const resp = await api.patchIntegration(id, body);
+        void capture(Events.AGENT_CONFIG_SAVED, {
+          agent_id: "default",
+          section: "integrations",
+          duration_ms: Math.round(performance.now() - startedAt),
+          result: "ok",
+        });
+        return resp;
+      } catch (err) {
+        void capture(Events.AGENT_CONFIG_SAVED, {
+          agent_id: "default",
+          section: "integrations",
+          duration_ms: Math.round(performance.now() - startedAt),
+          result:
+            (err instanceof ApiError && (err.status === 400 || err.status === 422)) ||
+            err instanceof z.ZodError
+              ? "validation_error"
+              : "server_error",
+        });
+        throw err;
+      }
+    },
     onSuccess: (resp) => {
       applyMutationToast(resp);
       qc.invalidateQueries({ queryKey: ["integrations"] });

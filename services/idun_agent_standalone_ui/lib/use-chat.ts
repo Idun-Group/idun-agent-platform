@@ -9,6 +9,8 @@ import {
   runAgent,
 } from "@/lib/agui";
 import { api } from "@/lib/api";
+import { capture } from "@/lib/telemetry";
+import { Events } from "@/lib/telemetry/events";
 
 type Status = "idle" | "streaming" | "error";
 
@@ -433,6 +435,14 @@ export function useChat(threadId: string) {
    * moment ``send()`` runs, telling the in-flight hydration to bail out.
    */
   const hydratableRef = useRef(true);
+  /**
+   * 1-based counter of user turns in the current thread. Initialized from the
+   * hydration payload (or 0 for a fresh thread) and incremented inside
+   * ``send`` so the telemetry ``message_index`` doesn't depend on the latest
+   * ``messages`` state, which would otherwise force ``send`` to be re-created
+   * on every message append and churn downstream ``useCallback`` consumers.
+   */
+  const userMessageCountRef = useRef(0);
 
   // Reset + hydrate whenever the parent flips threadId. Clicking a row in
   // HistorySidebar pushes ``/?session=<sid>`` and the page-level component
@@ -452,6 +462,7 @@ export function useChat(threadId: string) {
     setError(null);
     eventIdRef.current = 0;
     hydratableRef.current = true;
+    userMessageCountRef.current = 0;
 
     let cancelled = false;
     (async () => {
@@ -475,6 +486,9 @@ export function useChat(threadId: string) {
               streaming: false,
             },
       );
+      userMessageCountRef.current = seeded.filter(
+        (m) => m.role === "user",
+      ).length;
       setMessages(seeded);
     })();
 
@@ -500,6 +514,31 @@ export function useChat(threadId: string) {
         thoughts: "",
         streaming: true,
       };
+
+      // === TELEMETRY: send-time markers ===
+      // Sampled at the synchronous send entry so duration_ms / TTFT use the
+      // same monotonic clock for start and stop. ``userMessageCountRef`` is
+      // initialized from the hydrated session (or 0 for a fresh thread) and
+      // incremented here so the 1-based index of this user turn is available
+      // without reading ``messages`` from the closure — which would otherwise
+      // force ``send`` to be recreated on every message append.
+      const sendStartedAt = performance.now();
+      let firstChunkSeen = false;
+      const trimmed = text.trim();
+      const wordCount = trimmed.length === 0 ? 0 : trimmed.split(/\s+/).length;
+      userMessageCountRef.current += 1;
+      const nextMessageIndex = userMessageCountRef.current;
+      void capture(Events.CHAT_MESSAGE_SENT, {
+        session_id: threadId,
+        length_chars: text.length,
+        length_words: wordCount,
+      });
+      void capture(Events.AGENT_RUN_STARTED, {
+        agent_id: "default",
+        session_id: threadId,
+        message_index: nextMessageIndex,
+      });
+
       setMessages((m) => [...m, userMsg, assistantMsg]);
       setStatus("streaming");
       setError(null);
@@ -518,6 +557,31 @@ export function useChat(threadId: string) {
           message: text,
           signal: abortRef.current.signal,
           onEvent: (e) => {
+            // === TELEMETRY: stream-time markers ===
+            // Sample TTFT on the first text delta, and run duration on
+            // RUN_FINISHED. We measure BEFORE applyEvent so the timestamps
+            // reflect when the event arrived, not when React finished
+            // committing state.
+            const t = String(e.type ?? "");
+            if (
+              !firstChunkSeen &&
+              (t === "TEXT_MESSAGE_CONTENT" || t === "TextMessageContent")
+            ) {
+              firstChunkSeen = true;
+              void capture(Events.CHAT_RESPONSE_RECEIVED, {
+                session_id: threadId,
+                time_to_first_token_ms: Math.round(
+                  performance.now() - sendStartedAt,
+                ),
+              });
+            }
+            if (t === "RUN_FINISHED" || t === "RunFinished") {
+              void capture(Events.AGENT_RUN_COMPLETED, {
+                agent_id: "default",
+                session_id: threadId,
+                duration_ms: Math.round(performance.now() - sendStartedAt),
+              });
+            }
             // Capture every event for downstream surfaces (inspector layout,
             // dev console). The ring is capped to MAX_EVENTS.
             const captured: ChatEvent = {
@@ -536,6 +600,25 @@ export function useChat(threadId: string) {
         });
       } catch (e: unknown) {
         const name = (e as { name?: string }).name;
+        // Emit error telemetry for every non-Abort path. AbortError is a
+        // user-initiated cancel, not a stream failure. GuardrailRejected
+        // counts as a non-recoverable error (the guardrail policy decided
+        // the turn cannot proceed).
+        if (name !== "AbortError") {
+          const errorClass =
+            e instanceof Error ? e.constructor.name : "Unknown";
+          void capture(Events.AGENT_RUN_ERROR, {
+            agent_id: "default",
+            session_id: threadId,
+            error_class: errorClass,
+            duration_ms: Math.round(performance.now() - sendStartedAt),
+          });
+          void capture(Events.CHAT_ERROR, {
+            session_id: threadId,
+            error_class: errorClass,
+            recoverable: !(e instanceof GuardrailRejectedError),
+          });
+        }
         if (e instanceof GuardrailRejectedError) {
           setStatus("idle");
           setError(null);

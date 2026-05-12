@@ -36,3 +36,17 @@ if (typeof window !== "undefined" && typeof window.localStorage === "undefined")
     configurable: true,
   });
 }
+
+import { vi } from "vitest";
+
+// Global mock so any test that imports posthog-js transitively does not hit
+// the real SDK. Tests that need to inspect calls re-mock locally.
+vi.mock("posthog-js", () => ({
+  default: {
+    init: vi.fn(),
+    capture: vi.fn(),
+    identify: vi.fn(),
+    reset: vi.fn(),
+    register: vi.fn(),
+  },
+}));

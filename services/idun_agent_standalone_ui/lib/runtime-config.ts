@@ -43,10 +43,20 @@ export type ThemeConfig = {
   defaultColorScheme: "light" | "dark" | "system";
 };
 
+export type TelemetryConfig = {
+  enabled: boolean;
+  host: string;
+  projectKey: string;
+  deploymentType: "cloud" | "self-hosted" | "dev";
+  identifyUsers: boolean;
+  sessionReplay: boolean;
+};
+
 export type RuntimeConfig = {
   theme: ThemeConfig;
   authMode: "none" | "password" | "oidc";
   layout: "branded" | "minimal" | "inspector";
+  telemetry: TelemetryConfig;
 };
 
 declare global {
@@ -120,6 +130,16 @@ export const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
   theme: DEFAULT_THEME,
   authMode: "none",
   layout: "branded",
+  telemetry: {
+    enabled: false, // dev / SSR default is OFF; the backend overrides at runtime
+    host: "https://us.i.posthog.com",
+    // keep in sync with libs/idun_agent_standalone/src/idun_agent_standalone/runtime_config.py:_POSTHOG_PROJECT_KEY
+    //   backend /runtime-config.js overrides this at runtime; this is only the SSR/dev fallback.
+    projectKey: "phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw", // gitleaks:allow — PostHog public client key, ships in browser bundle
+    deploymentType: "dev",
+    identifyUsers: true,
+    sessionReplay: true,
+  },
 };
 
 export function getRuntimeConfig(): RuntimeConfig {

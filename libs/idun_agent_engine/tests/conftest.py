@@ -7,6 +7,7 @@ Fixtures are designed to be composable and easy to customize for specific test n
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 from collections.abc import AsyncGenerator, Callable, Generator
 from typing import Any
@@ -27,6 +28,16 @@ def pytest_sessionstart(session):
     api_key = os.getenv("GUARDRAILS_API_KEY")
     if not api_key:
         print("GUARDRAILS_API_KEY not set, skipping guardrails setup")
+        return
+
+    # guardrails-ai ships as an optional extra of idun-agent-engine. When the
+    # extra is not installed the CLI is absent — skip Hub install rather than
+    # crashing the entire session in pytest_sessionstart.
+    if shutil.which("guardrails") is None:
+        print(
+            "guardrails CLI not on PATH (optional extra not installed); "
+            "skipping guardrails setup"
+        )
         return
 
     try:

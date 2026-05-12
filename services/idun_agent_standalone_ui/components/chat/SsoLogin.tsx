@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { isGoogleIssuer, signIn } from "@/lib/auth";
+import { capture } from "@/lib/telemetry";
+import { Events } from "@/lib/telemetry/events";
 import { GoogleSignInButton } from "./GoogleSignInButton";
 
 export function SsoLogin({
@@ -25,6 +27,7 @@ export function SsoLogin({
 
   const onRedirect = async () => {
     setBusy(true);
+    void capture(Events.AUTH_LOGIN_START, { method: "oidc", provider: host });
     try {
       await signIn();
     } catch {

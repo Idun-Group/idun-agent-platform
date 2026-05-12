@@ -31,7 +31,7 @@ export function MessageView({ m }: Props) {
 
   if (m.role === "user") {
     return (
-      <div className="flex justify-end">
+      <div className="flex justify-end" data-ph-no-capture="">
         <div className="flex max-w-[78%] flex-col items-end gap-1">
           <div className="rounded-2xl rounded-tr-md bg-foreground px-4 py-2.5 text-[15.5px] leading-snug text-background shadow-sm">
             {m.text}
@@ -54,7 +54,7 @@ export function MessageView({ m }: Props) {
   const waiting = m.streaming === true && !hasAnything;
 
   return (
-    <div className="flex w-full gap-3.5">
+    <div className="flex w-full gap-3.5" data-ph-no-capture="">
       <div className="shrink-0 pt-0.5">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-card shadow-sm ring-1 ring-border">
           {logoImage ? (

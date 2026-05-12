@@ -29,19 +29,6 @@ dev = [
 [tool.uv]
 package = false
 
-# PyPI quarantined guardrails-ai's simple index on 2026-05-12 due to a
-# security issue (guardrails-ai/guardrails#1473). The wheel CDN URLs
-# remain live, but any workspace `uv lock` re-resolves all packages
-# and fails on the empty simple index. Restricting to the platforms we
-# actually ship (macOS dev + Linux Cloud Run) avoids the win32 resolver
-# split that triggers the failure most loudly. Combined with the
-# explicit guardrails-ai URL override in [tool.uv.sources] below, this
-# restores lock-ability. Remove both once the quarantine lifts.
-environments = [
-    "sys_platform == 'darwin'",
-    "sys_platform == 'linux'",
-]
-
 # Declare the three Idun libs as a uv workspace so `uv build --package
 # idun-agent-standalone` works from the repo root and resolves the
 # inter-lib editable installs by name.
@@ -56,9 +43,20 @@ members = [
 idun-agent-engine = { workspace = true }
 idun-agent-schema = { workspace = true }
 idun-agent-standalone = { workspace = true }
-# Quarantine workaround (see [tool.uv] comment). Wheel URL still served
-# from the CDN even though PyPI's simple index returns no files.
-guardrails-ai = { url = "https://files.pythonhosted.org/packages/cf/67/b1db74bf7bd6cbbdd5e6f37880ece08e9d6a785cf955c8ba652ed43ec880/guardrails_ai-0.9.2-py3-none-any.whl" }
+# Temporary workaround: the PyPI ``guardrails-ai`` project was quarantined for
+# a security incident, so the published 0.9.2 wheel is no longer resolvable.
+# Point uv at the upstream git commit so ``uv lock`` / ``uv sync`` succeed for
+# the optional ``[guardrails]`` extra of idun-agent-engine. Source overrides
+# apply only to local resolution — published engine wheels still reference
+# ``guardrails-ai==0.9.2`` on PyPI, so end-users are unaffected once upstream
+# restores the project. Remove this entry when that happens.
+#
+# ``rev`` is the peeled commit object of the annotated ``v0.9.2`` tag, pinned
+# rather than the tag name itself — tags can be moved or rewritten upstream,
+# commit SHAs cannot, so this keeps resolution reproducible and reduces
+# supply-chain risk. To refresh: ``git ls-remote --tags
+# https://github.com/guardrails-ai/guardrails | grep 'v0.9.2\^{}'``.
+guardrails-ai = { git = "https://github.com/guardrails-ai/guardrails", rev = "ee6999d84d3becdb3dbf5862ae7b893130ddacb8" }
 
 [build-system]
 requires = ["hatchling"]

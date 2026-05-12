@@ -13,6 +13,7 @@ import {
   type RuntimeConfig,
   getRuntimeConfig,
 } from "@/lib/runtime-config";
+import { logoutWithTelemetry } from "@/lib/telemetry";
 
 type Props = {
   threadId?: string;
@@ -69,12 +70,16 @@ export function HeaderActions({ onNewSession }: Props) {
 
   const handleSignOut = async () => {
     if (ssoEnabled) {
-      await ssoSignOut().catch(() => {});
+      try {
+        await logoutWithTelemetry("oidc", () => ssoSignOut());
+      } catch {
+        // Even if SSO sign-out fails, redirect — local state should be cleared.
+      }
       if (typeof window !== "undefined") window.location.replace("/");
       return;
     }
     try {
-      await api.logout();
+      await logoutWithTelemetry("basic", () => api.logout());
     } catch {
       // cookie may already be gone server-side
     }
