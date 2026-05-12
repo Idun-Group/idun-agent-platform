@@ -30,6 +30,7 @@ from fastapi.routing import APIRoute, Mount
 from fastapi.staticfiles import StaticFiles
 from idun_agent_engine import create_app as create_engine_app
 from idun_agent_engine.prompts.registry import set_active_prompts
+from sqlalchemy import func, select
 
 from idun_agent_standalone.api.v1._register import register_standalone_routers
 from idun_agent_standalone.api.v1.deps import reload_disabled, require_auth
@@ -38,6 +39,7 @@ from idun_agent_standalone.api.v1.openapi import OPENAPI_TAGS
 from idun_agent_standalone.core.logging import get_logger
 from idun_agent_standalone.core.security import SESSION_COOKIE_NAME
 from idun_agent_standalone.core.settings import AuthMode, StandaloneSettings
+from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
 from idun_agent_standalone.infrastructure.db.session import (
     create_db_engine,
     create_sessionmaker,
@@ -147,12 +149,36 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
         async with sessionmaker() as session:
             await ensure_admin_seeded(session, settings)
 
+    # Count agent rows first so AssemblyError can be classified.
+    # Zero rows + AssemblyError is wizard mode (intentional fall-through to
+    # admin-only). Any rows + AssemblyError is a deploy bug: a real agent was
+    # supposed to materialize, so log loudly and stash the reason on app.state
+    # for /health to surface.
+    boot_error: str | None = None
     async with sessionmaker() as session:
+        agent_count = await session.scalar(
+            select(func.count()).select_from(StandaloneAgentRow)
+        )
+        agent_count = agent_count or 0
         try:
             engine_config = await assemble_engine_config(session)
         except AssemblyError as exc:
-            logger.warning("boot engine layer skipped, admin only mode reason=%s", exc)
             engine_config = None
+            if agent_count > 0:
+                boot_error = (
+                    f"Agent assembly failed: {exc} "
+                    f"DB has {agent_count} agent row(s); "
+                    "configured agent will be unreachable."
+                )
+                logger.error("BOOT FAILED — %s", boot_error)
+                logger.error(
+                    "/agent/* will return 503 until the config is fixed and "
+                    "the engine reloaded."
+                )
+            else:
+                logger.info(
+                    "boot engine layer skipped, wizard mode reason=%s", exc
+                )
 
     # Publish the DB-backed prompts to the engine's process-wide snapshot
     # before the engine app boots — the LangGraph adapter's exec_module
@@ -184,6 +210,8 @@ async def create_standalone_app(settings: StandaloneSettings) -> FastAPI:
     app.state.settings = settings
     app.state.db_engine = db_engine
     app.state.sessionmaker = sessionmaker
+    if boot_error is not None:
+        app.state.boot_error = boot_error
     from idun_agent_standalone.services.engine_reload import (
         build_engine_reload_callable,
     )
