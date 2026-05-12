@@ -71,6 +71,13 @@ export function GoogleSignInButton({
     ensureGsiScript()
       .then(() => {
         if (cancelled || !window.google || !ref.current) return;
+        // GSI script-ready is the closest observable proxy for "user can now
+        // click sign-in" — Google's own button doesn't expose a click event,
+        // so we emit start here, immediately before initialize/renderButton.
+        void capture(Events.AUTH_LOGIN_START, {
+          method: "oidc",
+          provider: "accounts.google.com",
+        });
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: (res) => {
