@@ -9,34 +9,55 @@ on:
         description: "Tag to release (e.g. v0.6.0). Required for manual dispatch."
         required: true
         type: string
+      skip_socket:
+        description: "Bypass Socket security gate. Use only when Socket is down or a known false positive blocks a hotfix."
+        required: false
+        default: false
+        type: boolean
 
 env:
   PYTHON_VERSION: "3.12"
 
 jobs:
   # ============================================================================
+  # Job 0: Socket security gate (release-published always runs it;
+  #        workflow_dispatch can bypass with skip_socket=true).
+  # ============================================================================
+  socket-scan:
+    name: Socket security gate
+    if: github.event_name != 'workflow_dispatch' || inputs.skip_socket != true
+    uses: ./.github/workflows/socket-scan-reusable.yml
+    with:
+      ref: ${{ inputs.tag || github.ref }}
+    secrets:
+      SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
+
+  # ============================================================================
   # Job 1: Publish Schema to PyPI
   # ============================================================================
   publish-schema:
     name: Publish Schema to PyPI
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: socket-scan
+    if: always() && (needs.socket-scan.result == 'success' || needs.socket-scan.result == 'skipped')
     permissions:
       contents: read
       id-token: write # For trusted publishing
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: ${{ inputs.tag || github.ref }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
           enable-cache: true
 
@@ -68,7 +89,7 @@ jobs:
         run: uvx twine check libs/idun_agent_schema/dist/*
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
         with:
           packages-dir: libs/idun_agent_schema/dist/
           verbose: true
@@ -80,34 +101,36 @@ jobs:
   publish-engine:
     name: Publish Engine to PyPI
     runs-on: ubuntu-latest
-    needs: publish-schema
+    timeout-minutes: 45
+    needs: [socket-scan, publish-schema]
+    if: always() && needs.publish-schema.result == 'success' && (needs.socket-scan.result == 'success' || needs.socket-scan.result == 'skipped')
     permissions:
       contents: read
       id-token: write # For trusted publishing
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: ${{ inputs.tag || github.ref }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
           enable-cache: true
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           version: 9
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "20"
           cache: "pnpm"
@@ -186,7 +209,7 @@ jobs:
           idun hash-password --help
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
         with:
           packages-dir: libs/idun_agent_engine/dist/
           verbose: true
@@ -198,6 +221,7 @@ jobs:
   release-summary:
     name: Create Release Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [publish-schema, publish-engine]
     if: success()
 
