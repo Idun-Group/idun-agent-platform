@@ -6,6 +6,12 @@ keywords: ["telemetry", "posthog", "events", "session-replay", "analytics", "obs
 
 The Idun standalone UI emits the events below through PostHog. The single off-switch is `IDUN_TELEMETRY_ENABLED=false`, which also kills Python engine telemetry.
 
+## Stability policy
+
+Event names are a public contract. Renaming or removing an event goes through one release with both the old and new names emitted, so downstream PostHog dashboards and queries have time to migrate. The release notes call out the deprecation; the old name is removed in the following release.
+
+If you need to ship a breaking change faster than that, raise it explicitly in the PR description.
+
 ## Events
 
 | Event | Where it fires | Properties |
