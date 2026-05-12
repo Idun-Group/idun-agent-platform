@@ -572,6 +572,7 @@ export default function PromptsPage() {
                           spellCheck={false}
                           className="font-mono text-xs"
                           placeholder="You are a helpful assistant. Today is {{date}}."
+                          data-ph-no-capture=""
                         />
                       </FormControl>
                       <FormDescription>

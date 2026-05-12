@@ -60,6 +60,7 @@ function LoginForm() {
         </div>
         <form
           className="space-y-3"
+          data-ph-mask=""
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
