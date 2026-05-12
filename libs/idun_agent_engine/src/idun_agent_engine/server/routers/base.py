@@ -3,6 +3,7 @@
 import inspect
 import logging
 import os
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -30,7 +31,7 @@ class HealthResponse(BaseModel):
     so the field stays absent (not ``null``) on the happy path.
     """
 
-    status: str
+    status: Literal["ok", "degraded"]
     service: str
     version: str
     agent_ready: bool
