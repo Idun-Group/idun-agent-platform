@@ -797,7 +797,7 @@ export default function GuardrailsPage() {
         agent_id: "default",
         section: "guardrails",
         duration_ms: Math.round(performance.now() - startedAt),
-        result: "ok",
+        result: failed ? "server_error" : "ok",
       });
       qc.invalidateQueries({ queryKey: ["guardrails"] });
     } catch (e) {
