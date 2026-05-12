@@ -71,18 +71,24 @@ export function HeaderActions({ onNewSession }: Props) {
 
   const handleSignOut = async () => {
     if (ssoEnabled) {
-      void capture(Events.AUTH_LOGOUT, { method: "oidc" });
-      void reset();
-      await ssoSignOut().catch(() => {});
+      try {
+        await ssoSignOut();
+      } catch {
+        // Even if SSO sign-out fails, redirect — local state should be cleared.
+      } finally {
+        void capture(Events.AUTH_LOGOUT, { method: "oidc" });
+        void reset();
+      }
       if (typeof window !== "undefined") window.location.replace("/");
       return;
     }
-    void capture(Events.AUTH_LOGOUT, { method: "basic" });
-    void reset();
     try {
       await api.logout();
     } catch {
       // cookie may already be gone server-side
+    } finally {
+      void capture(Events.AUTH_LOGOUT, { method: "basic" });
+      void reset();
     }
     if (typeof window !== "undefined") {
       window.location.href = "/login/";

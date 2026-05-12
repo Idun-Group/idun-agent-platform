@@ -110,12 +110,13 @@ export function GlobalCommand({ open, onOpenChange }: Props) {
     close();
     // GlobalCommand only surfaces the sign-out action when password auth is
     // active, so the method is always basic here.
-    void capture(Events.AUTH_LOGOUT, { method: "basic" });
-    void reset();
     try {
       await api.logout();
     } catch {
       // Even if logout fails, redirect — the cookie may already be gone.
+    } finally {
+      void capture(Events.AUTH_LOGOUT, { method: "basic" });
+      void reset();
     }
     window.location.href = "/login/";
   };

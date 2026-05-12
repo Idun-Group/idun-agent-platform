@@ -25,12 +25,13 @@ export function UserMenu() {
 
   const handleLogout = async () => {
     // UserMenu only renders when authMode === "password".
-    void capture(Events.AUTH_LOGOUT, { method: "basic" });
-    void reset();
     try {
       await api.logout();
     } catch {
       // Even if logout fails, redirect — cookie may already be gone.
+    } finally {
+      void capture(Events.AUTH_LOGOUT, { method: "basic" });
+      void reset();
     }
     window.location.href = "/login/";
   };

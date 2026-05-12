@@ -104,12 +104,13 @@ export function AppSidebar() {
   const handleLogout = async () => {
     // AppSidebar only renders the logout entry when authMode === "password",
     // so the method is always basic auth here.
-    void capture(Events.AUTH_LOGOUT, { method: "basic" });
-    void reset();
     try {
       await api.logout();
     } catch {
       // Even if logout fails, redirect — cookie may already be gone.
+    } finally {
+      void capture(Events.AUTH_LOGOUT, { method: "basic" });
+      void reset();
     }
     window.location.href = "/login/";
   };

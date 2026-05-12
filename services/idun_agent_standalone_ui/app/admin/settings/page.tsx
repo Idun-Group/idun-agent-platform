@@ -1076,9 +1076,9 @@ function PasswordForm() {
       // Brief delay so the toast is legible before the redirect.
       setTimeout(() => {
         // Password change forces a sign-out and only runs under password auth.
-        void capture(Events.AUTH_LOGOUT, { method: "basic" });
-        void reset();
         api.logout().finally(() => {
+          void capture(Events.AUTH_LOGOUT, { method: "basic" });
+          void reset();
           window.location.href = "/login/";
         });
       }, 1500);
