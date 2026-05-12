@@ -13,6 +13,17 @@ pip install idun-agent-engine
 - Requires Python 3.12+
 - Ships with FastAPI, Uvicorn, LangGraph, SQLite checkpointing, and optional observability hooks
 
+### A note on PyPI's JSON metadata
+
+Both TestPyPI's and public PyPI's JSON API at `/pypi/idun-agent-engine/<version>/json` report `entry_points: null` and omit `idun-agent-standalone` from `requires_dist`. This is a Warehouse rendering quirk: the wheel itself wires the `idun` console script and bundles the standalone package. To verify post-install:
+
+```bash
+python -c "import idun_agent_engine, idun_agent_standalone, idun_agent_schema"
+idun --help
+```
+
+Both commands succeed when the install is healthy.
+
 ## Quickstart
 
 ### 1) Minimal one-liner (from a YAML config)
