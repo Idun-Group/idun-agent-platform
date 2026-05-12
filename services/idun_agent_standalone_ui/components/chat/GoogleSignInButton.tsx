@@ -117,6 +117,12 @@ export function GoogleSignInButton({
       })
       .catch((e: unknown) => {
         if (!cancelled) {
+          void capture(Events.AUTH_LOGIN_FAILURE, {
+            method: "oidc",
+            provider: "accounts.google.com",
+            duration_ms: Math.round(performance.now() - startedAt),
+            error_class: "GsiLoadError",
+          });
           setError(e instanceof Error ? e.message : "Failed to load Google Sign-In");
         }
       });
