@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, type PromptRead, api } from "@/lib/api";
+import { capture, Events } from "@/lib/telemetry";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -247,6 +248,7 @@ export default function PromptsPage() {
    */
   async function onSaveAll() {
     setSaving(true);
+    const startedAt = performance.now();
     try {
       const initialById = new Map(
         initialList.filter((r) => r.id !== null).map((r) => [r.id as string, r]),
@@ -293,8 +295,20 @@ export default function PromptsPage() {
       }
       await Promise.all(tasks);
       toast.success("Saved");
+      void capture(Events.AGENT_CONFIG_SAVED, {
+        agent_id: "default",
+        section: "prompts",
+        duration_ms: Math.round(performance.now() - startedAt),
+        result: "ok",
+      });
       qc.invalidateQueries({ queryKey: ["prompts"] });
     } catch (e: unknown) {
+      void capture(Events.AGENT_CONFIG_SAVED, {
+        agent_id: "default",
+        section: "prompts",
+        duration_ms: Math.round(performance.now() - startedAt),
+        result: e instanceof z.ZodError ? "validation_error" : "server_error",
+      });
       const detail = e instanceof ApiError ? e.detail : undefined;
       const message =
         (detail as { message?: string } | undefined)?.message ??

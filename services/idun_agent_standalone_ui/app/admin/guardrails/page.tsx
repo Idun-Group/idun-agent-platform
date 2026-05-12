@@ -79,6 +79,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ApiError, type GuardrailRead, api } from "@/lib/api";
+import { capture, Events } from "@/lib/telemetry";
 
 const GUARD_IDS = [
   "ban_list",
@@ -735,6 +736,7 @@ export default function GuardrailsPage() {
   async function onSaveAll() {
     setSaving(true);
     setRestartRequired(false);
+    const startedAt = performance.now();
     try {
       const initialById = new Map(
         initialList.filter((r) => r.id !== null).map((r) => [r.id as string, r]),
@@ -791,8 +793,20 @@ export default function GuardrailsPage() {
       } else {
         toast.message("Nothing to save");
       }
+      void capture(Events.AGENT_CONFIG_SAVED, {
+        agent_id: "default",
+        section: "guardrails",
+        duration_ms: Math.round(performance.now() - startedAt),
+        result: "ok",
+      });
       qc.invalidateQueries({ queryKey: ["guardrails"] });
     } catch (e) {
+      void capture(Events.AGENT_CONFIG_SAVED, {
+        agent_id: "default",
+        section: "guardrails",
+        duration_ms: Math.round(performance.now() - startedAt),
+        result: e instanceof z.ZodError ? "validation_error" : "server_error",
+      });
       const detail = e instanceof ApiError ? e.detail : undefined;
       const message =
         (detail as { error?: { message?: string } } | undefined)?.error?.message ??
