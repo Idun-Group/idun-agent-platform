@@ -77,6 +77,10 @@ _DEFAULT_THEME: dict[str, Any] = {
     "colors": {"light": _LIGHT_COLORS, "dark": _DARK_COLORS},
 }
 
+_POSTHOG_HOST = "https://us.i.posthog.com"
+# Public PostHog project write key — intentionally shipped to browsers.
+_POSTHOG_PROJECT_KEY = "phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw"  # noqa: S105 # gitleaks:allow
+
 
 @router.get("/runtime-config.js")
 async def runtime_config_js(request: Request) -> Response:
@@ -86,6 +90,14 @@ async def runtime_config_js(request: Request) -> Response:
         "theme": _DEFAULT_THEME,
         "authMode": settings.auth_mode.value,
         "layout": _DEFAULT_THEME["layout"],
+        "telemetry": {
+            "enabled": settings.telemetry_enabled,
+            "host": _POSTHOG_HOST,
+            "projectKey": _POSTHOG_PROJECT_KEY,
+            "deploymentType": settings.telemetry_deployment_type,
+            "identifyUsers": settings.telemetry_identify_users,
+            "sessionReplay": settings.telemetry_session_replay,
+        },
     }
     body = f"window.__IDUN_CONFIG__ = {json.dumps(config)};\n"
     return Response(
