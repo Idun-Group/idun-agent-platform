@@ -60,6 +60,9 @@ async def test_lifespan_stops_trace_tasks_before_db_engine_dispose(monkeypatch):
         ) -> None:
             return None
 
+        async def scalar(self, *_a: object, **_kw: object) -> int:
+            return 0
+
     monkeypatch.setattr(
         app_module, "create_sessionmaker", lambda *a, **kw: lambda: _StubSession()
     )
@@ -140,6 +143,9 @@ async def test_lifespan_disposes_engine_when_no_trace_tasks(monkeypatch):
             tb: TracebackType | None,
         ) -> None:
             return None
+
+        async def scalar(self, *_a: object, **_kw: object) -> int:
+            return 0
 
     monkeypatch.setattr(
         app_module, "create_sessionmaker", lambda *a, **kw: lambda: _StubSession()
