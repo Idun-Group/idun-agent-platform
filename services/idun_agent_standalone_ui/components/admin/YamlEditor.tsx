@@ -77,7 +77,7 @@ export function YamlEditor({
   const height = `${Math.max(rows * 18, 200)}px`;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-ph-no-capture>
       <div
         className="rounded-md border border-border overflow-hidden"
         style={{ height }}
