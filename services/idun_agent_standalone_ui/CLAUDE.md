@@ -7,6 +7,7 @@ A Next.js 15 + Tailwind v4 + React 19 SPA shipped as a static export. Bundled in
 ## Routes
 
 <!-- VERIFY: regenerate from services/idun_agent_standalone_ui/app/ -->
+
 | Route | Status |
 | --- | --- |
 | `/` | Chat UI; layout switched at runtime (branded / minimal / inspector) |
@@ -98,6 +99,7 @@ Unit tests live in the top-level `__tests__/` directory, organized by surface (`
 - `IDUN_TELEMETRY_SESSION_REPLAY=false` — analytics on, replay off
 
 ### Event taxonomy (canonical)
+
 | Event | Surface | Properties |
 |---|---|---|
 | `auth.login.start` | login form / OIDC button | `method`, `provider?` |
