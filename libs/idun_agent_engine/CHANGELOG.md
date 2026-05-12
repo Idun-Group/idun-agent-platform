@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Documentation
+
+- README note for TestPyPI dev snapshots: the JSON metadata can show `entry_points: null` and a partial `requires_dist`, but the wheel still bundles `idun_agent_standalone` and `idun_agent_schema`. Includes a post-install check. Public PyPI releases (0.6.0+) are not affected.
+
 ### Removed
 
 - Haystack agent adapter, `HaystackAgentConfig` schema, and the `langfuse-haystack` runtime dependency. Migrate Haystack agents to LangGraph or ADK.

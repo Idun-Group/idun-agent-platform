@@ -53,6 +53,13 @@ cd my-agent && idun serve
 
 Open [http://localhost:8000](http://localhost:8000). Chat with your agent, then explore the admin at [/admin](http://localhost:8000/admin) and traces at [/admin/traces](http://localhost:8000/admin/traces).
 
+> Installing a TestPyPI dev snapshot? Its JSON metadata can come back with `entry_points: null` and a partial `requires_dist`. The wheel still bundles `idun_agent_standalone` and `idun_agent_schema`, so trust the wheel. Public PyPI releases (0.6.0+) are not affected. To check what you got:
+>
+> ```bash
+> python -c "import idun_agent_engine, idun_agent_standalone, idun_agent_schema"
+> idun --help
+> ```
+
 ## What's inside
 
 <table>
