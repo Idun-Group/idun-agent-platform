@@ -177,3 +177,65 @@ jobs:
             ---
             _This check is **advisory** in v1. Run `/review-pr` locally to
             iterate. Findings here do not block merge._
+
+  security-audit:
+    name: Dependency vulnerability audit (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: false
+
+      - name: Export resolved Python requirements
+        run: |
+          uv export --no-dev --no-hashes --no-emit-workspace > requirements-audit.txt
+          echo "Exported $(wc -l < requirements-audit.txt) locked Python dependencies."
+
+      - name: Run pip-audit
+        run: |
+          uv tool run --from pip-audit pip-audit \
+            --requirement requirements-audit.txt \
+            --vulnerability-service osv \
+            --desc on \
+            --strict \
+          | tee pip-audit-report.txt
+          echo "::warning::See pip-audit-report.txt for Python dependency findings."
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+
+      - name: Run pnpm audit on standalone UI
+        working-directory: services/idun_agent_standalone_ui
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm audit --audit-level=high --json | tee ../../pnpm-audit-report.json || true
+          echo "::warning::See pnpm-audit-report.json for npm dependency findings."
+
+      - name: Upload audit reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dependency-audit-reports
+          path: |
+            pip-audit-report.txt
+            pnpm-audit-report.json
+          if-no-files-found: ignore
