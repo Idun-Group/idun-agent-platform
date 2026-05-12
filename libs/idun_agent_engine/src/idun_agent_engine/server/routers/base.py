@@ -74,18 +74,33 @@ async def _reload_auth_dep(request: Request) -> None:
 
 @base_router.get("/health")
 def health_check(request: Request):
-    """Health check endpoint for monitoring and load balancers."""
+    """Health check endpoint for monitoring and load balancers.
+
+    Returns ``status: "ok"`` only when an agent is registered and
+    ``/agent/*`` will accept requests. Returns ``status: "degraded"`` with
+    ``agent_ready: false`` when no agent is configured — e.g. standalone
+    admin-only mode after an ``assemble_engine_config`` error, or the
+    pre-onboarding wizard state. When ``app.state.boot_error`` is set by
+    the standalone's assembly failure handler, it is surfaced as ``reason``
+    so operators can diagnose without grepping logs.
+    """
     agent = getattr(request.app.state, "agent", None)
     configuration = getattr(agent, "configuration", None)
     agent_name = getattr(configuration, "name", None)
+    agent_ready = agent is not None
+    boot_error = getattr(request.app.state, "boot_error", None)
     # TODO: return managed agent UUID (from manager API response) for stronger
     # identity validation. Currently agent_name is the only shared identifier.
-    return {
-        "status": "ok",
+    response: dict[str, object] = {
+        "status": "ok" if agent_ready else "degraded",
         "service": "idun-agent-engine",
         "version": __version__,
+        "agent_ready": agent_ready,
         "agent_name": agent_name,
     }
+    if boot_error:
+        response["reason"] = boot_error
+    return response
 
 
 @base_router.post("/reload")

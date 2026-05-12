@@ -52,14 +52,18 @@ class TestUnconfiguredBoot:
         assert "/reload" in paths
 
     def test_unconfigured_app_returns_200_on_health(self) -> None:
-        """``/health`` works regardless of agent configuration — it is
-        the load-balancer's reachability signal."""
+        """``/health`` stays reachable on the unconfigured/wizard path —
+        the load-balancer's reachability signal — but reports degraded so
+        monitoring can distinguish a wedged service from a healthy one
+        (FIX 02 / L10-1).
+        """
         app = create_app()
         with TestClient(app) as client:
             response = client.get("/health")
             assert response.status_code == 200
             body = response.json()
-            assert body["status"] == "ok"
+            assert body["status"] == "degraded"
+            assert body["agent_ready"] is False
             assert body["agent_name"] is None  # No agent yet
 
     def test_unconfigured_app_returns_503_on_agent_run(self) -> None:
