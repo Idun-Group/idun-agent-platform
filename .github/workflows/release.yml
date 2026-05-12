@@ -194,6 +194,9 @@ jobs:
       - name: Check distribution metadata
         run: uvx twine check libs/idun_agent_engine/dist/*
 
+      - name: Verify wheel metadata
+        run: bash scripts/check-wheel-metadata.sh libs/idun_agent_engine/dist/*.whl
+
       - name: Smoke test built engine wheel
         run: |
           python -m venv /tmp/engine-prepub-venv
