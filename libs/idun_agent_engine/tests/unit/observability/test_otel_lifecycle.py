@@ -133,7 +133,9 @@ class TestAttachSpanProcessor:
         provider.add_span_processor = _boom  # type: ignore[method-assign]
 
         with caplog.at_level(logging.ERROR):
-            otel_lifecycle.attach_span_processor(SimpleSpanProcessor(InMemorySpanExporter()))
+            otel_lifecycle.attach_span_processor(
+                SimpleSpanProcessor(InMemorySpanExporter())
+            )
 
         # Helper degraded gracefully: nothing tracked, no exception.
         assert otel_lifecycle._attached_processors == []
@@ -266,3 +268,127 @@ class TestReloadOtel:
         # (we don't assert distinct identity because LANGFUSE is a no-op
         # provider for OTel and may share state).
         assert isinstance(otel_lifecycle.get_tracer_provider(), TracerProvider)
+
+
+@pytest.mark.unit
+class TestAttachInstrumentor:
+    def test_forwards_extra_kwargs_to_instrument(self):
+        from idun_agent_engine.observability import otel_lifecycle
+
+        otel_lifecycle.init_otel(
+            ObservabilityConfig(
+                provider=ObservabilityProvider.GCP_TRACE,
+                config=GCPTraceConfig(),
+            )
+        )
+
+        class _Recorder:
+            def __init__(self) -> None:
+                self.called_with: dict[str, object] = {}
+
+            def instrument(self, **kwargs: object) -> None:
+                self.called_with = kwargs
+
+            def uninstrument(self) -> None:
+                return
+
+        recorder = _Recorder()
+        otel_lifecycle.attach_instrumentor(
+            recorder,
+            separate_trace_from_runtime_context=True,
+            some_other_flag=42,
+        )
+
+        assert (
+            recorder.called_with.get("tracer_provider")
+            is otel_lifecycle.get_tracer_provider()
+        )
+        assert recorder.called_with.get("separate_trace_from_runtime_context") is True
+        assert recorder.called_with.get("some_other_flag") == 42
+        assert recorder in otel_lifecycle._installed_instrumentors
+
+    def test_no_extra_kwargs_preserves_existing_behavior(self):
+        from idun_agent_engine.observability import otel_lifecycle
+
+        otel_lifecycle.init_otel(
+            ObservabilityConfig(
+                provider=ObservabilityProvider.GCP_TRACE,
+                config=GCPTraceConfig(),
+            )
+        )
+
+        class _Recorder:
+            def __init__(self) -> None:
+                self.called_with: dict[str, object] = {}
+
+            def instrument(self, **kwargs: object) -> None:
+                self.called_with = kwargs
+
+            def uninstrument(self) -> None:
+                return
+
+        recorder = _Recorder()
+        otel_lifecycle.attach_instrumentor(recorder)
+
+        assert set(recorder.called_with.keys()) == {"tracer_provider"}
+        assert (
+            recorder.called_with["tracer_provider"]
+            is otel_lifecycle.get_tracer_provider()
+        )
+
+    def test_returns_true_on_successful_attach(self):
+        from idun_agent_engine.observability import otel_lifecycle
+
+        otel_lifecycle.init_otel(
+            ObservabilityConfig(
+                provider=ObservabilityProvider.GCP_TRACE,
+                config=GCPTraceConfig(),
+            )
+        )
+
+        class _Recorder:
+            def instrument(self, **_kwargs: object) -> None:
+                return
+
+            def uninstrument(self) -> None:
+                return
+
+        assert otel_lifecycle.attach_instrumentor(_Recorder()) is True
+
+    def test_returns_false_when_no_tracer_provider(self):
+        from idun_agent_engine.observability import otel_lifecycle
+
+        # Drain any provider installed by a previous test.
+        otel_lifecycle.shutdown_otel()
+
+        class _Recorder:
+            def instrument(self, **_kwargs: object) -> None:
+                return
+
+            def uninstrument(self) -> None:
+                return
+
+        recorder = _Recorder()
+        assert otel_lifecycle.attach_instrumentor(recorder) is False
+        assert recorder not in otel_lifecycle._installed_instrumentors
+
+    def test_returns_false_when_instrument_raises(self):
+        from idun_agent_engine.observability import otel_lifecycle
+
+        otel_lifecycle.init_otel(
+            ObservabilityConfig(
+                provider=ObservabilityProvider.GCP_TRACE,
+                config=GCPTraceConfig(),
+            )
+        )
+
+        class _Broken:
+            def instrument(self, **_kwargs: object) -> None:
+                raise RuntimeError("boom")
+
+            def uninstrument(self) -> None:
+                return
+
+        broken = _Broken()
+        assert otel_lifecycle.attach_instrumentor(broken) is False
+        assert broken not in otel_lifecycle._installed_instrumentors
