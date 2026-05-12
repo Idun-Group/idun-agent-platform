@@ -133,6 +133,8 @@ export const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
   telemetry: {
     enabled: false, // dev / SSR default is OFF; the backend overrides at runtime
     host: "https://us.i.posthog.com",
+    // keep in sync with libs/idun_agent_standalone/src/idun_agent_standalone/runtime_config.py:_POSTHOG_PROJECT_KEY
+    //   backend /runtime-config.js overrides this at runtime; this is only the SSR/dev fallback.
     projectKey: "phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw", // gitleaks:allow — PostHog public client key, ships in browser bundle
     deploymentType: "dev",
     identifyUsers: true,

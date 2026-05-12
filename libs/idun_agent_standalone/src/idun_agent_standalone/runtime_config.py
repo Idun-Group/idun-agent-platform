@@ -79,6 +79,7 @@ _DEFAULT_THEME: dict[str, Any] = {
 
 _POSTHOG_HOST = "https://us.i.posthog.com"
 # Public PostHog project write key — intentionally shipped to browsers.
+# keep in sync with services/idun_agent_standalone_ui/lib/runtime-config.ts:DEFAULT_RUNTIME_CONFIG.telemetry.projectKey
 _POSTHOG_PROJECT_KEY = "phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw"  # noqa: S105 # gitleaks:allow
 
 
