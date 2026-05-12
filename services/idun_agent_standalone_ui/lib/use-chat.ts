@@ -148,7 +148,24 @@ function applyEvent(
       // them out so the row body isn't empty.
       let initialArgs = "";
       const raw = e.rawEvent as RawToolCallChunk | undefined;
-      const rawArgs = raw?.data?.chunk?.tool_calls?.[0]?.args;
+      const toolCalls = raw?.data?.chunk?.tool_calls ?? [];
+      const incomingStartId = String(e.toolCallId ?? e.tool_call_id ?? "");
+      const incomingStartName = String(
+        e.toolCallName ?? e.tool_call_name ?? "",
+      );
+      // Match the corresponding entry by id (preferred) or name; only
+      // fall back to index 0 when the chunk has a single tool call. A
+      // bare [0] would attach the wrong args when the LLM emitted
+      // multiple tool calls in one chunk.
+      const matched =
+        (incomingStartId &&
+          toolCalls.find((tc) => String(tc.id ?? "") === incomingStartId)) ||
+        (incomingStartName &&
+          toolCalls.find(
+            (tc) => String(tc.name ?? "") === incomingStartName,
+          )) ||
+        (toolCalls.length === 1 ? toolCalls[0] : undefined);
+      const rawArgs = matched?.args;
       if (rawArgs !== undefined && rawArgs !== null) {
         initialArgs =
           typeof rawArgs === "string" ? rawArgs : JSON.stringify(rawArgs);
@@ -210,7 +227,25 @@ function applyEvent(
       // possible and otherwise attach to the most recent tool call
       // without a result.
       const incomingId = String(e.toolCallId ?? e.tool_call_id ?? "");
-      const content = String(e.content ?? "");
+      // Serialise structured content so the row body shows the actual
+      // payload instead of "[object Object]". `String({})` would coerce
+      // an object literal to that placeholder, which is what reaches
+      // the UI today when a tool returns a JSON blob; stringify when we
+      // can, fall back to String(...) for circular refs / BigInt.
+      const rawContent = e.content;
+      let content: string;
+      if (typeof rawContent === "string") {
+        content = rawContent;
+      } else if (rawContent === undefined || rawContent === null) {
+        content = "";
+      } else {
+        try {
+          const serialised = JSON.stringify(rawContent, null, 2);
+          content = serialised ?? String(rawContent);
+        } catch {
+          content = String(rawContent);
+        }
+      }
       updateLatestAssistant((m) => {
         if (m.role !== "assistant") return m;
         const exact = m.toolCalls.find((tc) => tc.id === incomingId);

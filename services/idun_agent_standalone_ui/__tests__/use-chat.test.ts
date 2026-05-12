@@ -603,6 +603,96 @@ describe("useChat", () => {
     }
   });
 
+  it("matches the right tool_calls entry by id when a chunk carries multiple tool calls", async () => {
+    // Regression: previously the reducer always read tool_calls[0],
+    // which attached the wrong args when the LLM emitted multiple
+    // parallel tool calls in a single chunk. We now match by id.
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const script: AGUIEvent[] = [
+      { type: "RUN_STARTED" },
+      {
+        type: "TOOL_CALL_START",
+        toolCallId: "tc-second",
+        toolCallName: "lookup_b",
+        rawEvent: {
+          data: {
+            chunk: {
+              tool_calls: [
+                { name: "lookup_a", args: { q: "first" }, id: "tc-first" },
+                { name: "lookup_b", args: { q: "second" }, id: "tc-second" },
+              ],
+            },
+          },
+        },
+      },
+      { type: "TOOL_CALL_END", toolCallId: "tc-second" },
+      { type: "RUN_FINISHED" },
+    ];
+
+    (runAgent as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: RunOptions) => {
+        for (const event of script) {
+          opts.onEvent(event);
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useChat("thread-multi-toolcall"));
+    await act(async () => {
+      await result.current.send("hi");
+    });
+
+    const assistant = result.current.messages.find(
+      (m) => m.role === "assistant",
+    );
+    if (assistant && assistant.role === "assistant") {
+      const tc = assistant.toolCalls[0];
+      // Args must come from the entry whose id matched the START event.
+      expect(tc.args).toBe('{"q":"second"}');
+    }
+  });
+
+  it("serialises a structured TOOL_CALL_RESULT.content instead of producing [object Object]", async () => {
+    // Regression: `String(e.content)` coerced object payloads to
+    // "[object Object]" before the row body ever rendered. We now
+    // JSON.stringify non-string content with a defensive fallback.
+    const { runAgent } = await import("@/lib/agui");
+    const { useChat } = await import("@/lib/use-chat");
+
+    const structured = { hits: 2, items: ["a", "b"] };
+    const script: AGUIEvent[] = [
+      { type: "RUN_STARTED" },
+      { type: "TOOL_CALL_START", toolCallId: "tc-3", toolCallName: "search" },
+      { type: "TOOL_CALL_END", toolCallId: "tc-3" },
+      { type: "TOOL_CALL_RESULT", toolCallId: "tc-3", content: structured },
+      { type: "RUN_FINISHED" },
+    ];
+
+    (runAgent as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: RunOptions) => {
+        for (const event of script) {
+          opts.onEvent(event);
+        }
+      },
+    );
+
+    const { result } = renderHook(() => useChat("thread-structured-result"));
+    await act(async () => {
+      await result.current.send("hi");
+    });
+
+    const assistant = result.current.messages.find(
+      (m) => m.role === "assistant",
+    );
+    if (assistant && assistant.role === "assistant") {
+      const tc = assistant.toolCalls[0];
+      expect(tc.result).toBe(JSON.stringify(structured, null, 2));
+      expect(tc.result).not.toContain("[object Object]");
+    }
+  });
+
   it("leaves result undefined when only TOOL_CALL_END fires (no result event)", async () => {
     const { runAgent } = await import("@/lib/agui");
     const { useChat } = await import("@/lib/use-chat");

@@ -4,7 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CopyButton } from "@/components/common/CopyButton";
 
 describe("CopyButton", () => {
-  const originalClipboard = navigator.clipboard;
+  // Capture the full property descriptor (not just the value) so the
+  // afterEach restore preserves getter/setter semantics that jsdom may
+  // set up for `navigator.clipboard`. Replacing only `.value` would
+  // leak a modified data descriptor across tests.
+  const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(
+    navigator,
+    "clipboard",
+  );
 
   beforeEach(() => {
     Object.defineProperty(navigator, "clipboard", {
@@ -14,10 +21,15 @@ describe("CopyButton", () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: originalClipboard,
-    });
+    if (originalClipboardDescriptor) {
+      Object.defineProperty(
+        navigator,
+        "clipboard",
+        originalClipboardDescriptor,
+      );
+    } else {
+      Reflect.deleteProperty(navigator, "clipboard");
+    }
     vi.restoreAllMocks();
   });
 
