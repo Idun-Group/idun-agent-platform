@@ -37,6 +37,8 @@ import {
 } from "@/components/ui/command";
 import { api } from "@/lib/api";
 import { getRuntimeConfig } from "@/lib/runtime-config";
+import { capture, reset } from "@/lib/telemetry";
+import { Events } from "@/lib/telemetry/events";
 
 type PageEntry = {
   href: string;
@@ -106,6 +108,10 @@ export function GlobalCommand({ open, onOpenChange }: Props) {
 
   const signOut = async () => {
     close();
+    // GlobalCommand only surfaces the sign-out action when password auth is
+    // active, so the method is always basic here.
+    void capture(Events.AUTH_LOGOUT, { method: "basic" });
+    void reset();
     try {
       await api.logout();
     } catch {

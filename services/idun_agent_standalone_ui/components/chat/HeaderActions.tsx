@@ -13,6 +13,8 @@ import {
   type RuntimeConfig,
   getRuntimeConfig,
 } from "@/lib/runtime-config";
+import { capture, reset } from "@/lib/telemetry";
+import { Events } from "@/lib/telemetry/events";
 
 type Props = {
   threadId?: string;
@@ -69,10 +71,14 @@ export function HeaderActions({ onNewSession }: Props) {
 
   const handleSignOut = async () => {
     if (ssoEnabled) {
+      void capture(Events.AUTH_LOGOUT, { method: "oidc" });
+      void reset();
       await ssoSignOut().catch(() => {});
       if (typeof window !== "undefined") window.location.replace("/");
       return;
     }
+    void capture(Events.AUTH_LOGOUT, { method: "basic" });
+    void reset();
     try {
       await api.logout();
     } catch {

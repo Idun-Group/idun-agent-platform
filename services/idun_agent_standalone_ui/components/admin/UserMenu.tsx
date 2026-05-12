@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api";
 import { getRuntimeConfig } from "@/lib/runtime-config";
+import { capture, reset } from "@/lib/telemetry";
+import { Events } from "@/lib/telemetry/events";
 
 export function UserMenu() {
   const [authMode, setAuthMode] = useState<string>("none");
@@ -22,6 +24,9 @@ export function UserMenu() {
   }, []);
 
   const handleLogout = async () => {
+    // UserMenu only renders when authMode === "password".
+    void capture(Events.AUTH_LOGOUT, { method: "basic" });
+    void reset();
     try {
       await api.logout();
     } catch {
