@@ -614,19 +614,21 @@ wheels = [
 
 [[package]]
 name = "copilotkit"
-version = "0.1.78"
+version = "0.1.88"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ag-ui-langgraph", extra = ["fastapi"], marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
+    { name = "ag-ui-protocol", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "fastapi", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "langchain", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "langgraph", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "partialjson", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
+    { name = "pydantic-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "toml", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/33/4ff1f1d732f89f8a08f08a20c6288af8d407438221b44748967f10df88f8/copilotkit-0.1.78.tar.gz", hash = "sha256:d27c303d61539eab3dc168ada6ec0a0ecb02f770da8aa4f1f9bbd9488235c556", size = 37578, upload-time = "2026-02-06T11:56:04.523Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/be/f1/aacbd51eb36fd794650e924aeda4fb5dbb427178c0c931e0376b9debf502/copilotkit-0.1.88.tar.gz", hash = "sha256:4e5e8cfb8833940b61684f73baacab2e0c11d72258fa5c6d01f5e8b87b3ebab5", size = 39415, upload-time = "2026-05-01T10:31:40.789Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5a/5c/81bcea99f0da7d6b43f5bbdce13943da260ea94cd5d61c0d8bb1d047e50c/copilotkit-0.1.78-py3-none-any.whl", hash = "sha256:d4230094c96de708a58c9d5da82258a4bfda6ce85846b2fb154a1837ed0a92f5", size = 46919, upload-time = "2026-02-06T11:56:03.318Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/26/9f4c37c55efb53953bb42adbb1ea3a8ed834e0cc2bea7e459e7ae7e43a8c/copilotkit-0.1.88-py3-none-any.whl", hash = "sha256:85bf80655963d6cc6ef177e723da5fbe9296411dcb48185e8276610595fa1e2b", size = 48033, upload-time = "2026-05-01T10:31:39.324Z" },
 ]
 
 [[package]]
@@ -1824,7 +1826,7 @@ requires-dist = [
     { name = "botbuilder-integration-aiohttp", specifier = ">=4.17.0,<5.0.0" },
     { name = "cachetools", specifier = ">=5.0.0,<7.0.0" },
     { name = "click", specifier = ">=8.2.0,<9.0.0" },
-    { name = "copilotkit", specifier = "==0.1.78" },
+    { name = "copilotkit", specifier = "==0.1.88" },
     { name = "cryptography", specifier = ">=46.0.3,<48.0.0" },
     { name = "deepagents", specifier = ">=0.2.8,<1.0.0" },
     { name = "fastapi", specifier = ">=0.115.0,<=0.134.0" },

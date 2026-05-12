@@ -63,7 +63,7 @@ dependencies = [
     "ag-ui-protocol==0.1.18",
     "ag-ui-langgraph==0.0.35",
     "ag-ui-adk>=0.3.4,<0.6.0",
-    "copilotkit==0.1.78",
+    "copilotkit==0.1.88",
     # Guardrails and security
     "guardrails-ai==0.9.2",
     "openinference-instrumentation-guardrails>=0.1.0,<2.0.0",
