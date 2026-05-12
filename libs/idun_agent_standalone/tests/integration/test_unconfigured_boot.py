@@ -105,10 +105,11 @@ async def test_standalone_unconfigured_boot_serves_health_and_admin(empty_db_set
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # /health works
         response = await client.get("/health")
         assert response.status_code == 200, response.text
-        assert response.json()["status"] == "ok"
+        body = response.json()
+        assert body["status"] == "degraded"
+        assert body["agent_ready"] is False
 
         # /admin/api/v1/agent returns 404 (no agent row) — that is the
         # wizard-not-yet-materialized signal the SPA's chat root reads to

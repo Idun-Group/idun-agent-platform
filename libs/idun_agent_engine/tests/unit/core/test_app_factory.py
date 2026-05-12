@@ -34,7 +34,9 @@ class TestAppFactoryConfigSources:
 
         response = client.get("/health")
         assert response.status_code == 200
-        assert response.json()["status"] == "ok"
+        # No lifespan ran (TestClient used without `with`), so no agent is
+        # registered on app.state and /health correctly reports degraded.
+        assert response.json()["status"] == "degraded"
 
         assert app.state.engine_config.server.api.port == 8888
         assert app.state.engine_config.agent.config.name == "YAML Test Agent"
@@ -129,7 +131,9 @@ class TestAppFactoryRoutes:
 
         resp = client.get("/health")
         assert resp.status_code == 200
-        assert resp.json().get("status") == "ok"
+        # No lifespan (TestClient used without `with`), so app.state.agent is
+        # never set — /health reports degraded by design (see FIX 02 / L10-1).
+        assert resp.json().get("status") == "degraded"
 
         resp = client.get("/")
         assert resp.status_code == 200
