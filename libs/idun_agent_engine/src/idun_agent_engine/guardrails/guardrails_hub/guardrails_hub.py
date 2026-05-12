@@ -38,11 +38,18 @@ def _require_guardrails_ai() -> None:
     installable when the upstream PyPI project is quarantined. Surfacing
     the install hint at the point of use is friendlier than letting a
     deep ``ModuleNotFoundError`` propagate from the internal hub import.
+
+    The catch is narrowed to ``ModuleNotFoundError`` whose ``name`` is
+    exactly ``"guardrails"`` so transitive import failures inside an
+    installed guardrails-ai (e.g. a broken sub-dep) bubble up unmasked
+    rather than being rewritten as "the extra is missing".
     """
     try:
         import guardrails  # noqa: F401
-    except ImportError as exc:
-        raise ImportError(_GUARDRAILS_EXTRA_HINT) from exc
+    except ModuleNotFoundError as exc:
+        if exc.name == "guardrails":
+            raise ImportError(_GUARDRAILS_EXTRA_HINT) from exc
+        raise
 
 
 def get_guard_instance(name: GuardrailConfigId) -> type[Validator]:

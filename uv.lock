@@ -1525,7 +1525,7 @@ wheels = [
 [[package]]
 name = "guardrails-ai"
 version = "0.9.2"
-source = { git = "https://github.com/guardrails-ai/guardrails?tag=v0.9.2#ee6999d84d3becdb3dbf5862ae7b893130ddacb8" }
+source = { git = "https://github.com/guardrails-ai/guardrails?rev=ee6999d84d3becdb3dbf5862ae7b893130ddacb8#ee6999d84d3becdb3dbf5862ae7b893130ddacb8" }
 dependencies = [
     { name = "click" },
     { name = "diff-match-patch" },
@@ -1813,7 +1813,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0,<=0.134.0" },
     { name = "google-adk", specifier = ">=1.19.0,<2.0.0" },
     { name = "google-cloud-logging", specifier = ">=3.10.0,<4.0.0" },
-    { name = "guardrails-ai", marker = "extra == 'guardrails'", git = "https://github.com/guardrails-ai/guardrails?tag=v0.9.2" },
+    { name = "guardrails-ai", marker = "extra == 'guardrails'", git = "https://github.com/guardrails-ai/guardrails?rev=ee6999d84d3becdb3dbf5862ae7b893130ddacb8" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
     { name = "httpx-sse", specifier = ">=0.4.0,<1.0.0" },
     { name = "idun-agent-schema", editable = "libs/idun_agent_schema" },
