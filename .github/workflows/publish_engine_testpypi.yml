@@ -100,6 +100,9 @@ jobs:
         run: |
           uv build --no-sources --wheel --out-dir dist
 
+      - name: Verify wheel metadata
+        run: bash scripts/check-wheel-metadata.sh libs/idun_agent_engine/dist/*.whl
+
       - name: Check distribution metadata
         run: |
           uvx twine check libs/idun_agent_engine/dist/*.whl libs/idun_agent_schema/dist/*
