@@ -113,7 +113,6 @@ Unit tests live in the top-level `__tests__/` directory, organized by surface (`
 | `agent.run.error` | `useChat` catch | `agent_id`, `session_id`, `error_class`, `duration_ms` |
 | `chat.message.sent` | `ChatInput` submit | `session_id`, `length_chars`, `length_words` |
 | `chat.response.received` | first TEXT_MESSAGE_CONTENT delta | `session_id`, `time_to_first_token_ms` |
-| `chat.message.retried` | retry button | `session_id`, `attempt_number` |
 | `chat.error` | error toast | `session_id`, `error_class`, `recoverable` |
 
 ### Masking convention

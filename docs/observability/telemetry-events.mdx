@@ -22,7 +22,6 @@ The Idun standalone UI emits the events below through PostHog. The single off-sw
 | `agent.run.error` | Stream error | `agent_id`, `session_id`, `error_class`, `duration_ms` |
 | `chat.message.sent` | `ChatInput` submit | `session_id`, `length_chars`, `length_words` |
 | `chat.response.received` | First TEXT_MESSAGE_CONTENT delta | `session_id`, `time_to_first_token_ms` |
-| `chat.message.retried` | Retry button | `session_id`, `attempt_number` |
 | `chat.error` | Error toast | `session_id`, `error_class`, `recoverable` |
 
 ## Properties policy

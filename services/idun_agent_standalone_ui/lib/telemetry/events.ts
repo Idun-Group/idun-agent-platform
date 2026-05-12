@@ -17,7 +17,6 @@ export const Events = {
   AGENT_RUN_ERROR: "agent.run.error",
   CHAT_MESSAGE_SENT: "chat.message.sent",
   CHAT_RESPONSE_RECEIVED: "chat.response.received",
-  CHAT_MESSAGE_RETRIED: "chat.message.retried",
   CHAT_ERROR: "chat.error",
 } as const;
 
@@ -79,7 +78,6 @@ export type ChatResponseReceived = {
   session_id: string;
   time_to_first_token_ms: number;
 };
-export type ChatMessageRetried = { session_id: string; attempt_number: number };
 export type ChatError = {
   session_id: string;
   error_class: string;
