@@ -36,8 +36,8 @@ repos:
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: detect-private-key
         name: "🔑 security · Detect private keys"
-        # PostHog "project API key" (public) is embedded for telemetry; don't flag it as a private key.
-        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry\.py$
+        # PostHog "project API key" (public) and redaction-marker strings ("PRIVATE KEY") are embedded for telemetry; don't flag them as real keys.
+        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry\.py$|(^|/)services/idun_agent_standalone_ui/lib/telemetry/(sanitize\.ts|__tests__/sanitize\.test\.ts)$
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.9
     hooks:
