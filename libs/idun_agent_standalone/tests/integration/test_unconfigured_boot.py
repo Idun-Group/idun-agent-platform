@@ -18,6 +18,11 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from idun_agent_standalone.app import create_standalone_app
 from idun_agent_standalone.core.settings import StandaloneSettings
+from idun_agent_standalone.infrastructure.db.models.agent import StandaloneAgentRow
+from idun_agent_standalone.infrastructure.db.session import (
+    create_db_engine,
+    create_sessionmaker,
+)
 
 
 @pytest.fixture
@@ -103,6 +108,9 @@ async def test_standalone_unconfigured_boot_serves_health_and_admin(empty_db_set
     they must work when the engine has no agent yet."""
     app = await create_standalone_app(empty_db_settings)
 
+    # Wizard mode (no agent row) must not set boot_error.
+    assert getattr(app.state, "boot_error", None) is None
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/health")
@@ -110,6 +118,7 @@ async def test_standalone_unconfigured_boot_serves_health_and_admin(empty_db_set
         body = response.json()
         assert body["status"] == "degraded"
         assert body["agent_ready"] is False
+        assert "reason" not in body
 
         # /admin/api/v1/agent returns 404 (no agent row) — that is the
         # wizard-not-yet-materialized signal the SPA's chat root reads to
@@ -120,3 +129,48 @@ async def test_standalone_unconfigured_boot_serves_health_and_admin(empty_db_set
         # /admin/api/v1/onboarding/scan works — wizard scanner endpoint.
         response = await client.post("/admin/api/v1/onboarding/scan")
         assert response.status_code == 200, response.text
+
+
+@pytest.fixture
+async def db_with_corrupt_agent(empty_db_settings):
+    """Seed an agent row whose ``base_engine_config`` fails Pydantic validation.
+
+    Exercises the failure-mode branch: an agent row exists (so wizard-mode
+    fall-through is wrong), but ``assemble_engine_config`` raises when
+    ``_parse_base_config`` validates the empty dict against ``EngineConfig``.
+    """
+    db_engine = create_db_engine(empty_db_settings.database_url)
+    sessionmaker = create_sessionmaker(db_engine)
+    async with sessionmaker() as session:
+        session.add(
+            StandaloneAgentRow(
+                name="Corrupt Agent",
+                base_engine_config={},
+            )
+        )
+        await session.commit()
+    await db_engine.dispose()
+    return empty_db_settings
+
+
+@pytest.mark.asyncio
+async def test_standalone_loud_failure_when_agent_row_exists_but_assembly_fails(
+    db_with_corrupt_agent,
+):
+    """When the DB has an agent row AND assembly raises, the standalone
+    must not silently fall through to admin-only mode. ``app.state.boot_error``
+    must carry the reason so ``/health`` can surface it.
+    """
+    app = await create_standalone_app(db_with_corrupt_agent)
+
+    assert app.state.boot_error is not None
+    assert "Corrupt Agent" in app.state.boot_error
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/health")
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["status"] == "degraded"
+        assert body["agent_ready"] is False
+        assert body.get("reason") == app.state.boot_error

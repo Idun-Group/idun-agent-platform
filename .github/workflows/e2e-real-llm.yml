@@ -88,7 +88,12 @@ jobs:
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
 
       - name: Install workspace dependencies
-        run: uv sync --group dev
+        # ``--all-extras`` pulls in the engine's ``[guardrails]`` optional
+        # extra so the ``guardrails`` CLI is available for the
+        # pre-install step below. The extra became opt-in once PyPI
+        # quarantined ``guardrails-ai`` (see #642 / #643); e2e jobs are
+        # the one place we want it installed.
+        run: uv sync --group dev --all-extras
 
       - name: Pre-install Guardrails Hub validators
         # Bootstraps ~/.guardrailsrc (the CLI's auth file) and eagerly
@@ -143,7 +148,12 @@ jobs:
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
 
       - name: Install workspace dependencies
-        run: uv sync --group dev
+        # ``--all-extras`` pulls in the engine's ``[guardrails]`` optional
+        # extra so the ``guardrails`` CLI is available for the
+        # pre-install step below. The extra became opt-in once PyPI
+        # quarantined ``guardrails-ai`` (see #642 / #643); e2e jobs are
+        # the one place we want it installed.
+        run: uv sync --group dev --all-extras
 
       - name: Pre-install Guardrails Hub validators
         # admin-edit-and-reload.spec.ts adds a BAN_LIST guardrail via

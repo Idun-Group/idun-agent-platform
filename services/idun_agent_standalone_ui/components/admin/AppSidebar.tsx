@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/sidebar";
 import { api } from "@/lib/api";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
+import { logoutWithTelemetry } from "@/lib/telemetry";
 
 type NavItem = {
   href: string;
@@ -100,8 +101,10 @@ export function AppSidebar() {
   }, []);
 
   const handleLogout = async () => {
+    // AppSidebar only renders the logout entry when authMode === "password",
+    // so the method is always basic auth here.
     try {
-      await api.logout();
+      await logoutWithTelemetry("basic", () => api.logout());
     } catch {
       // Even if logout fails, redirect — cookie may already be gone.
     }

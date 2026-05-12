@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { capture } from "@/lib/telemetry";
+import { Events } from "@/lib/telemetry/events";
 
 function isSafeNext(next: string): boolean {
   // Only same-origin paths. Reject `https://evil.com`, `//evil.com`,
@@ -58,15 +60,28 @@ function LoginForm() {
         </div>
         <form
           className="space-y-3"
+          data-ph-mask=""
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
+            const startedAt = performance.now();
+            void capture(Events.AUTH_LOGIN_START, { method: "basic" });
             try {
               await api.login(password);
+              void capture(Events.AUTH_LOGIN_SUCCESS, {
+                method: "basic",
+                duration_ms: Math.round(performance.now() - startedAt),
+              });
               const raw = params?.get("next") ?? "/";
               router.replace(pickPostLoginPath(raw));
             } catch (err) {
               const status = err instanceof ApiError ? err.status : 0;
+              void capture(Events.AUTH_LOGIN_FAILURE, {
+                method: "basic",
+                duration_ms: Math.round(performance.now() - startedAt),
+                error_class:
+                  err instanceof Error ? err.constructor.name : "Unknown",
+              });
               toast.error(
                 status === 401 ? "Invalid credentials" : "Sign-in failed",
               );

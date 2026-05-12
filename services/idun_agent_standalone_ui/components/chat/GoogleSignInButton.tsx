@@ -3,6 +3,8 @@
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useRef, useState } from "react";
 import { setManualToken } from "@/lib/auth";
+import { capture } from "@/lib/telemetry";
+import { Events } from "@/lib/telemetry/events";
 
 declare global {
   interface Window {
@@ -62,20 +64,50 @@ export function GoogleSignInButton({
 
   useEffect(() => {
     let cancelled = false;
+    // Track the wall-clock time of the mount as a proxy for "start" — Google's
+    // own button click is not observable to us, so duration measures the
+    // mount-to-credential window for this provider.
+    const startedAt = performance.now();
     ensureGsiScript()
       .then(() => {
         if (cancelled || !window.google || !ref.current) return;
+        // GSI script-ready is the closest observable proxy for "user can now
+        // click sign-in" — Google's own button doesn't expose a click event,
+        // so we emit start here, immediately before initialize/renderButton.
+        void capture(Events.AUTH_LOGIN_START, {
+          method: "oidc",
+          provider: "accounts.google.com",
+        });
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: (res) => {
-            if (!res?.credential) return;
+            if (!res?.credential) {
+              void capture(Events.AUTH_LOGIN_FAILURE, {
+                method: "oidc",
+                provider: "accounts.google.com",
+                duration_ms: Math.round(performance.now() - startedAt),
+                error_class: "NoCredential",
+              });
+              return;
+            }
             try {
               jwtDecode(res.credential);
             } catch {
+              void capture(Events.AUTH_LOGIN_FAILURE, {
+                method: "oidc",
+                provider: "accounts.google.com",
+                duration_ms: Math.round(performance.now() - startedAt),
+                error_class: "InvalidCredential",
+              });
               setError("Invalid credential from Google");
               return;
             }
             setManualToken(res.credential);
+            void capture(Events.AUTH_LOGIN_SUCCESS, {
+              method: "oidc",
+              provider: "accounts.google.com",
+              duration_ms: Math.round(performance.now() - startedAt),
+            });
             onSignedIn();
           },
           auto_select: false,
@@ -92,6 +124,12 @@ export function GoogleSignInButton({
       })
       .catch((e: unknown) => {
         if (!cancelled) {
+          void capture(Events.AUTH_LOGIN_FAILURE, {
+            method: "oidc",
+            provider: "accounts.google.com",
+            duration_ms: Math.round(performance.now() - startedAt),
+            error_class: "GsiLoadError",
+          });
           setError(e instanceof Error ? e.message : "Failed to load Google Sign-In");
         }
       });
