@@ -61,7 +61,7 @@ dependencies = [
     "langchain-google-vertexai>=2.0.27,<4.0.0",
     # AG-UI and interactive interfaces
     "ag-ui-protocol==0.1.18",
-    "ag-ui-langgraph==0.0.25",
+    "ag-ui-langgraph==0.0.35",
     "ag-ui-adk>=0.3.4,<0.6.0",
     "copilotkit==0.1.78",
     # Guardrails and security
