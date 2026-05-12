@@ -40,6 +40,16 @@ class StandaloneSettings(BaseSettings):
         alias="DATABASE_URL",
     )
     auth_mode: AuthMode = Field(default=AuthMode.NONE, alias="IDUN_ADMIN_AUTH_MODE")
+    telemetry_enabled: bool = Field(default=True, alias="IDUN_TELEMETRY_ENABLED")
+    telemetry_deployment_type: str = Field(
+        default="self-hosted", alias="IDUN_DEPLOYMENT_TYPE"
+    )
+    telemetry_identify_users: bool = Field(
+        default=True, alias="IDUN_TELEMETRY_IDENTIFY_USERS"
+    )
+    telemetry_session_replay: bool = Field(
+        default=True, alias="IDUN_TELEMETRY_SESSION_REPLAY"
+    )
     session_secret: str = Field(default="", alias="IDUN_SESSION_SECRET")
     admin_password_hash: str = Field(default="", alias="IDUN_ADMIN_PASSWORD_HASH")
     session_ttl_hours: int = Field(
