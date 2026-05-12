@@ -50,17 +50,19 @@ function sanitizeWithSeen(value: unknown, seen: WeakSet<object>): unknown {
     return truncate(value);
   }
   if (typeof value === "number" || typeof value === "boolean") return value;
-  if (typeof value === "object") {
-    if (seen.has(value as object)) return "[circular]";
-    seen.add(value as object);
+  if (typeof value !== "object") return value;
+
+  // From here on, value is an object (incl. arrays). Apply cycle guard once.
+  if (seen.has(value as object)) return "[circular]";
+  seen.add(value as object);
+
+  if (Array.isArray(value)) {
+    return value.map((v) => sanitizeWithSeen(v, seen));
   }
-  if (Array.isArray(value)) return value.map((v) => sanitizeWithSeen(v, seen));
-  if (typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      out[k] = isSensitiveKey(k) ? "[redacted]" : sanitizeWithSeen(v, seen);
-    }
-    return out;
+
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    out[k] = isSensitiveKey(k) ? "[redacted]" : sanitizeWithSeen(v, seen);
   }
-  return value;
+  return out;
 }
