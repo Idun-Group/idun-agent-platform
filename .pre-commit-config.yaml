@@ -65,6 +65,20 @@ repos:
     -   id: gitleaks
         name: "🔒 security · Detect hardcoded secrets"
         exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry\.py$
+# Wrapper repo for suzuki-shunsuke/pinact (pinact itself does not ship a
+# .pre-commit-hooks.yaml). The `language: golang` hook fetches the actual
+# pinact binary from suzuki-shunsuke/pinact v3.9.2 at first run.
+# Pinned to a commit SHA on ref-app/prek-pinact so the wrapper repo cannot
+# be rewritten upstream — same hardening rationale as the workflow pins.
+-   repo: https://github.com/ref-app/prek-pinact
+    rev: 2e61063ef6f6509e31512d739dba8e25cabbcd29  # v3.9.2
+    hooks:
+    -   id: pinact
+        name: "🔒 security · Verify GitHub Actions are SHA-pinned"
+        # Runs `pinact run --check`. Fails the commit if any workflow
+        # references an action by tag/branch instead of a full commit SHA.
+        # Auto-rewrite locally with `pre-commit run pinact-fix --all-files`
+        # or `pinact run` if pinact is installed directly.
 -   repo: local
     hooks:
     -   id: commitlint-advisory
