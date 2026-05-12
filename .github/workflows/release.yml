@@ -38,6 +38,7 @@ jobs:
   publish-schema:
     name: Publish Schema to PyPI
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: socket-scan
     if: always() && (needs.socket-scan.result == 'success' || needs.socket-scan.result == 'skipped')
     permissions:
@@ -100,6 +101,7 @@ jobs:
   publish-engine:
     name: Publish Engine to PyPI
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     needs: [socket-scan, publish-schema]
     if: always() && needs.publish-schema.result == 'success' && (needs.socket-scan.result == 'success' || needs.socket-scan.result == 'skipped')
     permissions:
@@ -219,6 +221,7 @@ jobs:
   release-summary:
     name: Create Release Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [publish-schema, publish-engine]
     if: success()
 

@@ -13,6 +13,7 @@ jobs:
   preflight:
     name: Check secrets availability
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       has_secrets: ${{ steps.check.outputs.has_secrets }}
     steps:
@@ -51,6 +52,7 @@ jobs:
     needs: preflight
     if: needs.preflight.outputs.has_secrets == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -115,6 +117,7 @@ jobs:
     needs: preflight
     if: needs.preflight.outputs.has_secrets == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LLM_PROVIDER: openai

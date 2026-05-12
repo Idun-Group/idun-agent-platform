@@ -15,6 +15,7 @@ jobs:
   build-and-validate:
     name: Build and validate schema package
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     permissions:
       contents: read
     outputs:
@@ -98,6 +99,7 @@ jobs:
   publish-testpypi:
     name: Publish schema to TestPyPI (best effort)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: [socket-scan, build-and-validate]
     continue-on-error: true
     permissions:
