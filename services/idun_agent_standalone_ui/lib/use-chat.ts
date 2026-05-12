@@ -435,6 +435,14 @@ export function useChat(threadId: string) {
    * moment ``send()`` runs, telling the in-flight hydration to bail out.
    */
   const hydratableRef = useRef(true);
+  /**
+   * 1-based counter of user turns in the current thread. Initialized from the
+   * hydration payload (or 0 for a fresh thread) and incremented inside
+   * ``send`` so the telemetry ``message_index`` doesn't depend on the latest
+   * ``messages`` state, which would otherwise force ``send`` to be re-created
+   * on every message append and churn downstream ``useCallback`` consumers.
+   */
+  const userMessageCountRef = useRef(0);
 
   // Reset + hydrate whenever the parent flips threadId. Clicking a row in
   // HistorySidebar pushes ``/?session=<sid>`` and the page-level component
@@ -454,6 +462,7 @@ export function useChat(threadId: string) {
     setError(null);
     eventIdRef.current = 0;
     hydratableRef.current = true;
+    userMessageCountRef.current = 0;
 
     let cancelled = false;
     (async () => {
@@ -477,6 +486,9 @@ export function useChat(threadId: string) {
               streaming: false,
             },
       );
+      userMessageCountRef.current = seeded.filter(
+        (m) => m.role === "user",
+      ).length;
       setMessages(seeded);
     })();
 
@@ -505,15 +517,17 @@ export function useChat(threadId: string) {
 
       // === TELEMETRY: send-time markers ===
       // Sampled at the synchronous send entry so duration_ms / TTFT use the
-      // same monotonic clock for start and stop. `messages` is read from the
-      // closure: filtering for prior user turns gives the 1-based index of
-      // this user message in the conversation.
+      // same monotonic clock for start and stop. ``userMessageCountRef`` is
+      // initialized from the hydrated session (or 0 for a fresh thread) and
+      // incremented here so the 1-based index of this user turn is available
+      // without reading ``messages`` from the closure — which would otherwise
+      // force ``send`` to be recreated on every message append.
       const sendStartedAt = performance.now();
       let firstChunkSeen = false;
       const trimmed = text.trim();
       const wordCount = trimmed.length === 0 ? 0 : trimmed.split(/\s+/).length;
-      const nextMessageIndex =
-        messages.filter((m) => m.role === "user").length + 1;
+      userMessageCountRef.current += 1;
+      const nextMessageIndex = userMessageCountRef.current;
       void capture(Events.CHAT_MESSAGE_SENT, {
         session_id: threadId,
         length_chars: text.length,
@@ -646,7 +660,7 @@ export function useChat(threadId: string) {
         window.setTimeout(refreshSessions, 1000);
       }
     },
-    [threadId, queryClient, messages],
+    [threadId, queryClient],
   );
 
   const stop = useCallback(() => {
