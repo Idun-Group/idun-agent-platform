@@ -69,18 +69,20 @@ async def test_runtime_context_leak_still_produces_trace_row(monkeypatch):
 
         otel_lifecycle.get_tracer_provider().force_flush()
 
-        async def _has_trace() -> bool:
+        async def _has_leak_probe_trace() -> bool:
             async with sm() as session:
                 count = (
                     await session.execute(
-                        select(func.count()).select_from(StandaloneTraceRow)
+                        select(func.count())
+                        .select_from(StandaloneTraceRow)
+                        .where(StandaloneTraceRow.name == "leak_probe")
                     )
                 ).scalar_one()
                 return count >= 1
 
         assert await _wait_for(
-            _has_trace
-        ), f"no trace row materialized within {_DRAIN_TIMEOUT_S}s"
+            _has_leak_probe_trace
+        ), f"no leak_probe trace row materialized within {_DRAIN_TIMEOUT_S}s"
 
         async with sm() as session:
             rows = (
@@ -101,10 +103,22 @@ async def test_runtime_context_leak_still_produces_trace_row(monkeypatch):
                 "leak_probe" in trace_names
             ), f"expected a trace row for leak_probe; got {trace_names!r}"
     finally:
-        if getattr(app.state, "trace_writer_task", None) is not None:
-            await app.state.trace_writer_task.stop()
-        if getattr(app.state, "trace_retention_task", None) is not None:
-            await app.state.trace_retention_task.stop()
-        await engine.dispose()
-        otel_lifecycle.shutdown_otel()
-        await asyncio.to_thread(downgrade_base)
+        # Nested try/finally so a failure in an earlier stop never blocks
+        # the next cleanup step — otherwise a flaky writer.stop() can
+        # leak the OTel TracerProvider and the Alembic schema into the
+        # next test in the integration suite.
+        try:
+            if getattr(app.state, "trace_writer_task", None) is not None:
+                await app.state.trace_writer_task.stop()
+        finally:
+            try:
+                if getattr(app.state, "trace_retention_task", None) is not None:
+                    await app.state.trace_retention_task.stop()
+            finally:
+                try:
+                    await engine.dispose()
+                finally:
+                    try:
+                        otel_lifecycle.shutdown_otel()
+                    finally:
+                        await asyncio.to_thread(downgrade_base)
