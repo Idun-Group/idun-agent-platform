@@ -12,7 +12,11 @@ set -euo pipefail
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
-WHEEL="${1:?usage: $0 <wheel-path>}"
+# Accept exactly one positional arg. If a future `dist/*.whl` glob expands
+# to multiple files we want a loud failure here, not a silent skip of all
+# but the first.
+[[ $# -eq 1 ]] || fail "usage: $0 <wheel-path> (expected exactly 1 wheel, got $#)"
+WHEEL="$1"
 if [[ ! -f "$WHEEL" ]]; then
   fail "wheel not found: $WHEEL"
 fi
@@ -32,10 +36,17 @@ if [[ $rc -ne 0 && $rc -ne 11 ]]; then
   cat "$ERRLOG" >&2
   fail "cannot read entry_points.txt from $WHEEL (unzip exited $rc)"
 fi
+# Distinguish "no entry_points.txt in the wheel at all" (force-include missing)
+# from "entry_points.txt present but our line is missing" (CLI mis-wired).
+# The former is the more likely future regression and deserves a fix-pointing
+# message; the latter would be a content typo in [project.scripts].
+if [[ $rc -eq 11 || -z "$EP" ]]; then
+  fail "entry_points.txt not bundled in $WHEEL — check [tool.hatch.build.targets.wheel.force-include] in libs/idun_agent_engine/pyproject.toml"
+fi
 if ! grep -qE '^idun[[:space:]]*=[[:space:]]*idun_agent_standalone\.cli:main$' <<<"$EP"; then
   echo "got:" >&2
   echo "$EP" >&2
-  fail "entry_points.txt missing 'idun = idun_agent_standalone.cli:main'"
+  fail "entry_points.txt present but missing 'idun = idun_agent_standalone.cli:main' — check [project.scripts] in libs/idun_agent_engine/pyproject.toml"
 fi
 
 # 2. idun_agent_standalone is co-bundled in the wheel

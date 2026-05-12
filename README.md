@@ -217,7 +217,7 @@ idun --help
 
 Both checks are smoke-tested in the release pipeline before any wheel is published.
 
-Heads up: `https://*.pypi.org/pypi/idun-agent-engine/<version>/json` reports `entry_points: null` and omits `idun-agent-standalone` from `requires_dist`. This is a Warehouse rendering quirk — the wheel itself still wires the `idun` console script and bundles standalone. The smoke-test commands above are the canonical way to verify a healthy install.
+Heads up: both `pypi.org` and `test.pypi.org` JSON APIs report `entry_points: null` and omit `idun-agent-standalone` from `requires_dist`. This is a Warehouse rendering quirk — the wheel itself still wires the `idun` console script and bundles standalone. The smoke-test commands above are the canonical way to verify a healthy install.
 
 ### YAML reference
 
