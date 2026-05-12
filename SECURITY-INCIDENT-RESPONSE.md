@@ -130,8 +130,8 @@ A rotation log entry should be appended below.
 
 These are the signals we monitor to catch compromises early:
 
-- **GitHub Dependabot alerts** — `.github/dependabot.yml` configures weekly
-  scans of `pip`, `npm`, and `github-actions`. Critical alerts page the
+- **GitHub Dependabot alerts** — `.github/dependabot.yml` configures monthly
+  scans of `uv` (Python), `npm`, and `github-actions`. Critical alerts page the
   maintainers.
 - **Socket Security org-side scanning** — full scans of every repo branch,
   with policy gating at `error` level. Webhook configured to surface
