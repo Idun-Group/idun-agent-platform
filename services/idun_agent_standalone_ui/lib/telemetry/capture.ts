@@ -14,7 +14,11 @@ export async function capture(name: EventName, props?: Props): Promise<void> {
   const ph = await getClient();
   if (!ph) return;
   const safe = props ? (sanitize(props) as Props) : undefined;
-  ph.capture(name, safe);
+  try {
+    ph.capture(name, safe);
+  } catch (err) {
+    console.warn("[telemetry] capture failed", err);
+  }
 }
 
 /**
@@ -27,12 +31,20 @@ export async function identify(distinctId: string, traits?: Props): Promise<void
   const ph = await getClient();
   if (!ph) return;
   const safe = traits ? (sanitize(traits) as Props) : undefined;
-  ph.identify(distinctId, safe);
+  try {
+    ph.identify(distinctId, safe);
+  } catch (err) {
+    console.warn("[telemetry] identify failed", err);
+  }
 }
 
 /** Clear identified state (e.g. on logout). */
 export async function reset(): Promise<void> {
   const ph = await getClient();
   if (!ph) return;
-  ph.reset();
+  try {
+    ph.reset();
+  } catch (err) {
+    console.warn("[telemetry] reset failed", err);
+  }
 }
