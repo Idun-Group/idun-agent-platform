@@ -64,9 +64,14 @@ dependencies = [
     "ag-ui-langgraph==0.0.25",
     "ag-ui-adk>=0.3.4,<0.6.0",
     "copilotkit==0.1.78",
-    # Guardrails and security
-    "guardrails-ai==0.9.2",
-    "openinference-instrumentation-guardrails>=0.1.0,<2.0.0",
+    # Security
+    # guardrails-ai + openinference-instrumentation-guardrails moved to the
+    # ``guardrails`` optional extra below. The PyPI ``guardrails-ai`` project
+    # was quarantined for a security incident, which made the engine wheel
+    # uninstallable from PyPI for every consumer — including those who never
+    # configure guardrails. Keeping it optional decouples the engine's
+    # install path from upstream quarantine status. Install with
+    # ``pip install 'idun-agent-engine[guardrails]'`` to opt in.
     "openinference-instrumentation>=0.1.0,<2.0.0",
     "PyJWT[crypto]>=2.9.0,<3.0.0",
     "cryptography>=46.0.3,<48.0.0",
@@ -110,6 +115,15 @@ dependencies = [
     "apscheduler>=3.10,<4",
     "rfc8785>=0.1,<1",
     "sentencepiece>=0.2.1,<1",
+]
+
+[project.optional-dependencies]
+# Opt-in guardrails support. Kept out of the default install so the engine
+# wheel does not depend on a single upstream package's availability on PyPI.
+# Install with: pip install 'idun-agent-engine[guardrails]'
+guardrails = [
+    "guardrails-ai==0.9.2",
+    "openinference-instrumentation-guardrails>=0.1.0,<2.0.0",
 ]
 
 [project.scripts]

@@ -1,13 +1,18 @@
 """Guardrails."""
 
+from __future__ import annotations
+
 import logging
 import os
+from typing import TYPE_CHECKING
 
-from guardrails import Validator
 from idun_agent_schema.engine.guardrails import Guardrail as GuardrailSchema
 from idun_agent_schema.engine.guardrails_v2 import GuardrailConfigId
 
 from ..base import BaseGuardrail
+
+if TYPE_CHECKING:
+    from guardrails import Validator
 
 PII_ENTITY_MAP = {
     "Email": "EMAIL_ADDRESS",
@@ -19,9 +24,38 @@ PII_ENTITY_MAP = {
 
 logger = logging.getLogger(__name__)
 
+_GUARDRAILS_EXTRA_HINT = (
+    "guardrails-ai is required to use Guardrails Hub validators but is not "
+    "installed. Install the optional extra: "
+    "`pip install 'idun-agent-engine[guardrails]'`."
+)
+
+
+def _require_guardrails_ai() -> None:
+    """Raise a clear ImportError when ``guardrails`` is unavailable.
+
+    The dependency moved to an optional extra so the engine wheel stays
+    installable when the upstream PyPI project is quarantined. Surfacing
+    the install hint at the point of use is friendlier than letting a
+    deep ``ModuleNotFoundError`` propagate from the internal hub import.
+
+    The catch is narrowed to ``ModuleNotFoundError`` whose ``name`` is
+    exactly ``"guardrails"`` so transitive import failures inside an
+    installed guardrails-ai (e.g. a broken sub-dep) bubble up unmasked
+    rather than being rewritten as "the extra is missing".
+    """
+    try:
+        import guardrails  # noqa: F401
+    except ModuleNotFoundError as exc:
+        if exc.name == "guardrails":
+            raise ImportError(_GUARDRAILS_EXTRA_HINT) from exc
+        raise
+
 
 def get_guard_instance(name: GuardrailConfigId) -> type[Validator]:
     """Returns a map of guard type -> guard instance."""
+    _require_guardrails_ai()
+
     if name == GuardrailConfigId.BAN_LIST:
         from guardrails.hub import BanList
 
@@ -75,6 +109,10 @@ class GuardrailsHubGuard(BaseGuardrail):
     """Class for managing guardrails from `guardrailsai`'s hub."""
 
     def __init__(self, config: GuardrailSchema, position: str) -> None:
+        # Surface a friendly install hint before any internal guardrails-ai
+        # import is reached during setup/validate.
+        _require_guardrails_ai()
+
         super().__init__(config)
 
         self.guard_id = self._guardrail_config.config_id
