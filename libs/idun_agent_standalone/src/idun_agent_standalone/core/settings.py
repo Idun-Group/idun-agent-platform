@@ -10,6 +10,7 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _MIN_SESSION_SECRET_LEN = 32
+_BIND_ALL_HOSTS = frozenset({"0.0.0.0", "::"})
 
 
 class AuthMode(StrEnum):
@@ -32,7 +33,7 @@ class StandaloneSettings(BaseSettings):
     )
 
     config_path: Path = Field(default=Path("./config.yaml"), alias="IDUN_CONFIG_PATH")
-    host: str = Field(default="0.0.0.0", alias="IDUN_HOST")
+    host: str = Field(default="127.0.0.1", alias="IDUN_HOST")
     port: int = Field(default=8000, alias="IDUN_PORT")
     database_url: str = Field(
         default="sqlite+aiosqlite:///./idun_standalone.db",
@@ -66,6 +67,10 @@ class StandaloneSettings(BaseSettings):
         default=False,
         alias="IDUN_PRICES_REFRESH",
     )
+    allow_open_admin: bool = Field(
+        default=False,
+        alias="IDUN_ALLOW_OPEN_ADMIN",
+    )
 
     @field_validator("admin_password_hash", "session_secret", mode="before")
     @classmethod
@@ -92,5 +97,20 @@ class StandaloneSettings(BaseSettings):
                 "IDUN_ADMIN_AUTH_MODE=password requires "
                 f"IDUN_SESSION_SECRET to be at least {_MIN_SESSION_SECRET_LEN} "
                 "characters."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_open_admin_combo(self) -> Self:
+        """Refuse bind-all + no auth unless explicitly opted in."""
+        if (
+            self.host in _BIND_ALL_HOSTS
+            and self.auth_mode == AuthMode.NONE
+            and not self.allow_open_admin
+        ):
+            raise SettingsValidationError(
+                f"Refusing to bind IDUN_HOST={self.host} with "
+                "IDUN_ADMIN_AUTH_MODE=none. Set "
+                "IDUN_ADMIN_AUTH_MODE=password or IDUN_ALLOW_OPEN_ADMIN=1."
             )
         return self
