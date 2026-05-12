@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { CopyButton } from "@/components/common/CopyButton";
 import type { Message } from "@/lib/agui";
 import { type ThemeConfig, getRuntimeConfig } from "@/lib/runtime-config";
 import { ReasoningPanel } from "./ReasoningPanel";
@@ -31,8 +32,11 @@ export function MessageView({ m }: Props) {
   if (m.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[78%] rounded-2xl rounded-tr-md bg-foreground px-4 py-2.5 text-[15.5px] leading-snug text-background shadow-sm">
-          {m.text}
+        <div className="flex max-w-[78%] flex-col items-end gap-1">
+          <div className="rounded-2xl rounded-tr-md bg-foreground px-4 py-2.5 text-[15.5px] leading-snug text-background shadow-sm">
+            {m.text}
+          </div>
+          <CopyButton value={m.text} label="Copy message" />
         </div>
       </div>
     );
@@ -94,10 +98,19 @@ export function MessageView({ m }: Props) {
         />
 
         {m.text && (
-          <div className="prose-chat max-w-none text-[16px] leading-[1.65] text-foreground">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
-            {m.streaming && (
-              <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-foreground/60 align-middle" />
+          <div>
+            <div className="prose-chat max-w-none text-[16px] leading-[1.65] text-foreground">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
+              {m.streaming && (
+                <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-foreground/60 align-middle" />
+              )}
+            </div>
+            {!m.streaming && (
+              <CopyButton
+                value={m.text}
+                label="Copy message"
+                className="mt-1"
+              />
             )}
           </div>
         )}

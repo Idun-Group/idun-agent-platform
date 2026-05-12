@@ -44,6 +44,19 @@ const PLAN_STEPS = new Set(["planner", "analyst"]);
  * closure for the duration of a single live run. */
 type SnapshotRef = { current: string | null };
 
+/** Shape of the raw chunk attached to AG-UI tool-call events by
+ * ag_ui_langgraph. Used as the lossy escape hatch for issue #629 where
+ * TOOL_CALL_START arrives without a follow-up TOOL_CALL_ARGS; the args are
+ * still present on the original LangChain chunk. Inline at the AG-UI/JSON
+ * boundary — keep this type narrow and call out new fields explicitly. */
+type RawToolCallChunk = {
+  data?: {
+    chunk?: {
+      tool_calls?: Array<{ args?: unknown; name?: string; id?: string }>;
+    };
+  };
+};
+
 /**
  * Apply a single AG-UI event to the chat state.
  *
@@ -126,7 +139,37 @@ function applyEvent(
 
     // — Tool call lifecycle -----------------------------------
     case "TOOL_CALL_START":
-    case "ToolCallStart":
+    case "ToolCallStart": {
+      // TODO(idun-engine): #629 — workaround until ag_ui_langgraph emits
+      // TOOL_CALL_ARGS for atomic (non-streaming) tool calls. When the LLM
+      // returns a tool call atomically (Gemini and other non-streaming
+      // paths), TOOL_CALL_START arrives without a follow-up
+      // TOOL_CALL_ARGS; the args are still on the raw chunk, so we pull
+      // them out so the row body isn't empty.
+      let initialArgs = "";
+      const raw = e.rawEvent as RawToolCallChunk | undefined;
+      const toolCalls = raw?.data?.chunk?.tool_calls ?? [];
+      const incomingStartId = String(e.toolCallId ?? e.tool_call_id ?? "");
+      const incomingStartName = String(
+        e.toolCallName ?? e.tool_call_name ?? "",
+      );
+      // Match the corresponding entry by id (preferred) or name; only
+      // fall back to index 0 when the chunk has a single tool call. A
+      // bare [0] would attach the wrong args when the LLM emitted
+      // multiple tool calls in one chunk.
+      const matched =
+        (incomingStartId &&
+          toolCalls.find((tc) => String(tc.id ?? "") === incomingStartId)) ||
+        (incomingStartName &&
+          toolCalls.find(
+            (tc) => String(tc.name ?? "") === incomingStartName,
+          )) ||
+        (toolCalls.length === 1 ? toolCalls[0] : undefined);
+      const rawArgs = matched?.args;
+      if (rawArgs !== undefined && rawArgs !== null) {
+        initialArgs =
+          typeof rawArgs === "string" ? rawArgs : JSON.stringify(rawArgs);
+      }
       updateLatestAssistant((m) =>
         m.role === "assistant"
           ? {
@@ -138,13 +181,14 @@ function applyEvent(
                   name: String(
                     e.toolCallName ?? e.tool_call_name ?? "tool",
                   ),
-                  args: "",
+                  args: initialArgs,
                 },
               ],
             }
           : m,
       );
       break;
+    }
     case "TOOL_CALL_ARGS":
     case "ToolCallArgs":
       updateLatestAssistant((m) =>
@@ -168,17 +212,60 @@ function applyEvent(
               ...m,
               toolCalls: m.toolCalls.map((tc) =>
                 tc.id === String(e.toolCallId ?? e.tool_call_id ?? "")
-                  ? {
-                      ...tc,
-                      result: JSON.stringify(e.result ?? null),
-                      done: true,
-                    }
+                  ? { ...tc, done: true }
                   : tc,
               ),
             }
           : m,
       );
       break;
+    case "TOOL_CALL_RESULT":
+    case "ToolCallResult": {
+      // TODO(idun-engine): #629 — workaround until ag_ui_langgraph
+      // forwards the LLM's tool_call_id on TOOL_CALL_RESULT. Today it
+      // emits LangGraph's run_id instead, so we match by id when
+      // possible and otherwise attach to the most recent tool call
+      // without a result.
+      const incomingId = String(e.toolCallId ?? e.tool_call_id ?? "");
+      // Serialise structured content so the row body shows the actual
+      // payload instead of "[object Object]". `String({})` would coerce
+      // an object literal to that placeholder, which is what reaches
+      // the UI today when a tool returns a JSON blob; stringify when we
+      // can, fall back to String(...) for circular refs / BigInt.
+      const rawContent = e.content;
+      let content: string;
+      if (typeof rawContent === "string") {
+        content = rawContent;
+      } else if (rawContent === undefined || rawContent === null) {
+        content = "";
+      } else {
+        try {
+          const serialised = JSON.stringify(rawContent, null, 2);
+          content = serialised ?? String(rawContent);
+        } catch {
+          content = String(rawContent);
+        }
+      }
+      updateLatestAssistant((m) => {
+        if (m.role !== "assistant") return m;
+        const exact = m.toolCalls.find((tc) => tc.id === incomingId);
+        const fallbackIndex = exact
+          ? -1
+          : (() => {
+              for (let i = m.toolCalls.length - 1; i >= 0; i--) {
+                if (m.toolCalls[i].result === undefined) return i;
+              }
+              return -1;
+            })();
+        return {
+          ...m,
+          toolCalls: m.toolCalls.map((tc, i) =>
+            tc === exact || i === fallbackIndex ? { ...tc, result: content } : tc,
+          ),
+        };
+      });
+      break;
+    }
 
     // — Thinking lifecycle ------------------------------------
     case "THINKING_START":
