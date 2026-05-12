@@ -9,17 +9,37 @@ on:
         description: "Tag to release (e.g. v0.6.0). Required for manual dispatch."
         required: true
         type: string
+      skip_socket:
+        description: "Bypass Socket security gate. Use only when Socket is down or a known false positive blocks a hotfix."
+        required: false
+        default: false
+        type: boolean
 
 env:
   PYTHON_VERSION: "3.12"
 
 jobs:
   # ============================================================================
+  # Job 0: Socket security gate (release-published always runs it;
+  #        workflow_dispatch can bypass with skip_socket=true).
+  # ============================================================================
+  socket-scan:
+    name: Socket security gate
+    if: github.event_name != 'workflow_dispatch' || inputs.skip_socket != true
+    uses: ./.github/workflows/socket-scan-reusable.yml
+    with:
+      ref: ${{ inputs.tag || github.ref }}
+    secrets:
+      SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
+
+  # ============================================================================
   # Job 1: Publish Schema to PyPI
   # ============================================================================
   publish-schema:
     name: Publish Schema to PyPI
     runs-on: ubuntu-latest
+    needs: socket-scan
+    if: always() && (needs.socket-scan.result == 'success' || needs.socket-scan.result == 'skipped')
     permissions:
       contents: read
       id-token: write # For trusted publishing
@@ -80,7 +100,8 @@ jobs:
   publish-engine:
     name: Publish Engine to PyPI
     runs-on: ubuntu-latest
-    needs: publish-schema
+    needs: [socket-scan, publish-schema]
+    if: always() && needs.publish-schema.result == 'success' && (needs.socket-scan.result == 'success' || needs.socket-scan.result == 'skipped')
     permissions:
       contents: read
       id-token: write # For trusted publishing
