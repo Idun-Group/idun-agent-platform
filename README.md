@@ -297,7 +297,7 @@ Maintained by [Idun Group](https://idunplatform.com). We help with platform arch
 
 ## Telemetry
 
-Minimal, anonymous usage metrics via PostHog. No PII. [View source](libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Opt out: `IDUN_TELEMETRY_ENABLED=false`
+Minimal, anonymous usage metrics + masked session replay via PostHog. No message content, no PII beyond email after sign-in (set `IDUN_TELEMETRY_IDENTIFY_USERS=false` to disable). [View source](libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Off: `IDUN_TELEMETRY_ENABLED=false`. Replay-only off: `IDUN_TELEMETRY_SESSION_REPLAY=false`.
 
 ## License
 

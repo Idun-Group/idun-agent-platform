@@ -7,6 +7,7 @@ A Next.js 15 + Tailwind v4 + React 19 SPA shipped as a static export. Bundled in
 ## Routes
 
 <!-- VERIFY: regenerate from services/idun_agent_standalone_ui/app/ -->
+
 | Route | Status |
 | --- | --- |
 | `/` | Chat UI; layout switched at runtime (branded / minimal / inspector) |
@@ -84,3 +85,44 @@ Unit tests live in the top-level `__tests__/` directory, organized by surface (`
 | `/admin/integrations` (still uses old `kind` field) | Half-migrated | Update to current `IntegrationConfig` shape when revisiting messaging integrations. |
 
 `next.config.mjs` sets `typescript: { ignoreBuildErrors: true }` to allow shipping while these gaps exist. `tsc --noEmit` lists the remaining gaps. Flip the flag back to `false` once every page above is either restored or deleted.
+
+## Telemetry
+
+### Architecture
+- Module: `lib/telemetry/` (mirrors `libs/idun_agent_engine/src/idun_agent_engine/telemetry/`)
+- Provider: `components/providers/PostHogProvider.tsx` mounted once in `app/layout.tsx`
+- Runtime config: `window.__IDUN_CONFIG__.telemetry`, populated server-side by `libs/idun_agent_standalone/src/idun_agent_standalone/runtime_config.py`
+
+### Off-switch
+`IDUN_TELEMETRY_ENABLED=false` on the server kills both Python engine telemetry and browser telemetry. Two sub-knobs:
+- `IDUN_TELEMETRY_IDENTIFY_USERS=false` — keep browser events anonymous (no `identify(email)`)
+- `IDUN_TELEMETRY_SESSION_REPLAY=false` — analytics on, replay off
+
+### Event taxonomy (canonical)
+
+| Event | Surface | Properties |
+|---|---|---|
+| `auth.login.start` | login form / OIDC button | `method`, `provider?` |
+| `auth.login.success` | callback | `method`, `provider?`, `duration_ms` |
+| `auth.login.failure` | callback | `method`, `provider?`, `duration_ms`, `error_class` |
+| `auth.logout` | topbar logout | `method` |
+| `agent.config.saved` | admin save handlers | `agent_id`, `section`, `duration_ms`, `result` |
+| `agent.config.reloaded` | admin reload button | `agent_id`, `duration_ms`, `result` |
+| `agent.run.started` | `useChat.send` | `agent_id`, `session_id`, `message_index` |
+| `agent.run.completed` | `useChat` on RUN_FINISHED | `agent_id`, `session_id`, `duration_ms` |
+| `agent.run.error` | `useChat` catch | `agent_id`, `session_id`, `error_class`, `duration_ms` |
+| `chat.message.sent` | `ChatInput` submit | `session_id`, `length_chars`, `length_words` |
+| `chat.response.received` | first TEXT_MESSAGE_CONTENT delta | `session_id`, `time_to_first_token_ms` |
+| `chat.error` | error toast | `session_id`, `error_class`, `recoverable` |
+
+### Masking convention
+- `data-ph-mask` — text contents replaced in replay (chat textarea, auth forms)
+- `data-ph-no-capture` — whole subtree blocked from replay (message bubbles, prompts editor)
+- All `<input>`/`<textarea>` are masked by default via `maskAllInputs: true`
+
+### Required-on-review checklist
+- New button/route/form handler? → Does it call `capture(Events.X, {...})` from `lib/telemetry`?
+- New input receiving user content? → Does the JSX have `data-ph-mask` (or `data-ph-no-capture` for whole-subtree block)?
+- New event name? → Added to `lib/telemetry/events.ts` AND this table AND `docs/observability/telemetry-events.mdx` in the same PR?
+
+PRs that add a new user-visible flow without telemetry are rejected at review.

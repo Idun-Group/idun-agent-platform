@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { ApiError, type AgentRead, api } from "@/lib/api";
+import { capture, Events } from "@/lib/telemetry";
 
 type Framework = "langgraph" | "adk";
 
@@ -175,17 +176,40 @@ export default function AgentPage() {
   });
 
   const save = useMutation({
-    mutationFn: (values: FormValues & { framework: Framework }) =>
-      api.patchAgent({
-        name: values.name,
-        description: values.description || null,
-        baseEngineConfig: buildBaseEngineConfig(
-          data?.baseEngineConfig,
-          values.framework,
-          values.definition,
-          values.name,
-        ),
-      }),
+    mutationFn: async (values: FormValues & { framework: Framework }) => {
+      const startedAt = performance.now();
+      try {
+        const resp = await api.patchAgent({
+          name: values.name,
+          description: values.description || null,
+          baseEngineConfig: buildBaseEngineConfig(
+            data?.baseEngineConfig,
+            values.framework,
+            values.definition,
+            values.name,
+          ),
+        });
+        void capture(Events.AGENT_CONFIG_SAVED, {
+          agent_id: "default",
+          section: "framework",
+          duration_ms: Math.round(performance.now() - startedAt),
+          result: "ok",
+        });
+        return resp;
+      } catch (err) {
+        void capture(Events.AGENT_CONFIG_SAVED, {
+          agent_id: "default",
+          section: "framework",
+          duration_ms: Math.round(performance.now() - startedAt),
+          result:
+            (err instanceof ApiError && (err.status === 400 || err.status === 422)) ||
+            err instanceof z.ZodError
+              ? "validation_error"
+              : "server_error",
+        });
+        throw err;
+      }
+    },
     onSuccess: (resp) => {
       if (resp.reload.status === "restart_required") {
         setRestartRequired(true);
