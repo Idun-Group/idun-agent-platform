@@ -1525,7 +1525,7 @@ wheels = [
 [[package]]
 name = "guardrails-ai"
 version = "0.9.2"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/guardrails-ai/guardrails?tag=v0.9.2#ee6999d84d3becdb3dbf5862ae7b893130ddacb8" }
 dependencies = [
     { name = "click" },
     { name = "diff-match-patch" },
@@ -1554,10 +1554,6 @@ dependencies = [
     { name = "tiktoken" },
     { name = "typer" },
     { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/1c/62/2b28a8f7f9fbea06cdb76885a44ec0a5e0bad758b53d317c7039a5dfd164/guardrails_ai-0.9.2.tar.gz", hash = "sha256:4c136b7ef9ef1562098cbe91338f71fe91824cbf1393f3e5b3a0d8a393f55851", size = 170657, upload-time = "2026-03-16T18:22:00.903Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cf/67/b1db74bf7bd6cbbdd5e6f37880ece08e9d6a785cf955c8ba652ed43ec880/guardrails_ai-0.9.2-py3-none-any.whl", hash = "sha256:530758c544383c23f6a755670673988a5446c90596102d629cc89311a3616fb7", size = 237653, upload-time = "2026-03-16T18:22:02.116Z" },
 ]
 
 [[package]]
@@ -1735,7 +1731,6 @@ dependencies = [
     { name = "fastapi" },
     { name = "google-adk" },
     { name = "google-cloud-logging" },
-    { name = "guardrails-ai" },
     { name = "httpx" },
     { name = "httpx-sse" },
     { name = "idun-agent-schema" },
@@ -1755,7 +1750,6 @@ dependencies = [
     { name = "openinference-instrumentation" },
     { name = "openinference-instrumentation-google-adk" },
     { name = "openinference-instrumentation-google-genai" },
-    { name = "openinference-instrumentation-guardrails" },
     { name = "openinference-instrumentation-langchain" },
     { name = "openinference-instrumentation-mcp" },
     { name = "openinference-instrumentation-vertexai" },
@@ -1777,6 +1771,12 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "tavily-python" },
     { name = "uvicorn" },
+]
+
+[package.optional-dependencies]
+guardrails = [
+    { name = "guardrails-ai" },
+    { name = "openinference-instrumentation-guardrails" },
 ]
 
 [package.dev-dependencies]
@@ -1813,7 +1813,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0,<=0.134.0" },
     { name = "google-adk", specifier = ">=1.19.0,<2.0.0" },
     { name = "google-cloud-logging", specifier = ">=3.10.0,<4.0.0" },
-    { name = "guardrails-ai", specifier = "==0.9.2" },
+    { name = "guardrails-ai", marker = "extra == 'guardrails'", git = "https://github.com/guardrails-ai/guardrails?tag=v0.9.2" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
     { name = "httpx-sse", specifier = ">=0.4.0,<1.0.0" },
     { name = "idun-agent-schema", editable = "libs/idun_agent_schema" },
@@ -1833,7 +1833,7 @@ requires-dist = [
     { name = "openinference-instrumentation", specifier = ">=0.1.0,<2.0.0" },
     { name = "openinference-instrumentation-google-adk", specifier = ">=0.1.0,<2.0.0" },
     { name = "openinference-instrumentation-google-genai", specifier = ">=0.1.0,<2.0.0" },
-    { name = "openinference-instrumentation-guardrails", specifier = ">=0.1.0,<2.0.0" },
+    { name = "openinference-instrumentation-guardrails", marker = "extra == 'guardrails'", specifier = ">=0.1.0,<2.0.0" },
     { name = "openinference-instrumentation-langchain", specifier = ">=0.1.13,<2.0.0" },
     { name = "openinference-instrumentation-mcp", specifier = ">=1.0.0,<2.0.0" },
     { name = "openinference-instrumentation-vertexai", specifier = ">=0.1.0,<2.0.0" },
@@ -1856,6 +1856,7 @@ requires-dist = [
     { name = "tavily-python", specifier = ">=0.7.9,<0.8.0" },
     { name = "uvicorn", specifier = ">=0.35.0,<=0.41.0" },
 ]
+provides-extras = ["guardrails"]
 
 [package.metadata.requires-dev]
 dev = [

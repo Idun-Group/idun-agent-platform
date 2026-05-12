@@ -43,6 +43,14 @@ members = [
 idun-agent-engine = { workspace = true }
 idun-agent-schema = { workspace = true }
 idun-agent-standalone = { workspace = true }
+# Temporary workaround: the PyPI ``guardrails-ai`` project was quarantined for
+# a security incident, so the published 0.9.2 wheel is no longer resolvable.
+# Point uv at the upstream git tag so ``uv lock`` / ``uv sync`` succeed for the
+# optional ``[guardrails]`` extra of idun-agent-engine. Source overrides apply
+# only to local resolution — published engine wheels still reference
+# ``guardrails-ai==0.9.2`` on PyPI, so end-users are unaffected once upstream
+# restores the project. Remove this entry when that happens.
+guardrails-ai = { git = "https://github.com/guardrails-ai/guardrails", tag = "v0.9.2" }
 
 [build-system]
 requires = ["hatchling"]
