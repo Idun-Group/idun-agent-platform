@@ -18,7 +18,7 @@
 
 [![License: GPLv3](https://img.shields.io/badge/License-GPLv3-purple.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![CI](https://github.com/Idun-Group/idun-agent-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/Idun-Group/idun-agent-platform/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/idun-agent-engine?color=purple)](https://pypi.org/project/idun-agent-engine/)
+[![PyPI](https://img.shields.io/badge/pypi/v/idun-agent-engine?color=purple)](https://pypi.org/project/idun-agent-engine/)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Us-purple?logo=discord&logoColor=white)](https://discord.gg/KCZ6nW2jQe)
 [![Stars](https://img.shields.io/github/stars/Idun-Group/idun-agent-platform?style=social)](https://github.com/Idun-Group/idun-agent-platform)
 [![Commits](https://img.shields.io/github/commit-activity/m/Idun-Group/idun-agent-platform?color=purple)](https://github.com/Idun-Group/idun-agent-platform)
@@ -320,6 +320,82 @@ idun agent serve --source manager
 > Full config reference: [docs.idunplatform.com/configuration](https://docs.idunplatform.com/configuration)
 >
 > 9 runnable agent examples: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
+
+---
+
+## ❓ FAQ
+
+### What is Idun Agent Platform?
+
+Idun Agent Platform is an open-source, self-hosted control plane for **LangGraph** and **Google ADK** agents. It provides production-grade infrastructure with observability, guardrails, memory persistence, MCP tool governance, prompt management, and SSO with workspace isolation.
+
+### How is Idun different from LangGraph Cloud or other agent platforms?
+
+**Idun vs LangGraph Cloud**: Idun is self-hosted, giving you full control over data and infrastructure. LangGraph Cloud is a managed service.
+
+**Idun vs SaaS platforms**: Idun offers sovereignty — you keep your agent code, data, and infrastructure. No vendor lock-in, no data leaving your environment.
+
+**Idun vs building from scratch**: Idun handles the production layer (observability, guardrails, memory, MCP, SSO) so you focus on agent logic.
+
+### How do I get started?
+
+**Full platform**:
+```bash
+git clone https://github.com/Idun-Group/idun-agent-platform.git && cd idun-agent-platform
+cp .env.example .env
+docker compose -f docker-compose.dev.yml up --build
+```
+
+Open [localhost:3000](http://localhost:3000) to create an account and deploy your first agent.
+
+**Standalone engine**:
+```bash
+pip install idun-agent-engine && idun init
+```
+The interactive TUI configures framework, memory, observability, guardrails, and MCP.
+
+### What LLM providers are supported?
+
+Idun supports any LLM provider compatible with LangGraph or Google ADK. Popular options include OpenAI, Anthropic, Google Gemini, Azure OpenAI, AWS Bedrock, and local models via Ollama.
+
+### What observability options are available?
+
+Idun integrates multiple observability providers: Langfuse, Arize Phoenix, LangSmith, GCP Trace, and GCP Logging. You can connect multiple providers simultaneously through configuration.
+
+### How do guardrails work?
+
+Guardrails use Guardrails AI to apply policies per agent on input, output, or both. Available checks: PII detection, toxic language, ban lists, topic restriction, bias checks, NSFW, and 9 more.
+
+### What is MCP tool governance?
+
+Idun lets you register MCP servers (stdio, SSE, streamable HTTP, WebSocket) and control which tools each agent can access. This provides centralized tool management with per-agent permissions.
+
+### How does memory persistence work?
+
+Idun supports PostgreSQL, SQLite, In-memory, Vertex AI, and ADK Database backends. Conversations persist across restarts, and you can pick a backend per agent.
+
+### What messaging integrations are available?
+
+Idun supports WhatsApp, Discord, and Slack with bidirectional messaging. Receive messages, invoke agents, and send replies with webhook verification handled automatically.
+
+### How do I manage prompts?
+
+Idun provides versioned prompt templates with Jinja2 variables. Assign prompts to agents from the UI or API, enabling centralized prompt management with version control.
+
+### Is there SSO and multi-tenancy?
+
+Yes. Idun supports OIDC with Google and Okta, plus username/password authentication. Role-based workspaces (owner, admin, member, viewer) scope every resource to a workspace.
+
+### What is AG-UI streaming?
+
+Every agent gets a standards-based streaming API compatible with CopilotKit clients. This enables real-time responses with a built-in chat playground for testing.
+
+### Where can I get help?
+
+- 📖 [Documentation](https://docs.idunplatform.com)
+- 💬 [Discord](https://discord.gg/KCZ6nW2jQe)
+- 🌐 [Cloud Platform](https://cloud.idunplatform.com)
+- 📅 [Book a Demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
 
 ---
 
