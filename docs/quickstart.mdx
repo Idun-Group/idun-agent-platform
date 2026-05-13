@@ -24,10 +24,10 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
 
   <Step title="Initialize a new agent project">
     ```bash
-    idun init my-agent
-    cd my-agent
+    mkdir my-agent && cd my-agent
+    idun init
     ```
-    Scaffolds:
+    `idun init` runs DB migrations and opens your browser at `http://localhost:8000/`. The onboarding wizard scaffolds:
     - `agent.py` (a minimal LangGraph agent template)
     - `config.yaml` (engine + standalone config)
     - `.env.example` (environment variables stub)
@@ -69,7 +69,7 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
 - [Pick a framework](/frameworks/overview): LangGraph or Google ADK
 - [Add guardrails](/guardrails/overview): 15+ built-in safety guards
 - [Wire observability](/observability/overview): Langfuse, Phoenix, LangSmith, or GCP Trace
-- [Connect MCP servers](/mcp/overview): stdio, SSE, streamable HTTP, or WebSocket transports
+- [Connect MCP servers](/mcp-servers/overview): stdio, SSE, streamable HTTP, or WebSocket transports
 - [Deploy](/deployment/overview): Cloud Run, Kubernetes, or any single-container host
 
 ## Switching to Postgres

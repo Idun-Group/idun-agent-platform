@@ -66,6 +66,10 @@ idun agent serve --source file --path ./config.yaml
 | `--source file` | required | Load config from a local YAML file. |
 | `--path <path>` | required when `--source=file` | Path to the YAML. |
 
+<Note>
+  `--source manager` is still present in `idun agent serve --help` as a leftover from the pre-0.6.0 manager-tier deployment model. It is deprecated and unsupported: the manager service no longer ships with the platform. Use `--source file` only.
+</Note>
+
 ## Environment variables
 
 `serve` (and the server side of `init`) reads every setting from the environment. The defaults below match what the standalone uses out of the box.

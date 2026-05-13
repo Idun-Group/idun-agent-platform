@@ -14,11 +14,11 @@ The wheel bundles the engine, the standalone admin/chat/traces app, and the `idu
 ## 2. Scaffold a project
 
 ```bash
-idun init my-agent
-cd my-agent
+mkdir my-agent && cd my-agent
+idun init
 ```
 
-This creates:
+`idun init` runs DB migrations and opens your browser at `http://localhost:8000/`. On a fresh directory the chat root redirects to `/onboarding/`, and the wizard scaffolds:
 
 - `agent.py`, a minimal LangGraph echo agent (no LLM key required).
 - `config.yaml` pointing at the agent.

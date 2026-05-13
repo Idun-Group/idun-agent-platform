@@ -44,13 +44,11 @@ One command on any host with Python 3.12+:
 
 ```bash
 pip install idun-agent-engine
-idun init my-agent
-cd my-agent
-cp .env.example .env
-idun serve
+mkdir my-agent && cd my-agent
+idun init
 ```
 
-The first boot seeds the local DB from `IDUN_CONFIG_PATH` (the YAML inside the scaffold). After that, the DB is the source of truth and admin edits persist across restarts. Visit `http://127.0.0.1:8000/` for the chat UI, `/admin/` to edit config, `/admin/traces/` to inspect AG-UI events.
+`idun init` runs DB migrations and opens your browser at `http://localhost:8000/`. The onboarding wizard scaffolds `agent.py`, `config.yaml`, and `.env.example` and seeds the local DB. After that, the DB is the source of truth and admin edits persist across restarts. Visit `/` for the chat UI, `/admin/` to edit config, `/admin/traces/` to inspect AG-UI events.
 
 If you have your own admin stack and only want the runtime layer, skip the standalone surface and use engine-only mode:
 

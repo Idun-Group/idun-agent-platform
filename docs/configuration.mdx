@@ -80,7 +80,7 @@ For LangGraph, provide a `StateGraph` via `graph_definition` (`path/to/file.py:v
 
 **`guardrails`** -- Split into `input` (validated before invocation) and `output` (validated after). Uses [Guardrails AI Hub](https://hub.guardrailsai.com/) guards, downloaded and run locally. Available guards: `BAN_LIST`, `DETECT_PII`, `NSFW_TEXT`, `COMPETITION_CHECK`, `BIAS_CHECK`, `CORRECT_LANGUAGE`, `GIBBERISH_TEXT`, `TOXIC_LANGUAGE`, `RESTRICT_TO_TOPIC`. See [guardrails reference](/guardrails/reference).
 
-**`mcp_servers`** -- Model Context Protocol servers that provide tools to your agent. Supports `stdio`, `sse`, `streamable_http`, and `websocket` transports. See [MCP Servers](/mcp/overview).
+**`mcp_servers`** -- Model Context Protocol servers that provide tools to your agent. Supports `stdio`, `sse`, `streamable_http`, and `websocket` transports. See [MCP Servers](/mcp-servers/overview).
 
 **`prompts`** -- Versioned prompt templates with Jinja2 variable support (`{{ variable }}`). Each entry has `prompt_id`, `version`, `content`, and `tags`.
 
