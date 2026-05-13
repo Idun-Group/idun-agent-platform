@@ -12,68 +12,34 @@ LangGraph is the primary framework integration in Idun Agent Platform. It suppor
 
 ## Create a LangGraph agent
 
-<Tabs>
-  <Tab title="Manager UI">
-    The fastest path. Create the agent in the Manager, then connect your code.
+Set `agent.type` to `LANGGRAPH` and provide the `graph_definition` field:
 
-    <Steps>
-      <Step title="Open the agent wizard">
-        From the [Agent Dashboard](/manager/overview), click **Create an agent**. In step 1, enter a name and select **LangGraph**.
+```yaml config.yaml
+server:
+  api:
+    port: 8000
 
-        ![Agent creation wizard with LangGraph selected](/images/ui/agents-create-step1.png)
-      </Step>
-      <Step title="Configure the framework">
-        In step 2, fill in:
+agent:
+  type: LANGGRAPH
+  config:
+    name: "my-langgraph-agent"
+    graph_definition: "my_agent/agent.py:graph"
+    checkpointer:
+      type: memory
+```
 
-        - **Graph Definition**: path to your graph file and variable, e.g. `./agent/graph.py:graph`
-        - **Agent Host**: Localhost (for local development) or Remote
-        - **Server Port**: the port your agent will listen on
+The graph definition format is `file_path:variable_name`. The file path is relative to where you run the agent. The variable should be a `StateGraph` (the engine compiles it with the configured checkpointer). A `CompiledStateGraph` is also accepted but will be recompiled.
 
-        ![LangGraph framework configuration step](/images/ui/agents-create-step2.png)
+Install and run:
 
-        The graph definition format is `file_path:variable_name`. The file path is relative to where you run the agent. The variable should be a `StateGraph` (the engine compiles it with the checkpointer). A `CompiledStateGraph` is also accepted but will be recompiled.
-      </Step>
-      <Step title="Enroll your agent">
-        Step 3 gives you the enrollment instructions. In your agent's project directory:
+```bash
+pip install idun-agent-engine langgraph langchain-openai
+idun serve
+```
 
-        ```bash
-        pip install idun-agent-engine langgraph langchain-openai
-        export IDUN_MANAGER_HOST=http://localhost:8000
-        export IDUN_AGENT_API_KEY=<your-api-key>
-        idun agent serve --source manager
-        ```
+The first boot reads `config.yaml`, seeds the DB, and serves the chat UI at `http://localhost:8000/`. After that you can edit the agent through the admin panel at `/admin/agent/` and the running engine hot-reloads on save.
 
-        Get the API key from the **API Integration** tab on your agent's detail page. The agent connects to the Manager, fetches its config, and starts.
-      </Step>
-    </Steps>
-
-    The Manager sets in-memory checkpointing by default. To switch to SQLite or PostgreSQL, see [Memory](/memory/langgraph).
-  </Tab>
-  <Tab title="Config file">
-    Set `agent.type` to `LANGGRAPH` and provide the `graph_definition` field.
-
-    ```yaml config.yaml
-    server:
-      api:
-        port: 8008
-
-    agent:
-      type: LANGGRAPH
-      config:
-        name: "my-langgraph-agent"
-        graph_definition: "my_agent/agent.py:graph"
-        checkpointer:
-          type: memory
-    ```
-
-    Then run:
-
-    ```bash
-    pip install idun-agent-engine langgraph langchain-openai
-    idun agent serve --source file --path config.yaml
-    ```
-  </Tab>
-</Tabs>
+For engine-only mode (no DB, no admin), use `idun agent serve --source file --path config.yaml` instead.
 
 ## Write your agent code
 
@@ -122,11 +88,11 @@ The engine tries the file path first, then falls back to Python module import no
 
 ## Checkpointing
 
-LangGraph agents can persist conversation state across restarts using checkpointers. The Manager sets in-memory checkpointing by default. You can switch to SQLite or PostgreSQL for durability. See [Memory and checkpointing for LangGraph](/memory/langgraph) for backend options and configuration.
+LangGraph agents can persist conversation state across restarts using checkpointers. The scaffolded `config.yaml` uses in-memory checkpointing by default. Switch to SQLite or PostgreSQL for durability. See [Memory and checkpointing for LangGraph](/memory/langgraph) for backend options and configuration.
 
 ## Next steps
 
 - [Memory and checkpointing details](/memory/langgraph)
 - [Guardrails](/guardrails/overview)
 - [Observability](/observability/overview)
-- [Tool governance](/tool-governance/overview)
+- [MCP Servers](/mcp/overview)

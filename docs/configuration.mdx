@@ -4,7 +4,7 @@ description: "Engine configuration reference for server settings, agent framewor
 keywords: ["configuration", "config.yaml", "EngineConfig", "environment variables", "YAML"]
 ---
 
-A single `EngineConfig` controls every aspect of your agent service. Define it as a YAML file or fetch it from the [manager API](/manager/overview). The structure is identical in both cases.
+A single `EngineConfig` controls every aspect of your agent service. Define it as a YAML file (the bootstrap path) or edit it through the standalone admin panel at `/admin/`. The structure is identical in both cases; the admin panel is just a UI over the same fields.
 
 ## Complete config example
 
@@ -80,11 +80,11 @@ For LangGraph, provide a `StateGraph` via `graph_definition` (`path/to/file.py:v
 
 **`guardrails`** -- Split into `input` (validated before invocation) and `output` (validated after). Uses [Guardrails AI Hub](https://hub.guardrailsai.com/) guards, downloaded and run locally. Available guards: `BAN_LIST`, `DETECT_PII`, `NSFW_TEXT`, `COMPETITION_CHECK`, `BIAS_CHECK`, `CORRECT_LANGUAGE`, `GIBBERISH_TEXT`, `TOXIC_LANGUAGE`, `RESTRICT_TO_TOPIC`. See [guardrails reference](/guardrails/reference).
 
-**`mcp_servers`** -- Model Context Protocol servers that provide tools to your agent. Supports `stdio`, `sse`, `streamable_http`, and `websocket` transports. See [tool governance](/tool-governance/overview).
+**`mcp_servers`** -- Model Context Protocol servers that provide tools to your agent. Supports `stdio`, `sse`, `streamable_http`, and `websocket` transports. See [MCP Servers](/mcp/overview).
 
 **`prompts`** -- Versioned prompt templates with Jinja2 variable support (`{{ variable }}`). Each entry has `prompt_id`, `version`, `content`, and `tags`.
 
-**`sso`** -- OIDC JWT validation on agent endpoints. When enabled, requests to `/agent/run` must include a valid token. Supports `allowed_domains` and `allowed_emails` filtering. See [authentication overview](/auth/overview).
+**`sso`** -- OIDC JWT validation on agent endpoints. When enabled, requests to `/agent/run` must include a valid token. Supports `allowed_domains` and `allowed_emails` filtering. See [SSO](/auth/sso).
 
 **`integrations`** -- Messaging platform connections. Each integration adds webhook endpoints to the engine. Supported: `WHATSAPP`, `DISCORD`.
 
@@ -92,49 +92,27 @@ For LangGraph, provide a `StateGraph` via `graph_definition` (`path/to/file.py:v
 
 ## Config sources
 
-<Tabs>
-  <Tab title="Manager UI">
-    Open an agent and go to the **Configuration** tab. This shows the full materialized engine config that the agent receives from the platform when it connects.
+The standalone runtime has two ways to land config in the DB:
 
-    Toggle between JSON and YAML views. Use the Copy button to grab the config for local testing or debugging. Note that `${ENV_VAR}` references aren't resolved here; the engine resolves them at load time.
+- **YAML bootstrap.** On first boot, if the DB is empty, the file at `IDUN_CONFIG_PATH` (default `./config.yaml`) seeds it. After that, the DB is the source of truth.
+- **Admin panel.** Open `/admin/` and edit any section. Each save flows through the reload pipeline and re-instantiates the engine atomically; a bad save rolls back without disturbing the running agent.
 
-    ![Agent detail Configuration tab](/images/ui/agents-detail-config.png)
-  </Tab>
-  <Tab title="Config file">
-    ### File-based (standalone)
+For the engine-only mode (no DB, no admin), serve directly from a YAML file:
 
-    Place a `config.yaml` next to your agent code and serve it directly.
-
-    ```bash
-    idun agent serve --source file --path config.yaml
-    ```
-
-    ### Manager-based (managed)
-
-    Set two environment variables and the engine fetches its config from the manager API at startup.
-
-    ```bash
-    export IDUN_AGENT_API_KEY=your-agent-api-key
-    export IDUN_MANAGER_HOST=https://manager.example.com
-    idun agent serve --source manager
-    ```
-
-    The API key is generated in the manager UI or via `GET /api/v1/agents/key?agent_id=<id>`.
-  </Tab>
-</Tabs>
+```bash
+idun agent serve --source file --path config.yaml
+```
 
 ## Environment variables
 
 | Variable | Purpose |
 |---|---|
-| `IDUN_AGENT_API_KEY` | API key for fetching config from the manager |
-| `IDUN_MANAGER_HOST` | Manager API base URL |
-| `IDUN_CONFIG_PATH` | Path to config.yaml (alternative to `--path` flag) |
+| `IDUN_CONFIG_PATH` | Path to config.yaml. Used by `idun setup` and `idun init` on first boot. |
 | `IDUN_TELEMETRY_ENABLED` | Set to `false` to disable anonymous usage telemetry |
-| `IDUN_DEPLOYMENT_TYPE` | Tag events with `cloud` or `self-hosted` |
+| `IDUN_DEPLOYMENT_TYPE` | Tag events with `cloud`, `self-hosted`, or `dev` |
 | `IDUN_TELEMETRY_IDENTIFY_USERS` | Set to `false` to keep all browser events anonymous (no email-level `identify`) |
 | `IDUN_TELEMETRY_SESSION_REPLAY` | Set to `false` to ship browser analytics without recording sessions |
 
 The engine resolves `${VAR_NAME}` references in YAML values at config load time, so you can keep secrets out of your config files.
 
-For the full list of browser events captured and PostHog masking conventions, see [Telemetry events](/observability/telemetry-events).
+For the full list of browser events captured and PostHog masking conventions, see [Telemetry events](/observability/telemetry-events). For the complete list of standalone environment variables, see the [CLI reference](/standalone/cli#environment-variables).

@@ -1,146 +1,61 @@
 ---
 title: "CLI"
-description: "Use the Idun CLI to configure, deploy, and test agents through an interactive terminal interface or direct commands."
-keywords: ["CLI", "command line", "TUI", "terminal", "idun init", "idun agent serve", "configuration"]
+description: "The Idun CLI: one console script (idun) for serving the standalone, scaffolding a new project, and running engine-only mode."
+keywords: ["CLI", "command line", "idun", "idun init", "idun serve", "idun setup", "idun agent serve"]
 ---
 
-<Note>
-  For a visual interface, see [Getting started with the Manager](/manager/tutorial).
-</Note>
+`idun` is the single console script installed by `pip install idun-agent-engine`. It covers the full lifecycle: scaffold a project, serve the standalone, run engine-only, hash a password, pre-stage migrations.
 
-The Idun CLI provides an interactive Terminal User Interface (TUI) for configuring and running agents, and a set of commands for direct operation. It is included in the `idun-agent-engine` package.
+## Common flows
 
-## Installation
+<CodeGroup>
+```bash New project
+idun init my-agent
+cd my-agent
+idun serve
+```
+
+```bash Existing project
+# IDUN_CONFIG_PATH points at config.yaml (default ./config.yaml)
+idun setup     # one-time: migrations + seed the DB
+idun serve     # bind 127.0.0.1:8000, admin at /admin/, traces at /admin/traces/
+```
+
+```bash Engine-only mode
+# No DB, no admin REST, no chat UI. Engine routes only.
+idun agent serve --source file --path config.yaml
+```
+
+```bash Password auth
+HASH=$(idun hash-password)
+SECRET=$(openssl rand -hex 32)
+IDUN_ADMIN_AUTH_MODE=password \
+IDUN_ADMIN_PASSWORD_HASH="$HASH" \
+IDUN_SESSION_SECRET="$SECRET" \
+idun serve
+```
+</CodeGroup>
+
+## Full reference
+
+The standalone [CLI reference](/standalone/cli) documents every subcommand, every flag, and every environment variable, with verified defaults from source.
+
+## Verifying a running agent
+
+Once `idun serve` is up, open the bundled chat UI at `http://localhost:8000/`. You land on the welcome screen.
+
+![Chat UI welcome state](/images/ui/chat-welcome.png)
+
+Send a message. The chat surface streams the AG-UI response in real time and renders tool calls inline.
+
+![Chat UI showing a hello/Hey-what's-up exchange](/images/ui/chat-conversation.png)
+
+Open `/admin/traces/` to inspect the run after it completes. If you need to hit `/agent/run` directly from a script or external client, see [Programmatic chat](/guides/programmatic-chat) for the request shape and SSE event stream.
+
+## API documentation
+
+The OpenAPI schema is auto-published at `/docs` on the running standalone:
 
 ```bash
-pip install idun-agent-engine
+open http://localhost:8000/docs
 ```
-
-## Operating modes
-
-<Tabs>
-  <Tab title="Interactive (TUI)">
-    Launch the interactive setup with:
-
-    ```bash
-    idun init
-    ```
-
-    The TUI walks you through agent configuration step by step:
-
-    1. **Agent information**: Name, framework (LangGraph, ADK), port, Python file, and variable selection
-    2. **Memory**: Checkpoint type (in-memory, SQLite, PostgreSQL)
-    3. **Observability**: Provider selection (Langfuse, Phoenix, LangSmith, GCP)
-    4. **Guardrails**: Add safety filters (bias check, PII detection, ban list, and more)
-    5. **MCP servers**: Configure external tool servers
-    6. **Validate and run**: Preview the YAML config, save, and start the agent
-    7. **Chat**: Test the agent with a built-in chat interface
-
-    The TUI saves configuration to `~/.idun/<agent-name>.yaml`.
-  </Tab>
-  <Tab title="Direct commands">
-    Run agents directly from a config file or the Manager:
-
-    <CodeGroup>
-    ```bash From a config file
-    idun agent serve --source file --path config.yaml
-    ```
-
-    ```bash From the Manager
-    export IDUN_AGENT_API_KEY=your-agent-api-key
-    export IDUN_MANAGER_HOST=https://manager.example.com
-    idun agent serve --source manager
-    ```
-
-    ```bash From a saved TUI config
-    idun agent serve --source file --path ~/.idun/my-agent.yaml
-    ```
-    </CodeGroup>
-  </Tab>
-</Tabs>
-
-## Key commands
-
-| Command | Description |
-|---|---|
-| `idun init` | Launch the interactive TUI for agent configuration |
-| `idun agent serve` | Start an agent from a config source |
-| `idun agent serve --source file --path <path>` | Start from a YAML config file |
-| `idun agent serve --source manager` | Start from the Manager API (requires `IDUN_AGENT_API_KEY` and `IDUN_MANAGER_HOST`) |
-
-## Configuration file structure
-
-The TUI generates a YAML config file with this structure:
-
-```yaml ~/.idun/my-agent.yaml
-server:
-  api:
-    port: 8008
-
-agent:
-  type: LANGGRAPH
-  config:
-    name: my-agent
-    graph_definition: ./agent.py:app
-    checkpointer:
-      type: memory
-
-observability:
-  provider: OFF
-
-guardrails: []
-
-mcp_servers: []
-```
-
-## TUI features
-
-### Agent variable selection
-
-The CLI parses your Python file and lists all available variables. Select the variable that contains your agent or graph instance.
-
-### Configuration preview
-
-Before running, the TUI displays your complete YAML configuration with syntax highlighting and line numbers.
-
-### Built-in chat
-
-After starting the agent, the Chat section provides:
-
-- Real-time messaging with the agent
-- Connection status indicators
-- Thinking indicator while the agent processes
-- Word wrapping for long responses
-
-### Server management
-
-The Validate and Run section provides two options:
-
-- **Save and Run**: Saves config and starts the agent server. The button changes to **Kill Server** while running
-- **Save and Exit**: Saves config to disk without starting. The server must be stopped first
-
-## API access
-
-Once deployed, your agent exposes a REST API:
-
-```bash
-# Health check
-curl http://localhost:8008/health
-
-# Invoke agent
-curl -X POST http://localhost:8008/agent/invoke \
-  -H "Content-Type: application/json" \
-  -d '{"session_id": "test-session", "query": "Hello"}'
-
-# API documentation
-open http://localhost:8008/docs
-```
-
-## Keyboard shortcuts
-
-| Key | Action |
-|---|---|
-| `Enter` | Send message or select option |
-| `Tab` | Navigate between sections and inputs |
-| Arrow keys | Navigate lists and options |
-| `Ctrl+Q` | Exit the CLI (stop the server first) |

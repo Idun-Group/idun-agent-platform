@@ -158,7 +158,7 @@ mintlify-docs/
 │   ├── langsmith.mdx
 │   ├── gcp-trace.mdx
 │   └── gcp-logging.mdx
-├── tool-governance/
+├── mcp/
 │   ├── overview.mdx
 │   └── docker-toolkit.mdx
 ├── auth/

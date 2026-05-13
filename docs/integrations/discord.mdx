@@ -15,16 +15,14 @@ Connect your Idun agent to Discord so users can interact with it through slash c
 ## Setup
 
 <Tabs>
-  <Tab title="Manager UI">
+  <Tab title="Admin UI">
     <Steps>
-      <Step title="Open the integrations catalog">
-        Navigate to **Integrations**. The channel catalog shows WhatsApp, Discord, and Slack as active channels. Teams, Telegram, LINE, Notion, and Google Chat are planned.
-
-        ![Integrations catalog](/images/ui/integrations-catalog.png)
+      <Step title="Open the integrations admin page">
+        Navigate to `/admin/integrations/` in the running standalone. The channel catalog shows WhatsApp, Discord, Google Chat, Slack, and Microsoft Teams as active channels.
       </Step>
 
       <Step title="Create the Discord integration">
-        Click **+** on Discord and fill in the form:
+        Click **Discord** and fill in the form:
 
         | Field | Value |
         |---|---|
@@ -32,11 +30,11 @@ Connect your Idun agent to Discord so users can interact with it through slash c
         | `application_id` | Application ID from the Discord Developer Portal |
         | `public_key` | Public key from the Discord Developer Portal |
 
-        ![Discord integration form](/images/ui/integrations-create-discord.png)
+        ![Add Discord integration](/images/ui/admin-integrations-discord.png)
       </Step>
 
-      <Step title="Assign to an agent">
-        After saving, open the agent you want to connect and select the Discord integration from the **Integrations** field.
+      <Step title="Save">
+        Save the form. The reload pipeline registers the Discord webhook handler on the running engine.
       </Step>
     </Steps>
   </Tab>

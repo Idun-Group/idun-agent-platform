@@ -55,11 +55,19 @@ Sign in at `http://localhost:8000/login/` with the password you typed into `hash
 
 ## 5. Edit the agent live
 
-Open `/admin/agent/`, change the agent name, click "Save & reload". A toast confirms the running agent was hot-swapped. Structural changes (framework, graph_definition path) require a process restart — the UI shows a banner.
+Open `/admin/agent/`, change any field, click **Save**. A toast confirms the running agent was hot-swapped. Structural changes (framework, `graph_definition` path) require a process restart; the UI shows a banner.
+
+![Admin agent configuration page](/images/ui/admin-agent-config.png)
 
 ## 6. Watch traces
 
-Send a few messages from `/`. Open `/traces/` — your sessions appear with the full event timeline.
+Send a few messages from `/`. Open `/admin/traces/`; your runs appear with latency, token counts, cost, and per-span detail.
+
+![Admin traces list view](/images/ui/admin-traces-list.png)
+
+<Note>
+  The trace store is in alpha. If your runs don't appear right away, refresh the page; the write path is asynchronous and the list view doesn't yet auto-poll.
+</Note>
 
 ## Local development from a checkout
 

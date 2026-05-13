@@ -40,25 +40,26 @@ docker pull mcp/fetch
     2. The `mcp/fetch` image appears in the **Images** section
   </Step>
 
-  <Step title="Create the MCP server in the Manager">
-    Access the Manager web interface at `http://localhost:3000`.
+  <Step title="Register the MCP server">
+    Add the Fetch server to your standalone, either through the admin panel or in YAML.
 
-    1. Click **MCP Servers** in the main navigation
-    2. Click **Create MCP Server**
-    3. Fill in the configuration:
+    **Admin UI:** open `/admin/mcp/` and click **stdio**. Fill in:
 
-    | Field | Value | Description |
-    |---|---|---|
-    | **Name** | `fetch` | Identifier for this MCP server |
-    | **Transport** | `stdio` | Communication via standard I/O |
-    | **Command** | `docker` | Docker CLI command |
-    | **Args** | `["run", "-i", "--rm", "mcp/fetch"]` | Docker run arguments as JSON array |
+    | Field | Value |
+    |---|---|
+    | **Name** | `fetch` |
+    | **Command** | `docker` |
+    | **Args** | `["run", "-i", "--rm", "mcp/fetch"]` |
 
-    4. Click **Save**
+    **`config.yaml`:**
 
-    <Tip>
-      The Args field must be a valid JSON array. Copy the value including brackets: `["run", "-i", "--rm", "mcp/fetch"]`
-    </Tip>
+    ```yaml
+    mcp_servers:
+      - name: fetch
+        transport: stdio
+        command: docker
+        args: ["run", "-i", "--rm", "mcp/fetch"]
+    ```
 
     The args breakdown:
 
@@ -66,28 +67,11 @@ docker pull mcp/fetch
     - `-i`: Interactive mode (keeps STDIN open for MCP communication)
     - `--rm`: Remove container when it stops
     - `mcp/fetch`: The Docker image to run
-  </Step>
 
-  <Step title="Attach the MCP server to your agent">
-    1. Navigate to **Agents** in the main navigation
-    2. Find your agent and click **Edit**
-    3. Scroll to the **MCP Servers** section
-    4. Click **Add MCP Server** and select **fetch** from the dropdown
-    5. Click **Save**
+    Save (admin UI) or restart `idun serve` (YAML). The engine discovers the Fetch server's tools at boot.
   </Step>
 
   <Step title="Integrate MCP tools in your agent code">
-    Set the environment variables so the engine can fetch config and authenticate:
-
-    ```bash
-    export IDUN_MANAGER_HOST="http://localhost:8080"
-    export IDUN_AGENT_API_KEY="YOUR_AGENT_API_KEY"
-    ```
-
-    <Tip>
-      Find your agent's API key in the Manager UI under the agent's details page.
-    </Tip>
-
     Import MCP tools in your agent code:
 
     <Tabs>
@@ -136,27 +120,21 @@ docker pull mcp/fetch
       </Tab>
     </Tabs>
 
-    `get_adk_tools()` and `get_langchain_tools()` discover all MCP servers attached to your agent and make their tools available. You do not need to configure individual tools.
+    `get_adk_tools()` and `get_langchain_tools()` discover every MCP server in the engine config and make their tools available. You do not need to configure individual tools.
   </Step>
 
   <Step title="Launch the agent">
-    Navigate to your agent directory and start the engine:
+    From your agent directory:
 
     ```bash
-    idun agent serve --source manager
+    idun serve
     ```
 
-    The engine will:
-
-    1. Fetch agent config from the Manager API
-    2. Initialize your agent framework
-    3. Start the Fetch MCP server as a Docker container
-    4. Register the fetch tool with your agent
-    5. Start the API server at `http://localhost:8000`
+    The engine reads its config from the DB, starts the Fetch MCP server as a Docker container, registers the fetch tool with your agent, and serves the chat UI at `http://localhost:8000/`.
   </Step>
 
   <Step title="Test MCP integration">
-    In the Manager UI, navigate to your agent and open the **API Integration** tab. Use the chat interface to test:
+    Open `http://localhost:8000/` and use the chat to test:
 
     ```
     Give me the information on this website: https://www.idun-group.com/idun-agent-platform
@@ -192,27 +170,27 @@ docker logs $(docker ps -q --filter ancestor=mcp/fetch)
 
 ### Multiple MCP servers
 
-Add more MCP servers through the Manager UI to give your agent access to additional tools.
+Add more MCP servers through `/admin/mcp/` or in the same `mcp_servers` list in `config.yaml`. Each entry runs alongside the others and contributes its tools to the registry.
 
 **Filesystem access:**
 
-| Field | Value |
-|---|---|
-| **Name** | `filesystem` |
-| **Transport** | `stdio` |
-| **Command** | `npx` |
-| **Args** | `["-y", "@modelcontextprotocol/server-filesystem", "/allowed/path"]` |
+```yaml
+- name: filesystem
+  transport: stdio
+  command: npx
+  args: ["-y", "@modelcontextprotocol/server-filesystem", "/allowed/path"]
+```
 
 Allows the agent to read, write, and manipulate files within specified directories.
 
 **Custom Docker MCP server:**
 
-| Field | Value |
-|---|---|
-| **Name** | `custom` |
-| **Transport** | `stdio` |
-| **Command** | `docker` |
-| **Args** | `["run", "-i", "--rm", "your-registry/your-mcp:latest"]` |
+```yaml
+- name: custom
+  transport: stdio
+  command: docker
+  args: ["run", "-i", "--rm", "your-registry/your-mcp:latest"]
+```
 
 Deploy your own MCP servers for database access, API integrations, or internal tools.
 
@@ -239,7 +217,7 @@ Deploy your own MCP servers for database access, API integrations, or internal t
     - Review MCP server logs: `docker logs <container_id>`
     - Try an explicit query: "Use the fetch tool to get https://example.com"
     - Restart the agent
-    - Verify MCP config saved correctly in the Manager UI
+    - Verify the MCP config saved correctly in `/admin/mcp/` or in your `config.yaml`
   </Accordion>
 
   <Accordion title="Args format invalid">

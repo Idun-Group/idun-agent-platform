@@ -97,14 +97,19 @@
             "pages": ["observability/overview", "observability/traces", "observability/langfuse", "observability/arize-phoenix", "observability/langsmith", "observability/gcp-trace", "observability/gcp-logging", "observability/custom-handler", "observability/telemetry-events"]
           },
           {
-            "group": "Tool governance",
+            "group": "MCP Servers",
             "icon": "screwdriver-wrench",
-            "pages": ["tool-governance/overview", "tool-governance/docker-toolkit"]
+            "pages": ["mcp/overview", "mcp/docker-toolkit"]
+          },
+          {
+            "group": "Prompts",
+            "icon": "file-lines",
+            "pages": ["prompts"]
           },
           {
             "group": "Authentication",
             "icon": "lock",
-            "pages": ["auth/overview"]
+            "pages": ["auth/overview", "auth/sso"]
           },
           {
             "group": "Integrations",
@@ -112,6 +117,7 @@
               "integrations/discord",
               "integrations/google-chat",
               "integrations/slack",
+              "integrations/teams",
               "integrations/whatsapp"
             ]
           },
@@ -131,7 +137,7 @@
           {
             "group": "Advanced",
             "icon": "gear",
-            "pages": ["configuration", "prompts", "cli/overview", "troubleshooting", "faq"]
+            "pages": ["configuration", "cli/overview", "troubleshooting", "faq"]
           }
         ]
       },
@@ -239,9 +245,10 @@
     { "source": "/memory/index", "destination": "/memory/overview" },
     { "source": "/memory/memory-langgraph", "destination": "/memory/langgraph" },
     { "source": "/memory/memory-adk", "destination": "/memory/adk" },
-    { "source": "/mcp/overview", "destination": "/tool-governance/overview" },
-    { "source": "/mcp/docker-mcp", "destination": "/tool-governance/docker-toolkit" },
-    { "source": "/sso-rbac/overview", "destination": "/auth/overview" },
+    { "source": "/tool-governance/overview", "destination": "/mcp/overview" },
+    { "source": "/tool-governance/docker-toolkit", "destination": "/mcp/docker-toolkit" },
+    { "source": "/mcp/docker-mcp", "destination": "/mcp/docker-toolkit" },
+    { "source": "/sso-rbac/overview", "destination": "/auth/sso" },
     { "source": "/deployment/gcp-self-hosted", "destination": "/deployment/gcp" },
     { "source": "/prompts/overview", "destination": "/prompts" },
     { "source": "/more/faq", "destination": "/faq" },
