@@ -47,9 +47,6 @@
   "metadata": {
     "timestamp": true
   },
-  "api": {
-    "openapi": ["/api-reference/openapi.json"]
-  },
   "navigation": {
     "tabs": [
       {
@@ -124,7 +121,7 @@
           {
             "group": "Deployment",
             "icon": "server",
-            "pages": ["deployment/overview", "deployment/hardening", "deployment/gcp"]
+            "pages": ["deployment/overview", "deployment/hardening"]
           },
           {
             "group": "Guides",
@@ -149,21 +146,6 @@
             "pages": [
               "guides/overview"
             ]
-          }
-        ]
-      },
-      {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoints",
-            "openapi": "/api-reference/openapi.json"
           }
         ]
       },
@@ -249,7 +231,9 @@
     { "source": "/tool-governance/docker-toolkit", "destination": "/mcp/docker-toolkit" },
     { "source": "/mcp/docker-mcp", "destination": "/mcp/docker-toolkit" },
     { "source": "/sso-rbac/overview", "destination": "/auth/sso" },
-    { "source": "/deployment/gcp-self-hosted", "destination": "/deployment/gcp" },
+    { "source": "/deployment/gcp", "destination": "/standalone/cloud-run" },
+    { "source": "/deployment/gcp-self-hosted", "destination": "/standalone/cloud-run" },
+    { "source": "/api-reference/introduction", "destination": "/standalone/cli" },
     { "source": "/prompts/overview", "destination": "/prompts" },
     { "source": "/more/faq", "destination": "/faq" },
     { "source": "/concepts/overview", "destination": "/architecture" }

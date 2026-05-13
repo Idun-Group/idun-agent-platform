@@ -1,146 +1,75 @@
 ---
 title: "Deployment"
-description: "Deploy Idun Agent Platform in standalone mode with a config file or as a managed stack with the Manager, database, and web UI."
-keywords: ["deployment", "Docker Compose", "self-hosted", "production", "Cloud Run", "GCP", "standalone", "managed"]
+description: "Where to run the standalone in production. Cloud Run, Docker on any host, or engine-only mode for users with their own admin stack."
+keywords: ["deployment", "Docker", "Cloud Run", "standalone", "engine-only", "production", "self-hosted"]
 ---
 
-Idun Agent Platform supports two deployment modes depending on your needs. You can run a single agent with a config file, or deploy the full platform with centralized management.
+The standalone is a single FastAPI process. Anywhere you can run a Python container, you can run Idun. The pages under this section cover the supported deployment surfaces.
 
-## Deployment modes
+## Pick a target
 
-<Tabs>
-  <Tab title="Production (pre-built images)">
-    Pull published Docker images from Docker Hub and start the full stack. No build step required — this is the recommended approach for production and self-hosted deployments.
+<Columns cols={2}>
+  <Card title="Google Cloud Run" icon="cloud" href="/standalone/cloud-run">
+    Managed container with HTTPS, autoscaling, and Cloud SQL Postgres. The shortest path to a production deployment.
+  </Card>
+  <Card title="Docker on any host" icon="docker" href="#docker-on-any-host">
+    `Dockerfile.example` + `cloud-run.example.yaml` adapt to AWS Fargate, Azure Container Apps, GKE, a VM with Docker, or any container host.
+  </Card>
+  <Card title="Engine-only mode" icon="terminal" href="/cli/overview">
+    Skip the DB and admin REST. Use `idun agent serve --source file --path config.yaml` when you have your own admin stack and only need the runtime.
+  </Card>
+  <Card title="Production hardening" icon="shield-halved" href="/deployment/hardening">
+    The minimum production checklist: admin auth, TLS termination, bind address, Postgres, secrets management.
+  </Card>
+</Columns>
 
-    ```bash
-    git clone https://github.com/Idun-Group/idun-agent-platform.git
-    cd idun-agent-platform
-    # Edit docker-compose.yml: set AUTH__SECRET_KEY to a strong random value
-    docker compose up -d
-    ```
+## What you're deploying
 
-    The Manager API is available at `http://localhost:8000` and the web UI at `http://localhost:3000`.
+`pip install idun-agent-engine` produces one wheel containing:
 
-    This mode suits:
-    - Production deployments
-    - Self-hosted environments
-    - Multi-agent deployments
-    - Teams that need centralized configuration and RBAC
-  </Tab>
-  <Tab title="Development (hot reload)">
-    Build images locally from source with hot reload enabled for the Manager and web UI. Requires the full repository checkout.
+- The engine runtime (`idun-agent-engine`)
+- The standalone admin / chat / traces app (`idun-agent-standalone`)
+- The shared schema (`idun-agent-schema`)
+- The `idun` console script
 
-    **Production** (prebuilt images from Docker Hub):
+In production you typically run `idun serve` inside a container, behind a TLS-terminating proxy or managed load balancer. SQLite is the default DB; Postgres is enabled by setting `DATABASE_URL`.
 
-    **Production** (prebuilt images from Docker Hub):
+## Docker on any host
 
-    ```bash
-    git clone https://github.com/Idun-Group/idun-agent-platform.git
-    cd idun-agent-platform
-    cp .env.example .env
-    docker compose up
-    ```
+The standalone wheel installs cleanly into any minimal Python 3.12 image. A typical Dockerfile looks like:
 
-    **Development** (builds from source, hot reload):
+```dockerfile Dockerfile
+FROM python:3.12-slim
 
-    ```bash
-    docker compose -f docker-compose.dev.yml up --build
-    ```
+WORKDIR /app
+COPY . .
 
-    **Build from source** (production images built locally):
+RUN pip install --no-cache-dir idun-agent-engine
 
-    ```bash
-    docker compose -f docker-compose.build.yml up --build
-    ```
+ENV IDUN_HOST=0.0.0.0
+ENV IDUN_PORT=8000
 
-    This mode suits:
-    - Local development and testing
-    - Contributing to the platform
-  </Tab>
-  <Tab title="Standalone engine">
-    Run a single agent from a YAML config file. No Manager, no database, no web UI required.
-
-    ```bash
-    pip install idun-agent-engine
-    idun agent serve --source file --path config.yaml
-    ```
-
-    This mode suits:
-    - Single-agent deployments
-    - CI/CD pipelines where you version config in Git
-  </Tab>
-</Tabs>
-
-## Docker Compose variants
-
-| File | Purpose | Images |
-|---|---|---|
-| `docker-compose.yml` | Production | Pulls prebuilt images from Docker Hub |
-| `docker-compose.build.yml` | Build from source | Builds images locally from Dockerfiles |
-| `docker-compose.dev.yml` | Development | Builds from source with hot reload, Vite dev server |
-| `docker-compose.debug.yml` | Debug overlay | Adds debugpy to the manager (use with `-f` alongside dev) |
-
-All production and build compose files use `env_file: .env` for secrets and configuration. Copy `.env.example` to `.env` before starting.
-
-To include the demo agent service, add the `demo` profile:
-
-```bash
-docker compose --profile demo up
+CMD ["idun", "serve"]
 ```
 
-## Agent lifecycle management
+The standalone repo ships a `Dockerfile.example` and a `cloud-run.example.yaml` you can copy as a starting point. See [Deploy to Cloud Run](/standalone/cloud-run) for the full walkthrough, including secrets management and the Cloud SQL annotations.
 
-<Tabs>
-  <Tab title="Manager UI">
-    From the agent detail page, manage the agent lifecycle:
+For any other container host:
 
-    - The status badge shows **Draft** or **Active**
-    - Click **Restart** to call `/reload` on the running engine, which re-fetches config from the platform
-    - The Overview tab includes **Connect to Platform** instructions for enrollment
+- **AWS Fargate / ECS**: build the image, push to ECR, point the task definition at the image. Set `IDUN_HOST=0.0.0.0` and the `$PORT` mapping to whatever the load balancer expects.
+- **Azure Container Apps**: same shape; set `IDUN_HOST=0.0.0.0` and `IDUN_PORT=80`.
+- **Kubernetes**: a `Deployment` with one replica, a `Service` for the port, and a `Secret` for `IDUN_ADMIN_PASSWORD_HASH` + `IDUN_SESSION_SECRET` + `DATABASE_URL` is enough. Mount the secret as env. Scale to one replica per agent (the standalone is single-tenant).
+- **A VM with Docker or Podman**: copy the image, `docker run` with the env file and a reverse proxy in front.
 
-    ![Agent detail overview tab](/images/ui/agents-detail-overview.png)
-  </Tab>
-  <Tab title="Config file">
-    With file-based deployment, manage your agent by restarting the process or updating the config file and restarting:
+For all of these, walk through [Production hardening](/deployment/hardening) before opening the service to traffic.
 
-    ```bash
-    # Stop the running agent
-    pkill -f "idun agent serve"
+## Engine-only mode
 
-    # Update config.yaml, then restart
-    idun agent serve --source file --path config.yaml
-    ```
+If you have your own admin stack, your own observability, and your own deployment platform, skip the standalone DB / admin REST entirely:
 
-    For managed deployments, restart the agent container to force a fresh config fetch from the Manager.
-  </Tab>
-</Tabs>
+```bash
+pip install idun-agent-engine
+idun agent serve --source file --path config.yaml
+```
 
-## Full stack architecture
-
-In managed mode, the platform consists of three services and a database:
-
-| Component | Description | Default port |
-|---|---|---|
-| **Manager** | FastAPI control plane API for agent configuration, auth, and workspace management | 8080 |
-| **Web UI** | React admin dashboard (nginx in production, Vite in dev) | 3000 |
-| **PostgreSQL** | Stores agent configs, user accounts, workspace data | 5432 |
-| **Agent engines** | Your agent services, each running the Idun engine SDK | 8000+ |
-
-## Prerequisites
-
-| Requirement | Standalone | Managed |
-|---|---|---|
-| Python 3.12+ | Yes | Yes (for agent services) |
-| Docker + Docker Compose | No | Yes |
-| PostgreSQL 16 | No | Yes (included in Docker Compose) |
-| `idun-agent-engine` package | Yes | Yes (for agent services) |
-
-## Self-hosted cloud deployments
-
-For production workloads, deploy the platform on your own cloud infrastructure.
-
-<Cards>
-  <Card title="Google Cloud Platform" icon="google" href="/deployment/gcp">
-    Cloud Run for Manager and UI, Cloud SQL for PostgreSQL. [Contact us](https://calendar.app.google/RSzm7EM5VZY8xVnN9) for Terraform modules.
-  </Card>
-</Cards>
+No DB, no chat UI, no admin REST. The engine reads its YAML config at boot and serves `/agent/run`. Use this for CI/CD pipelines, headless integrations, or thin runtime workers that sit behind a control plane you already operate.

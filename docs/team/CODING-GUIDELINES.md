@@ -165,7 +165,7 @@ log the traceback and re-raise; deliberate suppression must be justified.
 **Owner:** platform-team
 
 Each package should expose a single base exception (e.g., `EngineError`,
-`ManagerError`) and all package-defined exceptions should inherit from it.
+`StandaloneError`) and all package-defined exceptions should inherit from it.
 Callers can then catch the package's surface area with one clause instead
 of enumerating internal types — and refactors don't break their except
 blocks.
@@ -295,7 +295,7 @@ managers into a single comma-separated form.
 
 **Severity:** warn
 **Layer:** pre-commit, pr-review-agent
-**Owner:** manager-team
+**Owner:** standalone-team
 
 String-interpolated SQL is a SQL-injection vector and breaks the driver's
 prepared-statement cache. All values must travel as bound parameters via
@@ -392,13 +392,13 @@ for _ in range(3):
 
 **Severity:** warn
 **Layer:** pr-review-agent
-**Owner:** manager-team
+**Owner:** standalone-team
 
 Any change to a SQLAlchemy ORM model must be accompanied by an Alembic
 revision in the same PR. Otherwise the dev/prod migration breaks at deploy.
 
-**Fix:** Run `cd services/idun_agent_manager && alembic revision --autogenerate -m "<msg>"`
-and commit the new file under alembic/versions/.
+**Fix:** Run `cd libs/idun_agent_standalone/src/idun_agent_standalone && alembic revision --autogenerate -m "<msg>"`
+and commit the new file under `db/migrations/versions/`.
 
 ### SCHEMA-001 — Schema changes ship in idun_agent_schema before consumers
 
@@ -504,7 +504,7 @@ npm test -- --run` on changes under that path.
 
 **Severity:** warn
 **Layer:** pre-commit, pr-review-agent
-**Owner:** manager-team
+**Owner:** standalone-team
 
 Reading environment variables ad-hoc with `os.getenv` in business logic
 scatters configuration across the codebase, gives every call site a
@@ -535,7 +535,7 @@ for _ in range(int(os.getenv("MAX_RETRIES", "3"))):
 
 **Severity:** warn
 **Layer:** pr-review-agent
-**Owner:** manager-team
+**Owner:** standalone-team
 
 Telemetry init, capture, and flush calls (Langfuse, Phoenix, OpenTelemetry,
 LangSmith) must be wrapped in `try/except Exception` with `logger.exception`
