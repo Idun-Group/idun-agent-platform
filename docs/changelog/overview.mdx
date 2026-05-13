@@ -3,7 +3,66 @@ title: "Changelog"
 description: "Latest updates and releases for Idun Agent Platform."
 ---
 
-Track the latest changes, improvements, and bug fixes.
+Track the latest changes, improvements, and bug fixes. The canonical per-package changelogs live in the repo: [`idun-agent-engine`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/CHANGELOG.md), [`idun-agent-standalone`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_standalone/CHANGELOG.md).
+
+## v0.6.0 — TBD
+
+First public release since `0.5.4`. The engine wheel now bundles the `idun-agent-standalone` admin/chat/traces app and the `idun` console script, so adopters can `pip install idun-agent-engine && idun setup && idun serve` without installing any other package. Trace store + viewer land, Haystack is removed, and `guardrails-ai` becomes an optional extra.
+
+### Added
+
+- Standalone trace store: schema, asyncpg writer, REST endpoints, list + detail UI.
+- ADK adapter spans projected onto OpenInference attributes so they flow through the same trace pipeline as LangGraph spans.
+- `GoogleGenAIInstrumentor` auto-attached for Gemini cache-bucket capture.
+- `BaseAgent.register_run_event_observer(observer)`: async callbacks receive every AG-UI event from `/agent/run` before SSE encoding.
+- `/health` now reflects engine assembly state — returns `agent_ready: bool` and `status: "degraded"` when configured agents failed to come online.
+- `IDUN_UI_DIR` env var: mount a custom static UI at `/`; previous JSON info payload moves to `/_engine/info`.
+- `create_app(..., reload_auth=...)`: pluggable FastAPI dependency for the `POST /reload` endpoint.
+- Admin dashboard counters now sourced from the trace store (session count, run count, recent activity timeline).
+- Standalone seeder persists all top-level YAML config blocks (agent, guardrails, mcp, prompts, integrations, observability) on first boot.
+- Admin link surfaced on chat layouts; new Developer sidebar group links to `/docs` and `/redoc`.
+- PostHog tracking + masked session replay (opt-in) in the chat UI.
+
+### Changed
+
+- **The engine wheel bundles standalone + schema.** `pip install idun-agent-engine` ships the `idun` console script (mapped to `idun_agent_standalone.cli:main`), the chat/admin/traces Next.js bundle, alembic migrations, and `idun-agent-schema` as a runtime dependency.
+- **`guardrails-ai` is now an optional extra (`[guardrails]`)**. Install with `pip install idun-agent-engine[guardrails]` if you use the Guardrails-AI integration.
+- **Standalone admin DB rework.** Run `idun setup` after upgrade to apply the new migrations.
+- **Secure-by-default host binding.** `idun serve` no longer binds `0.0.0.0` by default; bind-all requires explicit opt-in.
+- **Standalone "admin-only mode" fails loud** instead of logging a single WARNING and serving 503s silently.
+- **Catch-all 404 for `/admin/api/v1/<unmapped>`** returns JSON 404 instead of falling through to the chat UI HTML.
+
+### Deprecated
+
+- **`/agent/invoke`** is marked `deprecated=True` in OpenAPI. Migrate to `POST /agent/run` (AG-UI SSE stream). Removal targeted for 0.7.
+
+### Removed
+
+- Haystack agent adapter, `HaystackAgentConfig` schema, `langfuse-haystack` runtime dependency, and all related tests, docs, and UI surfaces. Migrate Haystack agents to LangGraph or ADK before upgrading.
+
+### Fixed
+
+- MCP tool calls wrapped so AG-UI can serialize event payloads end-to-end.
+- Guardrail install failures surface to the reload pipeline instead of silently degrading the running agent.
+- Trace pipeline no longer drops trace rows when the runtime OTel context leaks a parent.
+- Prompts resolve from the `EngineConfig` snapshot in standalone, mirroring the MCP registry pattern.
+- Tool calls in the chat UI render their args and result instead of the literal string `"null"`.
+- Chat history sidebar auto-refreshes after a run and sorts newest first.
+
+### Security
+
+- Third-party GitHub Actions pinned to SHAs; dep-audit job; `SECURITY.md` hardened.
+- Socket security gates wired into PRs and both publish workflows.
+- Next.js and aiohttp CVE patches; `pinact` pre-commit hook.
+- `guardrails-ai` moved out of the default install footprint.
+
+### Upgrading from 0.5.x
+
+1. Uninstall any separate `idun-agent-standalone` wheel — it is now bundled in the engine wheel.
+2. Install with `pip install idun-agent-engine[guardrails]==0.6.0` if you use Guardrails-AI; otherwise plain `pip install idun-agent-engine==0.6.0`.
+3. Migrate Haystack agent configs to LangGraph or ADK.
+4. Switch smoke checks from `curl /health` to `POST /agent/run` (the deprecated `/agent/invoke` still works but will be removed in 0.7).
+5. Run `idun setup` after upgrade so the new standalone admin DB migrations apply.
 
 ## v0.5.1 — March 2026
 
@@ -32,4 +91,4 @@ Track the latest changes, improvements, and bug fixes.
 - SSO/OIDC authentication
 - Docker Compose deployment
 
-For full details, see the [GitHub releases](https://github.com/Idun-Group/idun-agent-platform/releases).
+For full details on any release, see the [GitHub releases](https://github.com/Idun-Group/idun-agent-platform/releases).
