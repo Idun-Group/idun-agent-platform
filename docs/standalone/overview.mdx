@@ -7,9 +7,10 @@ description: A self-sufficient single-agent deployment with embedded chat UI, ad
 
 ## What you get
 
-- **Chat UI** at `/` — themeable, AG-UI streaming, three layout variants (branded / minimal / inspector).
-- **Admin panel** at `/admin/` — edit agent config, guardrails, MCP servers, prompts, observability, integrations, and theme. Hot-reload of the running agent on save.
-- **First-party traces** at `/traces/` — every AG-UI run event captured locally; debug an agent without external observability.
+- **Chat UI** at `/`, themeable, AG-UI streaming, three layout variants (branded / minimal / inspector).
+- **Admin panel** at `/admin/`, edit agent config, guardrails, MCP servers, prompts, observability, integrations, and theme. Hot-reload of the running agent on save.
+- **Dashboard** at `/admin/`, live activity stats sourced from the local trace store: request count, p50/p95 latency, error rate, total cost, traffic sparkline, top errors.
+- **First-party traces** at `/admin/traces/`, every AG-UI run event captured locally; debug an agent without external observability.
 - **Single Docker image**, single Python process. SQLite by default; Postgres for production.
 
 ## When to use it
@@ -38,5 +39,20 @@ flowchart LR
 ```
 
 Spans flow into `standalone_trace` + `standalone_span` tables via an OTel exporter the standalone attaches at boot, and the admin UI reads them back through the same REST surface.
+
+## Dashboard
+
+The admin panel opens on a dashboard sourced from the trace store. It refreshes every time you reload and gives you a single-pane view of whether the agent is healthy.
+
+![Standalone admin dashboard](/images/ui/admin-dashboard.png)
+
+Default panels:
+
+- **Activity (24h / 7d / 30d toggle)**: total requests, p50/p95 latency, error rate, total cost across the window.
+- **Requests / min**: a sparkline of traffic over the window. Spikes here pair with spikes in the latency chart so you can spot saturation.
+- **Latency p50 / p95**: two-line chart over the window.
+- **Top errors**: a leaderboard of failing span names with a count, last-seen timestamp, and a one-click link into the offending trace.
+
+All of it reads from `standalone_trace` + `standalone_span` directly. No external observability provider needed.
 
 Continue to the [Quickstart →](/standalone/quickstart).

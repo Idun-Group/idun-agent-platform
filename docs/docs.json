@@ -128,6 +128,7 @@
             "pages": [
               "guides/connect-your-agent",
               "guides/langgraph-production-deployment",
+              "guides/idun-assistant-copilot",
               "guides/programmatic-chat"
             ]
           },
