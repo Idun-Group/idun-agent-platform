@@ -1,11 +1,12 @@
 ---
 title: "Changelog"
 description: "Latest updates and releases for Idun Agent Platform."
+keywords: ["changelog", "release notes", "idun agent platform", "versions"]
 ---
 
 Track the latest changes, improvements, and bug fixes. The canonical per-package changelogs live in the repo: [`idun-agent-engine`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/CHANGELOG.md), [`idun-agent-standalone`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_standalone/CHANGELOG.md).
 
-## v0.6.0 — TBD
+## v0.6.0, TBD
 
 First public release since `0.5.4`. The engine wheel now bundles the `idun-agent-standalone` admin/chat/traces app and the `idun` console script, so adopters can `pip install idun-agent-engine && idun setup && idun serve` without installing any other package. Trace store + viewer land, Haystack is removed, and `guardrails-ai` becomes an optional extra.
 
@@ -15,7 +16,7 @@ First public release since `0.5.4`. The engine wheel now bundles the `idun-agent
 - ADK adapter spans projected onto OpenInference attributes so they flow through the same trace pipeline as LangGraph spans.
 - `GoogleGenAIInstrumentor` auto-attached for Gemini cache-bucket capture.
 - `BaseAgent.register_run_event_observer(observer)`: async callbacks receive every AG-UI event from `/agent/run` before SSE encoding.
-- `/health` now reflects engine assembly state — returns `agent_ready: bool` and `status: "degraded"` when configured agents failed to come online.
+- `/health` now reflects engine assembly state, returning `agent_ready: bool` and `status: "degraded"` when configured agents failed to come online.
 - `IDUN_UI_DIR` env var: mount a custom static UI at `/`; previous JSON info payload moves to `/_engine/info`.
 - `create_app(..., reload_auth=...)`: pluggable FastAPI dependency for the `POST /reload` endpoint.
 - Admin dashboard counters now sourced from the trace store (session count, run count, recent activity timeline).
@@ -58,13 +59,13 @@ First public release since `0.5.4`. The engine wheel now bundles the `idun-agent
 
 ### Upgrading from 0.5.x
 
-1. Uninstall any separate `idun-agent-standalone` wheel — it is now bundled in the engine wheel.
+1. Uninstall any separate `idun-agent-standalone` wheel, since it is now bundled in the engine wheel.
 2. Install with `pip install idun-agent-engine[guardrails]==0.6.0` if you use Guardrails-AI; otherwise plain `pip install idun-agent-engine==0.6.0`.
 3. Migrate Haystack agent configs to LangGraph or ADK.
 4. Switch smoke checks from `curl /health` to `POST /agent/run` (the deprecated `/agent/invoke` still works but will be removed in 0.7).
 5. Run `idun setup` after upgrade so the new standalone admin DB migrations apply.
 
-## v0.5.1 — March 2026
+## v0.5.1, March 2026
 
 - Mintlify docs migration and UI rework
 - Guardrails hub URL fixes
@@ -72,7 +73,7 @@ First public release since `0.5.4`. The engine wheel now bundles the `idun-agent
 - Check connection for observability and memory providers
 - MCP discover tools timeout
 
-## v0.5.0 — March 2026
+## v0.5.0, March 2026
 
 - ADK database session service support
 - Observability V2 configuration schema
@@ -80,7 +81,7 @@ First public release since `0.5.4`. The engine wheel now bundles the `idun-agent
 - Prompt management system
 - MCP tool governance
 
-## v0.4.8 — February 2026
+## v0.4.8, February 2026
 
 - Initial public release
 - LangGraph and ADK framework support

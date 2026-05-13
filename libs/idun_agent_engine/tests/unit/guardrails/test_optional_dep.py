@@ -135,16 +135,26 @@ def test_engine_package_does_not_import_guardrails_ai():
     test bodies still held references to the original instances —
     causing ~42 unrelated MCP and integration tests to fail silently.
     """
-    proc = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            "import sys; import idun_agent_engine; "
-            "sys.exit(0 if 'guardrails' not in sys.modules else 1)",
-        ],
-        capture_output=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import sys; import idun_agent_engine; "
+                "sys.exit(0 if 'guardrails' not in sys.modules else 1)",
+            ],
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise AssertionError(
+            "Importing idun_agent_engine did not return within 30s. "
+            "The cold-import probe is meant to run in a subprocess to avoid "
+            "polluting the parent pytest session — a hang here means engine "
+            "import itself is broken or blocking. "
+            f"stderr so far: {(exc.stderr or b'').decode(errors='replace')}"
+        ) from exc
     assert proc.returncode == 0, (
         "Importing idun_agent_engine transitively imported the optional "
         "guardrails-ai package. Move the offending import behind a "
