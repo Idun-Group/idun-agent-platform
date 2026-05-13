@@ -200,6 +200,10 @@ And in your inbox:
 
 ![Gmail showing the summary email with the Google Doc attached](/images/guides/idun-assistant/email-result.png)
 
+Back in the admin panel, `/admin/` now reflects the run. Request count, p50/p95 latency, error rate, and total cost all roll up from the same `standalone_trace` rows the trace viewer reads.
+
+![Admin dashboard with activity from the agent run](/images/ui/admin-dashboard.png)
+
 For deeper debugging open `/admin/traces/` and click the run. You get the full span tree (every LLM call and every tool invocation) plus the exact JSON in/out of each tool in the right rail. Useful when the agent picks the wrong tool or passes weird arguments.
 
 ![Trace detail for an idun-assistant run](/images/guides/idun-assistant/trace-detail.png)
