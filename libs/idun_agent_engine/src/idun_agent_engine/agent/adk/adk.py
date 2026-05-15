@@ -194,6 +194,8 @@ class AdkAgent(agent_base.BaseAgent):
         self._obs_callbacks: list[Any] | None = None
         # Cached capabilities descriptor
         self._cached_capabilities: AgentCapabilities | None = None
+        # Skills configuration (injected during initialize())
+        self._skills_config: list[SkillConfig] | None = None
 
     @property
     def id(self) -> str:
