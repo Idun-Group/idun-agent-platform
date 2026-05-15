@@ -68,6 +68,20 @@ class TestSkillConfig:
                 name="2fast", description="Test", instructions="Test"
             )
 
+    def test_skill_name_rejects_trailing_hyphen(self):
+        """Names with trailing hyphens are rejected."""
+        with pytest.raises(ValueError, match="must start with a lowercase"):
+            SkillConfig(
+                name="my-skill-", description="Test", instructions="Test"
+            )
+
+    def test_skill_name_rejects_consecutive_hyphens(self):
+        """Names with consecutive hyphens are rejected."""
+        with pytest.raises(ValueError, match="must start with a lowercase"):
+            SkillConfig(
+                name="my--skill", description="Test", instructions="Test"
+            )
+
     def test_skill_name_rejects_empty(self):
         """Empty names are rejected."""
         with pytest.raises(ValueError):

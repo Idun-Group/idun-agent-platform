@@ -89,7 +89,7 @@ class SkillConfig(BaseModel):
     @classmethod
     def validate_skill_name(cls, v: str) -> str:
         """Enforce Agent Skills spec naming: lowercase letters, digits, hyphens."""
-        if not re.match(r"^[a-z][a-z0-9-]*$", v):
+        if not re.match(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$", v):
             raise ValueError(
                 f"Skill name '{v}' must start with a lowercase letter and contain "
                 "only lowercase letters, digits, and hyphens (per agentskills.io spec)"

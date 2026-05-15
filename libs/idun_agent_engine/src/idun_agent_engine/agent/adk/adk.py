@@ -504,6 +504,9 @@ class AdkAgent(agent_base.BaseAgent):
                 assets=(
                     sc.resources.assets if sc.resources else {}
                 ),
+                scripts=(
+                    sc.resources.scripts if sc.resources else {}
+                ),
             )
 
             adk_skill = skill_models.Skill(
