@@ -125,6 +125,7 @@
             "pages": [
               "guides/connect-your-agent",
               "guides/langgraph-production-deployment",
+              "guides/deepagents-with-idun",
               "guides/programmatic-chat"
             ]
           },
