@@ -144,10 +144,6 @@ pip install idun-agent-engine langchain-google-genai
 Create `config.yaml` next to your agent directory:
 
 ```yaml config.yaml
-server:
-  api:
-    port: 8800
-
 agent:
   type: LANGGRAPH
   config:
@@ -174,17 +170,17 @@ You should see:
 
 ```
 Agent 'Production Chatbot' initialized and ready to serve!
-Starting Idun Agent Engine server on http://localhost:8800...
+Starting Idun Agent Engine server on http://localhost:8000...
 ```
 
-Your agent is now live. Open `http://localhost:8800/docs` to see the full OpenAPI spec, `http://localhost:8800/` for the chat UI, and `http://localhost:8800/admin/` for the admin panel.
+Your agent is now live. Open `http://localhost:8000/docs` to see the full OpenAPI spec, `http://localhost:8000/` for the chat UI, and `http://localhost:8000/admin/` for the admin panel. To use a different port, export `IDUN_PORT` before running `idun serve`.
 
 ## Step 3: Test the agent
 
 The canonical endpoint is `POST /agent/run`, which implements the AG-UI streaming protocol used by CopilotKit, Vercel AI SDK, and other modern chat frontends.
 
 ```bash
-curl -N -X POST http://localhost:8800/agent/run \
+curl -N -X POST http://localhost:8000/agent/run \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
@@ -205,8 +201,8 @@ You get back a stream of AG-UI events: `RunStarted`, `TextMessageStart`, `ToolCa
 You can also check capabilities and health:
 
 ```bash
-curl http://localhost:8800/agent/capabilities
-curl http://localhost:8800/health
+curl http://localhost:8000/agent/capabilities
+curl http://localhost:8000/health
 ```
 
 Or open `/` in a browser and chat with the agent directly through the bundled chat UI.
@@ -218,10 +214,6 @@ Guardrails validate input and output at the API boundary. They run before and af
 Add a `guardrails` section to your `config.yaml`:
 
 ```yaml config.yaml
-server:
-  api:
-    port: 8800
-
 agent:
   type: LANGGRAPH
   config:
@@ -250,7 +242,7 @@ On startup, Idun downloads the guardrail validators from the Guardrails AI Hub a
 Test it by sending a message that contains PII:
 
 ```bash
-curl -N -X POST http://localhost:8800/agent/run \
+curl -N -X POST http://localhost:8000/agent/run \
   -H "Content-Type: application/json" \
   -d '{
     "threadId": "session-2",
@@ -288,7 +280,7 @@ Restart the server. Every invocation now shows up in your Langfuse dashboard wit
 
 ![Langfuse trace showing LangGraph agent with tool calls](/images/guides/19-langfuse-trace.png)
 
-Idun supports five observability providers that can run simultaneously:
+Idun supports five observability providers, attached one at a time per agent:
 
 | Provider | Mechanism |
 |---|---|
@@ -298,7 +290,7 @@ Idun supports five observability providers that can run simultaneously:
 | GCP Cloud Trace | OpenTelemetry span exporter |
 | GCP Cloud Logging | Python logging integration |
 
-Add multiple providers by adding more entries to the `observability` list. They do not conflict. The standalone also runs a local trace store that always captures runs alongside any external provider; see [Local trace store](/observability/traces).
+The standalone admin UI attaches a single external provider per agent. Independently, the local trace store at `/admin/traces/` always captures every run alongside whichever external provider is configured; see [Local trace store](/observability/traces).
 
 ## Step 6: Upgrade to PostgreSQL memory
 
@@ -334,10 +326,6 @@ The `/agent/run` endpoint implements the AG-UI protocol, which is natively suppo
 Here is the complete config file with everything from this guide: agent, guardrails, observability, and PostgreSQL memory. Copy it and adjust the values for your setup.
 
 ```yaml config.yaml
-server:
-  api:
-    port: 8800
-
 agent:
   type: LANGGRAPH
   config:

@@ -27,7 +27,7 @@ What it adds on top of the engine:
 - A bundled Next.js UI at `/` (chat), `/admin/` (config editing), and `/admin/traces/` (recent run events).
 - Admin REST endpoints under `/admin/api/v1/*` for editing agent, guardrails, MCP servers, prompts, observability, integrations, and theme.
 - A SQLite-backed database by default (Postgres optional) holding admin state and AG-UI trace events.
-- Password authentication (`none` for laptops, `password` for containers). OIDC is on the roadmap.
+- Password authentication for the admin panel (`none` for laptops, `password` for containers), and per-agent OIDC SSO on the `/agent/*` runtime routes with email/domain allowlists. See [Authentication](/auth/overview) and [SSO](/auth/sso).
 - A reload orchestrator that rebuilds the engine on every admin write and swaps it atomically.
 
 Use this when you ship one agent end-to-end and want chat, admin, and traces in one process.

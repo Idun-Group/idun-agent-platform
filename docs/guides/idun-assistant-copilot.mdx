@@ -1,17 +1,17 @@
 ---
-title: "How Idun makes building copilots a breeze"
+title: "Build and run the idun-assistant copilot"
 sidebarTitle: "Building a copilot (idun-assistant)"
-description: "Walk through idun-assistant, Idun's in-house dev copilot. About 180 lines of agent code plus a few clicks in the admin panel, and you get a tool-using LangGraph agent ready for production."
-keywords: ["copilot", "LangGraph", "MCP", "idun-assistant", "case study", "production agent", "Atlassian", "GitHub", "Google Workspace", "Langfuse"]
+description: "Wire a LangGraph agent into Idun Agent Platform end to end: MCP tools, system prompt, SQLite memory, Langfuse observability, and Google OIDC SSO, then run a multi-tool task in chat."
+keywords: ["copilot", "LangGraph", "MCP", "idun-assistant", "Atlassian", "GitHub", "Google Workspace", "Langfuse"]
 ---
 
-idun-assistant is Idun's in-house dev copilot. A LangGraph agent that reads our docs, queries Jira and Confluence, opens GitHub issues, drafts Google Docs, and sends mail. End-to-end, the agent code is ~180 lines of Python; everything else (tools, prompts, memory, observability, auth) is wired through the standalone admin panel.
+idun-assistant is Idun's in-house dev copilot. A LangGraph agent that reads the Idun docs, queries Jira and Confluence, opens GitHub issues, drafts Google Docs, and sends mail. End-to-end, the agent code is ~180 lines of Python; everything else (tools, prompts, memory, observability, auth) is wired through the standalone admin panel.
 
-This guide walks the path from "I have an agent" to "I have a protected, observable copilot," then runs a real multi-tool task in chat.
+This guide takes you from "you have an agent" to "you have a protected, observable copilot," then runs a real multi-tool task in chat.
 
-## The demo we'll run
+## The demo
 
-After setup, we'll send this to the bot:
+After setup, you'll send this to the bot:
 
 > Can you fetch the latest GitHub issues, make a summary in a Google Doc, and mail that to me?
 
@@ -25,18 +25,19 @@ You'll see each tool call inline in the chat UI and, after the fact, in the trac
 
 ## The agent code
 
-`agent/agent.py` is a normal LangGraph workflow. A single ReAct loop. Two nodes, one conditional edge, no Idun-specific scaffolding.
+`agent/agent.py` is a normal LangGraph workflow. A single ReAct loop. Two nodes, one conditional edge, no Idun-specific scaffolding. Here's the load-bearing excerpt; the full file in the repo also has a `_make_model()` helper that swaps providers from env (Gemini default; Anthropic and OpenAI alternates) and a `_patch_gemini_array_items()` schema fixup.
 
-```python agent/agent.py
+```python agent/agent.py (excerpt — see the repo for imports + _make_model)
+from langchain_core.messages import SystemMessage, ToolMessage
 from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.prebuilt import tools_condition
-from langchain_core.messages import SystemMessage, ToolMessage
 
 from idun_agent_engine import get_prompt
 from idun_agent_engine.mcp.helpers import get_langchain_tools
 
-_model = _make_model()
-SYSTEM_PROMPT = (get_prompt("system_prompt") or PromptConfig.empty()).content
+_model = _make_model()  # env-driven Gemini/Anthropic/OpenAI selector
+_prompt = get_prompt("system_prompt")
+SYSTEM_PROMPT = _prompt.content if _prompt else ""
 
 
 async def call_model(state: MessagesState) -> dict:
@@ -142,7 +143,7 @@ Tag it `latest`. Save. The reload pipeline picks up the new prompt without resta
 
 ## 3. Configure memory (SQLite)
 
-The default scaffold uses in-memory checkpointing, which loses every conversation when the process restarts. For idun-assistant we want conversations to survive a reboot. Open `/admin/memory/` and pick SQLite.
+The default scaffold uses in-memory checkpointing, which loses every conversation when the process restarts. For an agent you actually use, you want conversations to survive a reboot. Open `/admin/memory/` and pick SQLite.
 
 ![/admin/memory/ with SQLite selected](/images/guides/idun-assistant/admin-memory.png)
 
@@ -169,7 +170,7 @@ Save. The engine fans every span out to Langfuse alongside the local trace store
 
 ## 5. Lock down `/agent/*` with SSO (internal use only)
 
-idun-assistant is an internal tool. We want everyone with an `@idun-group.com` Google account to use it, and no one else. Open `/admin/sso/` and configure Google OIDC with a domain allowlist.
+idun-assistant is an internal tool. Anyone with an `@idun-group.com` Google account should be able to use it; no one else. Open `/admin/sso/` and configure Google OIDC with a domain allowlist.
 
 ![/admin/sso/ with Google OIDC and an idun-group.com allowlist](/images/guides/idun-assistant/admin-sso.png)
 

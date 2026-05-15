@@ -86,6 +86,6 @@ When you attach an observability configuration to an agent, the platform automat
           host: "https://cloud.langfuse.com"
     ```
 
-    `observability` is a list, so you can run multiple providers at once. See the provider-specific pages for the full list of fields each provider requires.
+    The YAML stays a list because that's what the engine schema requires, but the standalone admin UI attaches exactly one provider per agent. See the provider-specific pages for the full list of fields each provider requires.
   </Tab>
 </Tabs>
