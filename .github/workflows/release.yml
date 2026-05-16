@@ -73,11 +73,13 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
 
-      # - name: Update version in pyproject.toml
-      #   working-directory: libs/idun_agent_schema
-      #   run: |
-      #     sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
-      #     cat pyproject.toml | grep version
+      - name: Update version in pyproject.toml
+        working-directory: libs/idun_agent_schema
+        run: |
+          sed -Ei 's/^version = ".*"$/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
+          echo "Updated pyproject.toml:"
+          grep -m 1 'version = ' pyproject.toml
+          grep -q '^version = "${{ steps.version.outputs.VERSION }}"$' pyproject.toml || (echo "::error::Schema version sed did not produce expected pin"; exit 1)
 
       - name: Build schema package
         working-directory: libs/idun_agent_schema
@@ -151,7 +153,7 @@ jobs:
       - name: Update engine version and pin schema dependency
         working-directory: libs/idun_agent_engine
         run: |
-          sed -i 's/version = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
+          sed -Ei 's/^version = ".*"$/version = "${{ steps.version.outputs.VERSION }}"/' pyproject.toml
           sed -i 's|"idun-agent-schema>=.*"|"idun-agent-schema==${{ steps.version.outputs.VERSION }}"|' pyproject.toml
           echo "Updated pyproject.toml:"
           grep -m 1 'version = ' pyproject.toml
