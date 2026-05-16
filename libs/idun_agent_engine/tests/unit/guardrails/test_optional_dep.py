@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import builtins
 import importlib
+import subprocess
 import sys
 
 import pytest
@@ -125,18 +126,38 @@ def test_engine_package_does_not_import_guardrails_ai():
     without touching the guardrails hub. Regressing this would mean
     every consumer of the engine wheel transitively depends on the
     optional extra, defeating the split.
+
+    Run in a subprocess so the cold-import assertion does not mutate
+    the parent pytest session's ``sys.modules``. The previous in-process
+    version called ``del sys.modules[...]`` plus ``importlib.import_module``
+    without restoring state, leaking new module instances that every
+    subsequent test's ``unittest.mock.patch`` then targeted while the
+    test bodies still held references to the original instances —
+    causing ~42 unrelated MCP and integration tests to fail silently.
     """
-    # Clear the cached engine import so the assertion reflects a cold
-    # import path rather than whatever fixtures already loaded.
-    for name in list(sys.modules):
-        if name == "idun_agent_engine" or name.startswith("idun_agent_engine."):
-            del sys.modules[name]
-    sys.modules.pop("guardrails", None)
-
-    importlib.import_module("idun_agent_engine")
-
-    assert "guardrails" not in sys.modules, (
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import sys; import idun_agent_engine; "
+                "sys.exit(0 if 'guardrails' not in sys.modules else 1)",
+            ],
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise AssertionError(
+            "Importing idun_agent_engine did not return within 30s. "
+            "The cold-import probe is meant to run in a subprocess to avoid "
+            "polluting the parent pytest session — a hang here means engine "
+            "import itself is broken or blocking. "
+            f"stderr so far: {(exc.stderr or b'').decode(errors='replace')}"
+        ) from exc
+    assert proc.returncode == 0, (
         "Importing idun_agent_engine transitively imported the optional "
         "guardrails-ai package. Move the offending import behind a "
-        "TYPE_CHECKING guard or push it into the function that uses it."
+        "TYPE_CHECKING guard or push it into the function that uses it.\n"
+        f"stderr: {proc.stderr.decode(errors='replace')}"
     )
