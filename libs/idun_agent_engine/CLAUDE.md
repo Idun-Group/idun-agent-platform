@@ -317,6 +317,8 @@ Resolution priority in `get_prompts()`:
 - Supports `stdio` transport (and SSE/HTTP for LangChain adapters).
 - Provides `get_langchain_tools()` for LangGraph agents and `get_adk_toolsets()` for ADK agents.
 
+> **Note — sync callers.** User `agent.py` files where a factory like `deepagents.create_deep_agent` needs tools at construction time can use `get_langchain_tools_sync()` from the same module. It bridges the async fetch onto a worker thread, so it works whether or not an event loop is already running in the caller's thread (e.g. when the agent module is imported inside uvicorn's lifespan). Same resolution chain as the async version. One-shot, suitable for boot; not for hot-path use.
+
 ## Key Dependencies
 
 - `idun_agent_schema` — Shared Pydantic models (local editable dep)
