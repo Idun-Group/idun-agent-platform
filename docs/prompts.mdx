@@ -67,21 +67,30 @@ Prompt management lets you version, store, and render prompt templates without h
 
 The standalone exposes the same operations at `/admin/api/v1/prompts/`. All routes require an authenticated admin session (the cookie set by `/admin/api/v1/auth/login`).
 
-### List versions
+Set two shell variables once and the snippets below run as-is:
 
 ```bash
-curl http://localhost:8000/admin/api/v1/prompts \
-  -b "idun_session=<session_cookie>"
+# Capture the session cookie after `/admin/api/v1/auth/login` (e.g., copy from your browser's devtools).
+SESSION_COOKIE='your-session-cookie-value'
+# The integer row id for an existing prompt version.
+PROMPT_ROW_ID=123
+```
+
+### List versions
+
+```curl
+curl "http://localhost:8000/admin/api/v1/prompts" \
+  -b "idun_session=${SESSION_COOKIE}"
 ```
 
 Returns every prompt version ordered by `prompt_id` then `version DESC`.
 
 ### Create a new version
 
-```bash
-curl -X POST http://localhost:8000/admin/api/v1/prompts \
+```curl
+curl -X POST "http://localhost:8000/admin/api/v1/prompts" \
   -H "Content-Type: application/json" \
-  -b "idun_session=<session_cookie>" \
+  -b "idun_session=${SESSION_COOKIE}" \
   -d '{
     "prompt_id": "system-prompt",
     "content": "You are a helpful assistant for {{ domain }}.",
@@ -95,10 +104,10 @@ The first write for a given `prompt_id` is version 1. Subsequent POSTs with the 
 
 Content is immutable. Only tags can be patched:
 
-```bash
-curl -X PATCH http://localhost:8000/admin/api/v1/prompts/{prompt_row_id} \
+```curl
+curl -X PATCH "http://localhost:8000/admin/api/v1/prompts/${PROMPT_ROW_ID}" \
   -H "Content-Type: application/json" \
-  -b "idun_session=<session_cookie>" \
+  -b "idun_session=${SESSION_COOKIE}" \
   -d '{"tags": ["production", "reviewed"]}'
 ```
 
@@ -108,9 +117,9 @@ curl -X PATCH http://localhost:8000/admin/api/v1/prompts/{prompt_row_id} \
 
 ### Delete a version
 
-```bash
-curl -X DELETE http://localhost:8000/admin/api/v1/prompts/{prompt_row_id} \
-  -b "idun_session=<session_cookie>"
+```curl
+curl -X DELETE "http://localhost:8000/admin/api/v1/prompts/${PROMPT_ROW_ID}" \
+  -b "idun_session=${SESSION_COOKIE}"
 ```
 
 If the deleted row carried `latest`, the tag is automatically promoted onto the next-highest remaining version of the same `prompt_id`.

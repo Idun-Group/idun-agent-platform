@@ -94,8 +94,8 @@ idun agent serve --source file --path ./config.yaml
 | Variable | Default | Description |
 |---|---|---|
 | `IDUN_ADMIN_AUTH_MODE` | `none` | Admin gate. `none` for laptop dev; `password` for containers. |
-| `IDUN_ADMIN_PASSWORD_HASH` | empty | Bcrypt admin hash. Required on the first boot under `auth_mode = password` to seed the singleton admin row; subsequent boots ignore this variable and read the hash from the DB. Generate with `idun hash-password`. |
-| `IDUN_SESSION_SECRET` | empty | At least 32 characters. Signs the `idun_session` cookie. Required when `auth_mode = password`; startup fails fast if shorter. |
+| `IDUN_ADMIN_PASSWORD_HASH` | empty | Bcrypt admin hash. Required on the first boot under `IDUN_ADMIN_AUTH_MODE=password` to seed the singleton admin row; subsequent boots ignore this variable and read the hash from the DB. Generate with `idun hash-password`. |
+| `IDUN_SESSION_SECRET` | empty | At least 32 characters. Signs the `idun_session` cookie. Required when `IDUN_ADMIN_AUTH_MODE=password`; startup fails fast if shorter. |
 | `IDUN_SESSION_TTL_HOURS` | `24` | Session cookie lifetime in hours (range `1..720`). |
 | `IDUN_ALLOW_OPEN_ADMIN` | `false` | Opt-in flag that lets `auth_mode=none` bind `0.0.0.0` / `::`. Containers and trusted networks only. |
 

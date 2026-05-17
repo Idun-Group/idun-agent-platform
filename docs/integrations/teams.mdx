@@ -49,9 +49,7 @@ Connect your Idun agent to Microsoft Teams so users can interact with it through
       </Step>
 
       <Step title="Add the Microsoft Bot identity">
-        1. Go to **API permissions > Add a permission > Microsoft Graph > Application permissions**
-        2. Add the permissions your bot needs (typically `ChannelMessage.Read.All`, `ChannelMessage.Send`)
-        3. Grant admin consent
+        Standard Teams bot messaging (`@mention` detection and replies) is handled by the Bot Framework channel and does not require Microsoft Graph application permissions. If your bot needs to receive every channel message (not only `@mentions`), declare Resource-Specific Consent (RSC) permissions in the Teams app manifest instead: `ChannelMessage.Read.Group` for channels or `ChatMessage.Read.Chat` for chats. Graph application permissions like `ChannelMessage.Read.All` are only needed for administrative or archival scenarios outside the bot's conversation context.
       </Step>
 
       <Step title="Configure the integration">
@@ -63,7 +61,7 @@ Connect your Idun agent to Microsoft Teams so users can interact with it through
             enabled: true
             config:
               app_id: "00000000-0000-0000-0000-000000000000"
-              app_password: "your-azure-ad-client-secret"
+              app_password: "${TEAMS_APP_PASSWORD}"
               app_tenant_id: "11111111-1111-1111-1111-111111111111"
         ```
 

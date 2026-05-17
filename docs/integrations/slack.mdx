@@ -19,6 +19,7 @@ Connect your Idun agent to Slack so users can interact with it through direct me
     <Steps>
       <Step title="Open the integrations admin page">
         Navigate to `/admin/integrations/` in the running standalone. The channel catalog shows WhatsApp, Discord, Google Chat, Slack, and Microsoft Teams as active channels.
+        {/* VERIFY: confirm channel catalog entries shown in standalone admin UI for this release. */}
       </Step>
 
       <Step title="Create the Slack integration">
@@ -34,6 +35,7 @@ Connect your Idun agent to Slack so users can interact with it through direct me
 
       <Step title="Save">
         Save the form. The reload pipeline registers the Slack webhook handler on the running engine; the agent now responds to messages forwarded by Slack.
+        {/* VERIFY: confirm reload pipeline registers Slack webhook handler at runtime. */}
       </Step>
     </Steps>
   </Tab>

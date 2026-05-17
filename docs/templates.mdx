@@ -53,7 +53,7 @@ Each template is a self-contained folder with its own config, dependencies, and 
     idun init
     ```
 
-    Runs migrations, seeds the DB from the template's `config.yaml`, opens the browser at `http://localhost:8000/`, and serves the standalone app. Subsequent boots just need `idun serve`.
+    Runs migrations, seeds the DB from the template's `config.yaml`, opens the browser at `http://localhost:<port>/` (default 8000; override with `--port` or `IDUN_PORT`), and serves the standalone app. `idun init` is idempotent, so you can re-run it on the same folder. For routine restarts that skip migration/seed work, prefer `idun serve`.
   </Step>
 </Steps>
 

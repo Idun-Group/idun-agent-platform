@@ -22,9 +22,9 @@ There are two distinct auth surfaces.
 - `none`: open admin (laptop default).
 - `password`: bcrypt password + signed session cookie with sliding renewal.
 
-OIDC is on the roadmap. Use `idun hash-password` to generate the bcrypt hash, set it as `IDUN_ADMIN_PASSWORD_HASH` on first boot, and set `IDUN_SESSION_SECRET` (min 32 chars) when running in `password` mode.
+Use `idun hash-password` to generate the bcrypt hash, set it as `IDUN_ADMIN_PASSWORD_HASH` on first boot, and set `IDUN_SESSION_SECRET` (min 32 chars) when running in `password` mode.
 
-**Agent runtime routes.** The engine can enforce OIDC JWT validation on `/agent/*` via a per-agent SSO config. Clients must present a valid bearer token; tokens are not stored. `/health`, `/_engine/info`, and `/reload` stay open; treat the engine as a process running inside a trusted boundary.
+**Agent runtime routes.** The engine can enforce OIDC JWT validation on `/agent/*` via a per-agent SSO config. Clients must present a valid bearer token; tokens are not stored. Some operational endpoints stay outside per-agent auth, so deploy inside a trusted network boundary and follow the [hardening guidance](/deployment/hardening).
 
 See [Authentication](/auth/overview) for setup instructions.
 

@@ -80,11 +80,11 @@ IDUN_CONFIG_PATH=./config.yaml
 IDUN_AGENT_CONFIG_PATH=./config.yaml
 IDUN_ALLOW_OPEN_ADMIN=1
 IDUN_ADMIN_AUTH_MODE=password
-IDUN_ADMIN_PASSWORD_HASH=    # idun hash-password
-IDUN_SESSION_SECRET=         # openssl rand -hex 32
+IDUN_ADMIN_PASSWORD_HASH=${IDUN_ADMIN_PASSWORD_HASH}    # paste the output of `idun hash-password`
+IDUN_SESSION_SECRET=${IDUN_SESSION_SECRET}              # paste the output of `openssl rand -hex 32`
 
 # LLM
-GEMINI_API_KEY=your-gemini-key
+GEMINI_API_KEY=${GEMINI_API_KEY}                        # export your real Gemini API key in your shell
 ```
 
 Generate the two secrets:
@@ -203,9 +203,9 @@ Every Deep Agent step is captured: the middleware hooks, each `ChatGoogleGenerat
 
 ![Langfuse trace of the same Deep Agent run](/images/guides/deepagents/12-langfuse-cloud.png)
 
-<Tip>
-  Idun supports Langfuse, Arize Phoenix, LangSmith, GCP Trace, and GCP Logging side-by-side. They don't conflict — add more on the same Observability page.
-</Tip>
+<Note>
+  Idun supports Langfuse, Arize Phoenix, LangSmith, GCP Trace, and GCP Logging side-by-side. They don't conflict; add more on the same Observability page.
+</Note>
 
 ## Step 9: Plug in the Google Workspace MCP
 

@@ -280,7 +280,7 @@ Restart the server. Every invocation now shows up in your Langfuse dashboard wit
 
 ![Langfuse trace showing LangGraph agent with tool calls](/images/guides/19-langfuse-trace.png)
 
-Idun supports five observability providers, attached one at a time per agent:
+Idun supports five observability providers, and you can attach more than one to the same agent:
 
 | Provider | Mechanism |
 |---|---|
@@ -290,7 +290,7 @@ Idun supports five observability providers, attached one at a time per agent:
 | GCP Cloud Trace | OpenTelemetry span exporter |
 | GCP Cloud Logging | Python logging integration |
 
-The standalone admin UI attaches a single external provider per agent. Independently, the local trace store at `/admin/traces/` always captures every run alongside whichever external provider is configured; see [Local trace store](/observability/traces).
+The engine fans spans out to every enabled provider; each is lazy-loaded. Independently, the local trace store at `/admin/traces/` always captures every run alongside any external providers you configure; see [Local trace store](/observability/traces).
 
 ## Step 6: Upgrade to PostgreSQL memory
 

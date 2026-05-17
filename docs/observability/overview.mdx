@@ -6,7 +6,7 @@ keywords: ["observability", "tracing", "monitoring", "OpenTelemetry", "Langfuse"
 
 Idun Agent Platform includes built-in observability backed by OpenTelemetry auto-instrumentation. It captures traces, logs, and metrics from your agents with minimal configuration.
 
-The standalone runtime always captures traces locally into its own DB-backed [trace store](/observability/traces). External providers (Langfuse, Phoenix, LangSmith, GCP Trace) stack on top: configure one in the admin panel or `config.yaml`, and the engine fans spans out to both surfaces.
+The standalone runtime always captures traces locally into its own DB-backed [trace store](/observability/traces). External providers (Langfuse, Phoenix, LangSmith, GCP Trace) stack on top: configure one or more in the admin panel or `config.yaml`, and the engine fans spans out to local storage and every enabled provider.
 
 ## Supported providers
 
@@ -86,6 +86,6 @@ When you attach an observability configuration to an agent, the platform automat
           host: "https://cloud.langfuse.com"
     ```
 
-    The YAML stays a list because that's what the engine schema requires, but the standalone admin UI attaches exactly one provider per agent. See the provider-specific pages for the full list of fields each provider requires.
+    The `observability` key is a list, and you can attach more than one provider at a time; each entry is lazy-loaded and the engine fans spans out to every enabled provider. See the provider-specific pages for the full list of fields each provider requires.
   </Tab>
 </Tabs>

@@ -19,6 +19,7 @@ Connect your Idun agent to Discord so users can interact with it through slash c
     <Steps>
       <Step title="Open the integrations admin page">
         Navigate to `/admin/integrations/` in the running standalone. The channel catalog shows WhatsApp, Discord, Google Chat, Slack, and Microsoft Teams as active channels.
+        {/* VERIFY: confirm channel catalog entries shown in standalone admin UI for this release. */}
       </Step>
 
       <Step title="Create the Discord integration">
@@ -35,6 +36,7 @@ Connect your Idun agent to Discord so users can interact with it through slash c
 
       <Step title="Save">
         Save the form. The reload pipeline registers the Discord webhook handler on the running engine.
+        {/* VERIFY: confirm reload pipeline registers Discord webhook handler at runtime. */}
       </Step>
     </Steps>
   </Tab>

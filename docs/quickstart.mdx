@@ -110,4 +110,3 @@ Postgres unlocks 5–8k spans/sec sustained write (Linux production floor) versu
 | `IDUN_TRACE_RETENTION_DAYS` | `14` | How many days of traces to keep before dropping. On Postgres, expired monthly partitions are detached and dropped. On SQLite, a scheduled `DELETE` runs. |
 | `IDUN_TRACES_INPUT_VALUE_MAX_BYTES` | `65536` | Per-attribute byte cap before truncation. Lower this on heavy-payload deployments to recover throughput, or raise it to keep more raw input/output. |
 | `IDUN_PRICES_REFRESH` | `false` | When `true`, the cost calculator fetches the LiteLLM model-prices snapshot at boot (5-second timeout, snapshot fallback). Default uses the vendored monthly snapshot. |
-

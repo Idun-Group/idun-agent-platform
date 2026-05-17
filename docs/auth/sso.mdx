@@ -4,7 +4,7 @@ description: "Per-agent OIDC SSO that validates a JWT on every `/agent/*` reques
 keywords: ["SSO", "OIDC", "JWT", "agent auth", "Google OAuth", "Microsoft Entra", "Okta"]
 ---
 
-Idun's agent runtime supports per-agent OIDC SSO. When enabled, every request to `/agent/*` requires a valid `Authorization: Bearer <jwt>` header. The canonical AG-UI entry point is `POST /agent/run`; deprecated shims (`/agent/invoke`, `/agent/stream`, `/agent/copilotkit/stream`) are gated by the same dependency. Tokens are validated against the issuer's JWKS endpoint discovered via `{issuer}/.well-known/openid-configuration`; nothing is stored or cached beyond the JWKS rotation window.
+Idun Agent Platform's agent runtime supports per-agent OIDC SSO. When enabled, every request to `/agent/*` requires a valid `Authorization: Bearer <jwt>` header. The canonical AG-UI entry point is `POST /agent/run`; deprecated shims (`/agent/invoke`, `/agent/stream`, `/agent/copilotkit/stream`) are gated by the same dependency. Tokens are validated against the issuer's JWKS endpoint discovered via `{issuer}/.well-known/openid-configuration`; nothing is stored or cached beyond the JWKS rotation window.
 
 Health and metadata routes (`/health`, `/_engine/info`) stay open. SSO does not gate the admin panel; see [Authentication](/auth/overview) for that surface.
 
@@ -23,12 +23,12 @@ Health and metadata routes (`/health`, `/_engine/info`) stay open. SSO does not 
     sso:
       enabled: true
       issuer: "https://accounts.google.com"
-      client_id: "your-oauth-client-id"
-      audience: "your-oauth-client-id"
+      client_id: "123456789012-abc123def456ghi789.apps.googleusercontent.com"
+      audience: "123456789012-abc123def456ghi789.apps.googleusercontent.com"
       allowed_domains:
-        - "company.com"
+        - "example.com"
       allowed_emails:
-        - "admin@partner.com"
+        - "auditor@partner.example"
     ```
   </Tab>
 </Tabs>
@@ -52,11 +52,11 @@ Use `allowed_domains` and `allowed_emails` together. Both lists are applied afte
 sso:
   enabled: true
   issuer: "https://accounts.google.com"
-  client_id: "..."
+  client_id: "123456789012-abc123def456ghi789.apps.googleusercontent.com"
   allowed_domains:
-    - "yourcompany.com"   # everyone with a @yourcompany.com Google account
+    - "example.com"                       # everyone with a @example.com Google account
   allowed_emails:
-    - "external-auditor@partner.com"   # plus this one outside contractor
+    - "auditor@partner.example"           # plus this one outside contractor
 ```
 
 If both lists are unset, any valid token from the configured issuer is accepted (still scoped by `client_id` / `audience`).
@@ -66,8 +66,8 @@ If both lists are unset, any valid token from the configured issuer is accepted 
 Any OIDC-compliant provider works as long as it publishes a JWKS endpoint via `.well-known/openid-configuration`. Tested presets in the admin UI:
 
 - **Google Workspace** — issuer `https://accounts.google.com`
-- **Microsoft Entra ID / Azure AD** — multi-tenant `https://login.microsoftonline.com/common`, or single-tenant `https://login.microsoftonline.com/<tenant-uuid>`
-- **Okta** — issuer typically `https://<your-domain>.okta.com/oauth2/default`; audience usually `api://default`
+- **Microsoft Entra ID / Azure AD** — multi-tenant `https://login.microsoftonline.com/common`, or single-tenant `https://login.microsoftonline.com/11111111-2222-3333-4444-555555555555`
+- **Okta** — issuer typically `https://example.okta.com/oauth2/default`; audience usually `api://default`
 - **Custom OIDC** — any provider that publishes a `.well-known/openid-configuration` document
 
 ## How validation works

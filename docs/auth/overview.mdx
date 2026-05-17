@@ -11,7 +11,7 @@ The standalone has two distinct authentication surfaces. This page covers the ad
 | **Admin panel** | `/admin/*`, `/login/`, `/admin/api/v1/*` | `none` or `password` (bcrypt + signed session cookie) | Environment variables |
 | **Agent runtime** | `/agent/*` (chat side) | OIDC JWT validation with per-user allowlists | `sso:` block in config — see [SSO](/auth/sso) |
 
-Health and metadata routes (`/health`, `/_engine/info`) stay open on both surfaces. The engine `/reload` route is not currently gated by either mechanism; treat the engine as a process running inside a trusted boundary.
+Health and metadata routes (`/health`, `/_engine/info`) stay open on both surfaces. Treat the engine as a process running inside a trusted boundary; see [Production hardening](/deployment/hardening) for network-layer controls.
 
 ## Environment variables
 
@@ -54,7 +54,7 @@ idun serve
 `IDUN_ADMIN_PASSWORD_HASH` is consumed only on first boot to seed the singleton admin row. Subsequent boots ignore the env var. Rotate the password from the admin UI, or truncate the `standalone_admin_user` table and reboot to re-seed from the env.
 
 <Note>
-  The standalone supports **exactly one admin user**. The `standalone_admin_user` table has a fixed primary key of `"singleton"` and the admin URL never carries an id. There is no allowlist or multi-user concept for the admin panel today. OIDC SSO for the admin panel is on the [roadmap](/roadmap); until it ships, restrict access at the network layer (VPN, mTLS gateway, IP allowlist on the load balancer) if you need per-user policy.
+  The standalone supports **exactly one admin user**. The `standalone_admin_user` table has a fixed primary key of `"singleton"` and the admin URL never carries an id. There is no allowlist or multi-user concept for the admin panel today. For per-user policy, restrict access at the network layer (VPN, mTLS gateway, IP allowlist on the load balancer). See [Production hardening](/deployment/hardening) for the full checklist.
 </Note>
 
 ## What's next

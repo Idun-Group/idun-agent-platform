@@ -100,14 +100,18 @@ idun_tools = get_adk_tools()
 ```
 
 ```python LangGraph
+import asyncio
 from idun_agent_engine.mcp import get_langchain_tools
 
-mcp_tools = await get_langchain_tools()
+async def _load_tools():
+    return await get_langchain_tools()
+
+mcp_tools = asyncio.run(_load_tools())
 ```
 </CodeGroup>
 
 These functions discover all MCP servers attached to your agent and make their tools available. You do not need to configure individual tools.
 
-<Warning>
-  `get_langchain_tools()` is an async function. Use `await` when calling it.
-</Warning>
+<Note>
+  `get_langchain_tools()` is async, so it must be awaited inside an `async` function. If you need to bind tools at module load, run it with `asyncio.run(...)` as shown above. A synchronous helper (`get_langchain_tools_sync`) is also available; see the [engine MCP reference](/mcp-servers/overview) for details.
+</Note>
