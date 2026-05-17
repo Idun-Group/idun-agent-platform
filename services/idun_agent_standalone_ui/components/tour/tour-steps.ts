@@ -75,7 +75,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     popover: {
       title: "Deployment",
       description:
-        'This same standalone agent can be packaged for Docker or Cloud Run when you are ready to deploy. <a href="https://docs.idunplatform.com/deployment/overview" target="_blank" rel="noopener noreferrer">Read deployment guide →</a>',
+        'This same standalone agent can be packaged for Docker or Cloud Run when you are ready to deploy. <a href="https://docs.idun-group.com/deployment/overview" target="_blank" rel="noopener noreferrer">Read deployment guide →</a>',
     },
   },
 ] as const;
@@ -86,4 +86,4 @@ export const TOUR_STEPS: readonly TourStep[] = [
  * can assert against it without string duplication.
  */
 export const DEPLOYMENT_DOCS_URL =
-  "https://docs.idunplatform.com/deployment/overview";
+  "https://docs.idun-group.com/deployment/overview";

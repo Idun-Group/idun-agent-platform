@@ -1,45 +1,54 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
-  "name": "Idun Platform",
+  "name": "Idun Engine",
   "colors": {
-    "primary": "#8C52FF",
-    "light": "#0ED4A5",
-    "dark": "#8C52FF"
+    "primary": "#3D2A8E",
+    "light": "#3D2A8E",
+    "dark": "#15131F"
   },
   "css": "/styles.css",
   "favicon": "/favicon.svg",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg",
-    "href": "https://idunplatform.com"
+    "href": "https://idun-group.com"
   },
   "fonts": {
     "body": {
-      "family": "Figtree",
+      "family": "Inter",
       "weight": 400
     },
     "heading": {
-      "family": "Space Grotesk",
+      "family": "Inter",
       "weight": 600
     }
   },
   "appearance": {
-    "default": "dark"
+    "default": "light",
+    "strict": true
   },
   "background": {
-    "decoration": "grid"
+    "color": {
+      "light": "#F4F1EA",
+      "dark": "#040210"
+    }
   },
   "styling": {
     "eyebrows": "breadcrumbs",
-    "codeblocks": "dark"
+    "codeblocks": {
+      "theme": {
+        "light": "github-light",
+        "dark": "github-dark"
+      }
+    }
   },
   "search": {
-    "prompt": "Search Idun docs..."
+    "prompt": "Search Idun Engine docs..."
   },
   "seo": {
     "metatags": {
-      "og:site_name": "Idun Platform Documentation",
+      "og:site_name": "Idun Engine Documentation",
       "og:locale": "en_US"
     },
     "indexing": "navigable"
@@ -207,8 +216,8 @@
       {
         "header": "Product",
         "items": [
-          { "label": "Website", "href": "https://idunplatform.com" },
-          { "label": "Cloud", "href": "https://cloud.idunplatform.com" }
+          { "label": "Idun Group", "href": "https://idun-group.com" },
+          { "label": "Engine", "href": "https://idun-group.com/engine" }
         ]
       },
       {

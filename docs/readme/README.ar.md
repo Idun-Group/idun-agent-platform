@@ -29,7 +29,7 @@
 
 <br/>
 
-[السحابة](https://cloud.idunplatform.com) · [البدء السريع](https://docs.idunplatform.com/quickstart) · [التوثيق](https://docs.idunplatform.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [حجز عرض توضيحي](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
+[السحابة](https://cloud.idunplatform.com) · [البدء السريع](https://docs.idun-group.com/quickstart) · [التوثيق](https://docs.idun-group.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [حجز عرض توضيحي](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
 
 ⭐ إذا وجدت هذا مفيداً، يرجى إضافة نجمة للمستودع. هذا يساعد الآخرين على اكتشاف المشروع.
 
@@ -167,7 +167,7 @@ flowchart LR
 </p>
 
 > [!NOTE]
-> **دعم أُطر العمل** — LangGraph و Google ADK مدعومان بشكل أساسي اليوم، مع محولات كاملة في المحرك. LangChain مدعوم عبر محول LangGraph؛ التوافق الأصلي الأوسع مع LangChain موجود في [خارطة الطريق](https://docs.idunplatform.com/roadmap).
+> **دعم أُطر العمل** — LangGraph و Google ADK مدعومان بشكل أساسي اليوم، مع محولات كاملة في المحرك. LangChain مدعوم عبر محول LangGraph؛ التوافق الأصلي الأوسع مع LangChain موجود في [خارطة الطريق](https://docs.idun-group.com/roadmap).
 
 ---
 
@@ -248,7 +248,7 @@ idun agent serve --source file --path config.yaml
 ```
 
 > [!IMPORTANT]
-> مرجع التهيئة الكامل: [docs.idunplatform.com/configuration](https://docs.idunplatform.com/configuration)
+> مرجع التهيئة الكامل: [docs.idun-group.com/configuration](https://docs.idun-group.com/configuration)
 >
 > 9 أمثلة عملاء قابلة للتشغيل: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
 
@@ -266,7 +266,7 @@ idun agent serve --source file --path config.yaml
 
 ## الدعم التجاري
 
-تتم صيانته من قبل [Idun Group](https://idunplatform.com). نساعد في بنية المنصة، النشر، وتكامل IdP/الامتثال. [حجز مكالمة](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
+تتم صيانته من قبل [Idun Group](https://idun-group.com). نساعد في بنية المنصة، النشر، وتكامل IdP/الامتثال. [حجز مكالمة](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
 
 ## القياس عن بُعد
 

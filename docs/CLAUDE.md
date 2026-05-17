@@ -1,4 +1,4 @@
-# CLAUDE.md — Idun Platform Documentation
+# CLAUDE.md — Idun Engine Documentation
 
 This file governs all documentation work in `/docs`.
 
@@ -19,7 +19,7 @@ brew install node@24
 /opt/homebrew/opt/node@24/bin/npx mintlify@latest dev
 ```
 
-`docs.idunplatform.com` is rebuilt automatically on every merge to `main`. Per-PR preview deployments are not currently published by the Mintlify GitHub app (the `Mintlify Deployment` check exits as `SKIPPED`). Always run a local preview before merging non-trivial docs PRs.
+`docs.idun-group.com` is rebuilt automatically on every merge to `main`. Per-PR preview deployments are not currently published by the Mintlify GitHub app (the `Mintlify Deployment` check exits as `SKIPPED`). Always run a local preview before merging non-trivial docs PRs.
 
 ## Working relationship
 
@@ -81,7 +81,7 @@ Optional but encouraged:
 - Internal planning documents, implementation plans, review notes
 - "Coming soon" placeholders for unbuilt features
 - Marketing language or unverified capability claims
-- Pricing information (lives on idunplatform.com)
+- Pricing information (lives on idun-group.com)
 - Security vulnerabilities or exploit details
 - API keys, secrets, or credentials (even example ones that look real)
 - Content at the `/mcp` path (reserved by Mintlify for hosted MCP)
@@ -99,26 +99,32 @@ Before publishing any factual claim:
 5. **Environment variables** — verify in `libs/idun_agent_standalone/src/idun_agent_standalone/core/settings.py` for standalone, or engine config resolution for engine-only vars
 6. **Integration claims** — verify integration code exists, not just a schema entry
 
-## Style alignment with idunplatform.com
+## Style alignment with idun-group.com
 
-### Colors (from landing page CSS variables)
+Docs anchor on the **Engine product page** surface (paper / ink editorial), not the home-page Aurora. Light-mode only (`appearance.strict: true` in `docs.json`).
+
+### Colors (from idun-group.com `src/index.css` `@theme` paper tokens)
 | Token | Hex | Usage |
 |-------|-----|-------|
-| `idun-purple` | `#8C52FF` | Primary brand, accent, links |
-| `idun-green` | `#0ED4A5` | Success, auth features |
-| `idun-red` | `#FF2970` | Guardrails, alerts |
-| `idun-yellow` | `#FFDC68` | Memory, observability |
-| `idun-dark` | `#040210` | Dark backgrounds |
-| `idun-card` | `#121122` | Card surfaces |
+| `paper` | `#F4F1EA` | Page background |
+| `paper-2` | `#ECE7DC` | Card / code-block surface |
+| `paper-3` | `#E4DECF` | Deeper card / hover |
+| `paper-ink` | `#15131F` | Headings |
+| `paper-ink-2` | `#3D394A` | Body copy |
+| `paper-ink-3` | `#6E6878` | Muted text, meta |
+| `paper-line` | `rgba(21,19,31,0.10)` | Hairline dividers, borders |
+| `paper-accent` | `#3D2A8E` | Indigo accent — links, CTAs, focus ring |
+| `paper-accent-soft` | `#6E5BB0` | Hover / softer accent |
 
 ### Typography
-- Body: Figtree (weights 400-800)
-- Headings: Space Grotesk (weights 500-700)
+- Body & headings: Inter (weights 400 / 600)
+- Code: monospace (Mintlify default; Shiki `github-light` theme)
 
 ### Product name
-- Full: "Idun Agent Platform" or "Idun Platform"
+- Full: "Idun Engine"
 - Short: "Idun" (only after first full mention on a page)
-- Never: "IDUN", "idun", "Idun.ai", "Idun Group" (in docs context)
+- Repo / GitHub reference: "Idun Agent Platform" (only when explicitly pointing at the GitHub repo or its codebase)
+- Never: "IDUN", "idun", "Idun.ai", "Idun Platform" (legacy, dropped), "Idun Agent Platform" as a user-facing product name
 
 ### Positioning keywords to include naturally
 - "AI agent deployment platform"

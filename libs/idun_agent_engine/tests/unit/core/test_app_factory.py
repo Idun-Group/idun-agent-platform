@@ -163,7 +163,7 @@ class TestAppFactoryCors:
         response = client.options(
             "/reload",
             headers={
-                "Origin": "https://cloud.idunplatform.com",
+                "Origin": "https://idun-group.com",
                 "Access-Control-Request-Method": "POST",
                 "Access-Control-Request-Private-Network": "true",
             },
@@ -172,7 +172,7 @@ class TestAppFactoryCors:
         assert response.status_code == 200
         assert (
             response.headers.get("access-control-allow-origin")
-            == "https://cloud.idunplatform.com"
+            == "https://idun-group.com"
         )
         assert response.headers.get("access-control-allow-private-network") == "true"
 
