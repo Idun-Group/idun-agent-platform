@@ -29,7 +29,7 @@ Autoalojado. Código abierto. Sin dependencia de proveedores.
 
 <br/>
 
-[Cloud](https://cloud.idunplatform.com) · [Inicio rápido](https://docs.idunplatform.com/quickstart) · [Documentación](https://docs.idunplatform.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Reservar una demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
+[Cloud](https://cloud.idunplatform.com) · [Inicio rápido](https://docs.idun-group.com/quickstart) · [Documentación](https://docs.idun-group.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Reservar una demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
 
 ⭐ Si lo encuentras útil, dale una estrella al repositorio. Ayuda a otros a descubrir el proyecto.
 
@@ -167,7 +167,7 @@ flowchart LR
 </p>
 
 > [!NOTE]
-> **Soporte de frameworks** — LangGraph y Google ADK son de primera clase hoy, con adaptadores completos en el motor. LangChain está soportado a través del adaptador de LangGraph; una compatibilidad nativa más amplia con LangChain está en el [roadmap](https://docs.idunplatform.com/roadmap).
+> **Soporte de frameworks** — LangGraph y Google ADK son de primera clase hoy, con adaptadores completos en el motor. LangChain está soportado a través del adaptador de LangGraph; una compatibilidad nativa más amplia con LangChain está en el [roadmap](https://docs.idun-group.com/roadmap).
 
 ---
 
@@ -248,7 +248,7 @@ idun agent serve --source file --path config.yaml
 ```
 
 > [!IMPORTANT]
-> Referencia completa de configuración: [docs.idunplatform.com/configuration](https://docs.idunplatform.com/configuration)
+> Referencia completa de configuración: [docs.idun-group.com/configuration](https://docs.idun-group.com/configuration)
 >
 > 9 ejemplos de agentes ejecutables: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
 
@@ -266,7 +266,7 @@ idun agent serve --source file --path config.yaml
 
 ## Soporte comercial
 
-Mantenido por [Idun Group](https://idunplatform.com). Ayudamos con la arquitectura de la plataforma, el despliegue y la integración con IdP/cumplimiento normativo. [Reservar una llamada](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
+Mantenido por [Idun Group](https://idun-group.com). Ayudamos con la arquitectura de la plataforma, el despliegue y la integración con IdP/cumplimiento normativo. [Reservar una llamada](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
 
 ## Telemetría
 

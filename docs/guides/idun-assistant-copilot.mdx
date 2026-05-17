@@ -97,7 +97,7 @@ Open `/admin/mcp/`. Add four MCP servers. The agent will discover every tool the
 
 | Server | Transport | What it gives the agent |
 |---|---|---|
-| `idun-docs` | Streamable HTTP at `https://docs.idunplatform.com/mcp` | Search Idun's own docs. |
+| `idun-docs` | Streamable HTTP at `https://docs.idun-group.com/mcp` | Search Idun's own docs. |
 | `atlassian` | stdio: `uvx mcp-atlassian`, with Jira + Confluence env vars | Search and edit Jira tickets and Confluence pages. |
 | `github` | stdio: `docker run -i --rm ghcr.io/github/github-mcp-server` with a GH PAT | Repos, issues, PRs, commits, releases. |
 | `google-workspace` | Streamable HTTP at `http://127.0.0.1:8000/mcp` | Gmail, Docs, Drive, Calendar. |

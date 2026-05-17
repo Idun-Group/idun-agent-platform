@@ -23,7 +23,7 @@ Self-hosted. Open source. No vendor lock-in.
 
 <br/>
 
-[Cloud](https://cloud.idunplatform.com) · [Quickstart](https://docs.idunplatform.com/quickstart) · [Docs](https://docs.idunplatform.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Book a demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
+[Cloud](https://cloud.idunplatform.com) · [Quickstart](https://docs.idun-group.com/quickstart) · [Docs](https://docs.idun-group.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Book a demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
 
 ⭐ If you find this useful, please star the repo. It helps others discover the project.
 
@@ -63,7 +63,7 @@ Open [http://localhost:8000](http://localhost:8000). Chat with your agent, then 
 >
 > The `idun` command on your `$PATH` (`setup`, `serve`, `init`, `hash-password`, `agent serve`) is provided by the bundled standalone — it is not a separately published package. You won't see `idun-agent-standalone` in the engine's declared PyPI dependencies because it ships co-installed inside the wheel, not as a transitive dep.
 >
-> See [docs.idunplatform.com/architecture](https://docs.idunplatform.com/architecture) for the full layering.
+> See [docs.idun-group.com/architecture](https://docs.idun-group.com/architecture) for the full layering.
 
 ## What's inside
 
@@ -173,13 +173,13 @@ flowchart LR
 </p>
 
 > [!NOTE]
-> **Framework support** — LangGraph and Google ADK are first-class today, with full adapters in the engine. LangChain is supported via the LangGraph adapter; broader native LangChain compatibility is on the [roadmap](https://docs.idunplatform.com/roadmap).
+> **Framework support** — LangGraph and Google ADK are first-class today, with full adapters in the engine. LangChain is supported via the LangGraph adapter; broader native LangChain compatibility is on the [roadmap](https://docs.idun-group.com/roadmap).
 
 ---
 
 ## Idun vs alternatives
 
-| | **Idun Platform** | **LangGraph Cloud** | **LangSmith** | **DIY (FastAPI + glue)** |
+| | **Idun Engine** | **LangGraph Cloud** | **LangSmith** | **DIY (FastAPI + glue)** |
 |---|:---:|:---:|:---:|:---:|
 | Self-hosted / on-prem | ✅ | ❌ | ❌ | ✅ |
 | Multi-framework (LangGraph + ADK) | ✅ | LangGraph only | ❌ obs only | Manual |
@@ -277,7 +277,7 @@ idun agent serve --source file --path config.yaml
 ```
 
 > [!IMPORTANT]
-> Full config reference: [docs.idunplatform.com/configuration](https://docs.idunplatform.com/configuration)
+> Full config reference: [docs.idun-group.com/configuration](https://docs.idun-group.com/configuration)
 >
 > 9 runnable agent examples: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
 
@@ -295,7 +295,7 @@ idun agent serve --source file --path config.yaml
 
 ## Commercial support
 
-Maintained by [Idun Group](https://idunplatform.com). We help with platform architecture, deployment, and IdP/compliance integration. [Book a call](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
+Maintained by [Idun Group](https://idun-group.com). We help with platform architecture, deployment, and IdP/compliance integration. [Book a call](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
 
 ## Telemetry
 

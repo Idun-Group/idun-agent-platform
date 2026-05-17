@@ -1,56 +1,59 @@
-/* Idun Platform — Mintlify custom styles
+/* Idun Engine — Mintlify custom styles (paper / ink).
    Only overrides that docs.json cannot control.
-   Mintlify includes Tailwind v3; use utility classes in MDX where possible. */
+   Paper/ink palette ports from the Engine product page on idun-group.com
+   (src/index.css @theme tokens, deliberately not the home-page Aurora). */
 
 /* ── Brand custom properties ───────────────────────────────────── */
 
 :root {
-  --idun-dark: #040210;
-  --idun-card: #121122;
-  --idun-purple: #8C52FF;
-  --idun-green: #0ED4A5;
-  --idun-red: #FF2970;
-  --idun-yellow: #FFDC68;
+  --paper:        #F4F1EA;
+  --paper-2:      #ECE7DC;
+  --paper-3:      #E4DECF;
+  --paper-cream:  #EDE6D2;
+  --paper-ink:    #15131F;
+  --paper-ink-2:  #3D394A;
+  --paper-ink-3:  #6E6878;
+  --paper-ink-4:  #A09BAA;
+  --paper-line:   rgba(21, 19, 31, 0.10);
+  --paper-line-2: rgba(21, 19, 31, 0.18);
+  --paper-accent:      #3D2A8E;
+  --paper-accent-soft: #6E5BB0;
+  --paper-warm:        #A8825C;
 }
 
-/* ── Dark-mode surface refinements ─────────────────────────────── */
-
-html.dark {
-  --tw-bg-opacity: 1;
-}
-
-html.dark body {
-  background-color: var(--idun-dark);
-}
-
-/* Code blocks: darker surface to match the landing-page aesthetic */
-html.dark pre[class*="language-"],
-html.dark div[class*="codeblock"],
-html.dark .ch-codeblock {
-  background-color: var(--idun-card) !important;
-  border: 1px solid rgba(140, 82, 255, 0.12);
-  border-radius: 8px;
-}
-
-/* Inline code in dark mode */
-html.dark :not(pre) > code {
-  background-color: var(--idun-card);
-  border: 1px solid rgba(140, 82, 255, 0.15);
-  border-radius: 4px;
-}
-
-/* ── Typography reinforcement ──────────────────────────────────── */
-/* Mintlify loads fonts via docs.json; these ensure fallback chains. */
+/* ── Page surface ──────────────────────────────────────────────── */
 
 body {
-  font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--paper);
+  color: var(--paper-ink-2);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: 'ss01', 'cv11';
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  color: var(--paper-ink);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
-/* ── Focus outlines (purple accent, matches landing page) ──────── */
+/* ── Code blocks: paper-2 surface to match Engine product page ── */
+
+pre[class*="language-"],
+div[class*="codeblock"],
+.ch-codeblock {
+  background-color: var(--paper-2) !important;
+  border: 1px solid var(--paper-line);
+  border-radius: 8px;
+}
+
+:not(pre) > code {
+  background-color: var(--paper-2);
+  border: 1px solid var(--paper-line);
+  border-radius: 4px;
+  color: var(--paper-ink);
+}
+
+/* ── Focus outlines (indigo accent) ────────────────────────────── */
 
 a:focus-visible,
 button:focus-visible,
@@ -58,32 +61,30 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid rgba(140, 82, 255, 0.6);
+  outline: 2px solid rgba(61, 42, 142, 0.6);
   outline-offset: 2px;
   border-radius: 2px;
 }
 
 /* ── Scrollbar styling (Webkit / Blink) ────────────────────────── */
 
-html.dark ::-webkit-scrollbar {
+::-webkit-scrollbar {
   width: 8px;
 }
 
-html.dark ::-webkit-scrollbar-track {
-  background: var(--idun-dark);
+::-webkit-scrollbar-track {
+  background: var(--paper);
 }
 
-html.dark ::-webkit-scrollbar-thumb {
-  background: var(--idun-card);
-  border: 1px solid var(--idun-purple);
+::-webkit-scrollbar-thumb {
+  background: var(--paper-ink-4);
+  border: 1px solid var(--paper-line-2);
   border-radius: 4px;
 }
 
-html.dark ::-webkit-scrollbar-thumb:hover {
-  background: var(--idun-purple);
+::-webkit-scrollbar-thumb:hover {
+  background: var(--paper-accent);
 }
-
-/* ── Reduce sidebar left spacing ───────────────────────────────── */
 
 /* ── Reduce left padding, keep max-width ───────────────────────── */
 

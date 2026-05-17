@@ -29,7 +29,7 @@
 
 <br/>
 
-[云服务](https://cloud.idunplatform.com) · [快速开始](https://docs.idunplatform.com/quickstart) · [文档](https://docs.idunplatform.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [预约演示](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
+[云服务](https://cloud.idunplatform.com) · [快速开始](https://docs.idun-group.com/quickstart) · [文档](https://docs.idun-group.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [预约演示](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
 
 ⭐ 如果您觉得这个项目有用，请给仓库点个星。这有助于其他人发现该项目。
 
@@ -167,7 +167,7 @@ flowchart LR
 </p>
 
 > [!NOTE]
-> **框架支持** — LangGraph 和 Google ADK 目前是一等公民，引擎中提供完整适配器。LangChain 通过 LangGraph 适配器获得支持；更广泛的原生 LangChain 兼容性在[路线图](https://docs.idunplatform.com/roadmap)中。
+> **框架支持** — LangGraph 和 Google ADK 目前是一等公民，引擎中提供完整适配器。LangChain 通过 LangGraph 适配器获得支持；更广泛的原生 LangChain 兼容性在[路线图](https://docs.idun-group.com/roadmap)中。
 
 ---
 
@@ -248,7 +248,7 @@ idun agent serve --source file --path config.yaml
 ```
 
 > [!IMPORTANT]
-> 完整配置参考：[docs.idunplatform.com/configuration](https://docs.idunplatform.com/configuration)
+> 完整配置参考：[docs.idun-group.com/configuration](https://docs.idun-group.com/configuration)
 >
 > 9 个可运行的智能体示例：[idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
 
@@ -266,7 +266,7 @@ idun agent serve --source file --path config.yaml
 
 ## 商业支持
 
-由 [Idun Group](https://idunplatform.com) 维护。我们提供平台架构、部署以及 IdP/合规集成方面的支持。[预约通话](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
+由 [Idun Group](https://idun-group.com) 维护。我们提供平台架构、部署以及 IdP/合规集成方面的支持。[预约通话](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
 
 ## 遥测
 
