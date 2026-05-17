@@ -4,7 +4,7 @@ description: "Productionize LangGraph and Google ADK agents on your own infrastr
 keywords: ["AI agent deployment", "self-hosted", "open source", "LangGraph", "ADK", "guardrails", "observability", "MCP", "idun-agent-engine"]
 ---
 
-Idun is the open-source production wrapper for LangGraph and Google ADK agents. `pip install idun-agent-engine`, point it at your agent, and get a self-hosted FastAPI service with chat UI, admin panel, traces viewer, guardrails, memory, and MCP tool governance, all on your infrastructure.
+Idun Agent Platform is the open-source production wrapper for LangGraph and Google ADK agents. `pip install idun-agent-engine`, point it at your agent, and get a self-hosted FastAPI service with chat UI, admin panel, traces viewer, guardrails, memory, and MCP server support, all on your infrastructure.
 
 ## Get started
 
@@ -27,22 +27,36 @@ Idun is the open-source production wrapper for LangGraph and Google ADK agents. 
   <Card title="Memory" icon="database" href="/memory/overview">
     Persistent conversation state
   </Card>
-  <Card title="Tool governance" icon="screwdriver-wrench" href="/tool-governance/overview">
-    Per-agent MCP tool access control
+  <Card title="MCP Servers" icon="screwdriver-wrench" href="/mcp-servers/overview">
+    Connect MCP servers and discover tools
   </Card>
-  <Card title="Deployment" icon="server" href="/deployment/overview">
-    Cloud Run, Kubernetes, or any container host
+  <Card title="Prompts" icon="file-lines" href="/prompts">
+    Versioned templates with Jinja2 variables
+  </Card>
+  <Card title="Integrations" icon="plug" href="/integrations/slack">
+    Slack, Discord, Teams, Google Chat, WhatsApp
+  </Card>
+  <Card title="Auth" icon="lock" href="/auth/overview">
+    OIDC SSO for agent routes; password auth for admin
+  </Card>
+  <Card title="Deployment" icon="server" href="/standalone/cloud-run">
+    Cloud Run, Docker, or any container host
+  </Card>
+  <Card title="Guides" icon="book-open" href="/guides/overview">
+    Step-by-step tutorials for common workflows
   </Card>
 </Columns>
 
 ## What you get
 
-- **Framework adapters** for LangGraph and Google ADK. Bring your agent code; the engine wraps it as a FastAPI service with AG-UI streaming.
-- **Guardrails** with 15+ built-in guards (PII detection, jailbreak prevention, toxic language filtering, topic restriction, and more) powered by Guardrails AI.
-- **Observability** through Langfuse, Arize Phoenix, LangSmith, or Google Cloud Trace. Enable tracing and metrics through configuration.
-- **Memory and checkpointing** with in-memory, SQLite, or PostgreSQL backends. Conversations persist across restarts.
-- **MCP tool governance** to connect MCP servers to your agents and control which tools each agent can access.
-- **Auth** with `none` (dev) or `password` (prod) modes for the admin panel. SSO is on the roadmap.
+- **Framework adapters** for LangGraph and Google ADK, served with AG-UI streaming.
+- **Guardrails** with 15+ built-in guards powered by Guardrails AI.
+- **Observability** through Langfuse, Phoenix, LangSmith, or GCP, plus a local trace store with a waterfall viewer at `/admin/traces/`.
+- **Memory** with in-memory, SQLite, or PostgreSQL checkpointers.
+- **MCP tools** over stdio, SSE, streamable HTTP, or WebSocket with auto-discovery.
+- **Prompts** with versioning and Jinja2 variables.
+- **Integrations** for Slack, Discord, Microsoft Teams, Google Chat, and WhatsApp.
+- **Auth**: OIDC SSO on `/agent/*` routes; `none` / `password` for the admin panel.
 
 ## Community
 

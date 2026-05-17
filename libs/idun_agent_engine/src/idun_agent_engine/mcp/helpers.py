@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -215,3 +217,9 @@ async def get_langchain_tools(config_path: str | Path | None = None) -> list[Any
         return await get_langchain_tools_from_file(env_config_path)
 
     return await get_langchain_tools_from_api()
+
+
+def get_langchain_tools_sync(config_path: str | Path | None = None) -> list[Any]:
+    """Sync wrapper over ``get_langchain_tools`` for module-load callers."""
+    with ThreadPoolExecutor(max_workers=1) as ex:
+        return ex.submit(asyncio.run, get_langchain_tools(config_path)).result()

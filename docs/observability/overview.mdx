@@ -6,7 +6,7 @@ keywords: ["observability", "tracing", "monitoring", "OpenTelemetry", "Langfuse"
 
 Idun Agent Platform includes built-in observability backed by OpenTelemetry auto-instrumentation. It captures traces, logs, and metrics from your agents with minimal configuration.
 
-You configure observability once in the Manager UI, then attach configurations to any agent. Each configuration stores your provider credentials and settings, and you can reuse it across multiple agents.
+The standalone runtime always captures traces locally into its own DB-backed [trace store](/observability/traces). External providers (Langfuse, Phoenix, LangSmith, GCP Trace) stack on top: configure one or more in the admin panel or `config.yaml`, and the engine fans spans out to local storage and every enabled provider.
 
 ## Supported providers
 
@@ -58,25 +58,18 @@ When you attach an observability configuration to an agent, the platform automat
 - **Error traces** with full context for debugging
 - **Structured logs** for centralized log analysis
 
-<Note>
-  Observability configurations are saved at the workspace level and can be reused across multiple agents. You only need to set up provider credentials once.
-</Note>
-
 ## Configuration
 
 <Tabs>
-  <Tab title="Manager UI">
+  <Tab title="Admin UI">
     <Steps>
-      <Step title="Browse the provider catalog">
-        Navigate to **Observability** in the sidebar. The catalog shows provider cards: Langfuse, Phoenix, LangSmith, GCP Logging, and GCP Trace are active. Datadog APM, AWS X-Ray, Azure Monitor, and Jaeger are planned.
-        ![Observability catalog](/images/ui/observability-catalog.png)
+      <Step title="Open the observability admin page">
+        Navigate to `/admin/observability/` in the running standalone. The catalog shows the supported providers: Langfuse, Arize Phoenix, LangSmith, GCP Trace, GCP Logging.
+
+        ![Observability admin page with Langfuse selected](/images/ui/admin-observability-langfuse.png)
       </Step>
       <Step title="Add a provider">
-        Click **+** on your provider and fill in the credentials.
-        ![Create Langfuse config](/images/ui/observability-create-langfuse.png)
-      </Step>
-      <Step title="Attach to an agent">
-        Attach the configuration to agents from the agent detail **Overview** tab.
+        Click the provider you want and fill in the credentials. The reload pipeline re-instantiates the engine with the new observability config when you save.
       </Step>
     </Steps>
   </Tab>
@@ -85,12 +78,14 @@ When you attach an observability configuration to an agent, the platform automat
 
     ```yaml config.yaml
     observability:
-      provider: "langfuse"
-      public_key: "pk-lf-..."
-      secret_key: "sk-lf-..."
-      host: "https://cloud.langfuse.com"
+      - provider: "LANGFUSE"
+        enabled: true
+        config:
+          public_key: "pk-lf-..."
+          secret_key: "sk-lf-..."
+          host: "https://cloud.langfuse.com"
     ```
 
-    See the provider-specific pages for the full list of fields each provider requires.
+    The `observability` key is a list, and you can attach more than one provider at a time; each entry is lazy-loaded and the engine fans spans out to every enabled provider. See the provider-specific pages for the full list of fields each provider requires.
   </Tab>
 </Tabs>

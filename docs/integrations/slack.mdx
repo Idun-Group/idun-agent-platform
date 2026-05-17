@@ -15,25 +15,27 @@ Connect your Idun agent to Slack so users can interact with it through direct me
 ## Setup
 
 <Tabs>
-  <Tab title="Manager UI">
+  <Tab title="Admin UI">
     <Steps>
-      <Step title="Open the integrations catalog">
-        Navigate to **Integrations**. The channel catalog shows WhatsApp, Discord, and Slack as active channels.
-
-        ![Integrations catalog](/images/ui/integrations-catalog.png)
+      <Step title="Open the integrations admin page">
+        Navigate to `/admin/integrations/` in the running standalone. The channel catalog shows WhatsApp, Discord, Google Chat, Slack, and Microsoft Teams as active channels.
+        {/* VERIFY: confirm channel catalog entries shown in standalone admin UI for this release. */}
       </Step>
 
       <Step title="Create the Slack integration">
-        Click **+** on Slack and fill in the bot token and signing secret.
+        Click **Slack** and fill in the bot token and signing secret.
 
         | Field | Value |
         |---|---|
         | `bot_token` | Bot User OAuth Token from your Slack app (`xoxb-...`) |
         | `signing_secret` | Signing secret from your Slack app |
+
+        ![Add Slack integration](/images/ui/admin-integrations-slack.png)
       </Step>
 
-      <Step title="Assign to an agent">
-        After saving, open the agent you want to connect and select the Slack integration from the **Integrations** field.
+      <Step title="Save">
+        Save the form. The reload pipeline registers the Slack webhook handler on the running engine; the agent now responds to messages forwarded by Slack.
+        {/* VERIFY: confirm reload pipeline registers Slack webhook handler at runtime. */}
       </Step>
     </Steps>
   </Tab>

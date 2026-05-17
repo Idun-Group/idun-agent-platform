@@ -16,14 +16,15 @@ Connect your Idun agent to Google Chat so users can interact with it by @mention
 ## Setup
 
 <Tabs>
-  <Tab title="Manager UI">
+  <Tab title="Admin UI">
     <Steps>
-      <Step title="Open the integrations catalog">
-        Navigate to **Integrations**. The channel catalog shows available channels including Google Chat.
+      <Step title="Open the integrations admin page">
+        Navigate to `/admin/integrations/` in the running standalone. The channel catalog shows the available channels including Google Chat.
+        {/* VERIFY: confirm Google Chat appears in the channel catalog for this release. */}
       </Step>
 
       <Step title="Create the Google Chat integration">
-        Click **+** on Google Chat and fill in the credentials.
+        Click **Google Chat** and fill in the credentials.
 
         | Field | Value |
         |---|---|
@@ -31,8 +32,9 @@ Connect your Idun agent to Google Chat so users can interact with it by @mention
         | `project_number` | GCP project number (found on the Cloud Console dashboard) |
       </Step>
 
-      <Step title="Assign to an agent">
-        After saving, open the agent you want to connect and select the Google Chat integration from the **Integrations** field.
+      <Step title="Save">
+        Save the form. The reload pipeline registers the Google Chat webhook handler on the running engine.
+        {/* VERIFY: confirm reload pipeline registers Google Chat webhook handler at runtime. */}
       </Step>
     </Steps>
   </Tab>

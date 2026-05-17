@@ -43,11 +43,21 @@ _SKIP_DIRS = frozenset(
 _MAX_DEPTH = 4
 _MAX_FILE_BYTES = 1_000_000  # 1 MB
 
-_LANGGRAPH_IMPORT_RE = re.compile(r"(?m)^\s*(from\s+langgraph[\s.]|import\s+langgraph)")
+_LANGGRAPH_IMPORT_RE = re.compile(
+    r"(?m)^\s*("
+    r"from\s+langgraph[\s.]|import\s+langgraph"
+    r"|from\s+deepagents[\s.]"
+    r")"
+)
 _ADK_IMPORT_RE = re.compile(r"(?m)^\s*(from\s+google\.adk|import\s+google\.adk)")
 _ADK_AGENT_CLASSES = frozenset(
     {"Agent", "LlmAgent", "SequentialAgent", "ParallelAgent", "LoopAgent"}
 )
+
+_LANGGRAPH_FACTORY_EXPORTS: dict[str, frozenset[str]] = {
+    "langgraph.prebuilt": frozenset({"create_react_agent"}),
+    "deepagents": frozenset({"create_deep_agent"}),
+}
 
 
 def _is_skipped(name: str) -> bool:
@@ -133,6 +143,9 @@ def _detect_in_source(rel_path: str, abs_path: Path) -> list[DetectedAgent]:
     state_graph_bindings: set[str] = set()
     compiled_from_binding: set[str] = set()
     lg_builder_funcs: set[str] = set()
+    factory_names: frozenset[str] = frozenset()
+    if has_lg:
+        factory_names = _collect_factory_names(module)
 
     # First pass: collect StateGraph bindings so we can resolve `.compile()`.
     for stmt in module.body:
@@ -149,12 +162,13 @@ def _detect_in_source(rel_path: str, abs_path: Path) -> list[DetectedAgent]:
     # Pre-pass: collect same-module functions that return a LangGraph
     # (compiled or bare). This lets us resolve ``graph = _build()``
     # against ``def _build(): ...; return builder.compile()`` — the
-    # canonical idiom most LangGraph examples use (see issue #555).
+    # canonical idiom most LangGraph examples use (see issue #555) —
+    # plus the wrapper-around-factory shape (``return create_deep_agent(...)``).
     if has_lg:
         for stmt in module.body:
             if isinstance(
                 stmt, (ast.FunctionDef, ast.AsyncFunctionDef)
-            ) and _function_returns_langgraph(stmt):
+            ) and _function_returns_langgraph(stmt, factory_names):
                 lg_builder_funcs.add(stmt.name)
 
     # Second pass: emit detections.
@@ -198,6 +212,25 @@ def _detect_in_source(rel_path: str, abs_path: Path) -> list[DetectedAgent]:
             continue
 
         if has_lg and _is_call_to(rhs, frozenset(lg_builder_funcs)):
+            for target_name in targets:
+                found.append(
+                    DetectedAgent(
+                        framework="LANGGRAPH",
+                        file_path=rel_path,
+                        variable_name=target_name,
+                        inferred_name="",
+                        confidence="MEDIUM",
+                        source="source",
+                    )
+                )
+            continue
+
+        # Order matters: ``lg_builder_funcs`` is checked above so that a
+        # same-module wrapper around a factory (``def make(): return
+        # create_deep_agent(...); agent = make()``) emits exactly one
+        # detection through the builder path rather than double-firing here
+        # if the name happened to be re-imported.
+        if has_lg and factory_names and _is_call_to(rhs, factory_names):
             for target_name in targets:
                 found.append(
                     DetectedAgent(
@@ -286,18 +319,74 @@ def _iter_fn_statements(fn: ast.FunctionDef | ast.AsyncFunctionDef):
             stack.append(child)
 
 
+def _annotation_is_compiled_state_graph(node: ast.AST | None) -> bool:
+    """True if ``node`` is an annotation naming ``CompiledStateGraph``.
+
+    Accepts the unqualified name, dotted attribute paths
+    (``langgraph.graph.state.CompiledStateGraph``), and subscript forms
+    (``CompiledStateGraph[State]``). The presence of this annotation —
+    on a function return or a variable — is a load-bearing signal that
+    the file produces a compiled LangGraph.
+
+    This helper is gate-agnostic — the caller is responsible for
+    ensuring the file actually imports langgraph (``has_lg``) before
+    trusting an annotation match.
+    """
+    if node is None:
+        return False
+    if isinstance(node, ast.Subscript):
+        return _annotation_is_compiled_state_graph(node.value)
+    if isinstance(node, ast.Name):
+        return node.id == "CompiledStateGraph"
+    if isinstance(node, ast.Attribute):
+        return node.attr == "CompiledStateGraph"
+    return False
+
+
+def _collect_factory_names(module: ast.Module) -> frozenset[str]:
+    """Return the in-scope names of known LangGraph-producing factories.
+
+    Walks module-level ``ImportFrom`` nodes. For each ``from <mod> import
+    <name>`` whose ``<mod>`` is a key in ``_LANGGRAPH_FACTORY_EXPORTS``
+    and whose ``<name>`` is in the allowed set, the in-scope binding
+    (``alias.asname or alias.name``) is added. Star imports are skipped
+    because they can't be statically resolved.
+    """
+    names: set[str] = set()
+    for stmt in module.body:
+        if not isinstance(stmt, ast.ImportFrom) or stmt.module is None:
+            continue
+        allowed = _LANGGRAPH_FACTORY_EXPORTS.get(stmt.module)
+        if allowed is None:
+            continue
+        for alias in stmt.names:
+            if alias.name == "*":
+                continue
+            if alias.name in allowed:
+                names.add(alias.asname or alias.name)
+    return frozenset(names)
+
+
 def _function_returns_langgraph(
     fn: ast.FunctionDef | ast.AsyncFunctionDef,
+    factory_names: frozenset[str] = frozenset(),
 ) -> bool:
-    """True if ``fn`` returns a ``StateGraph(...)`` (compiled or bare).
+    """True if ``fn`` returns a compiled LangGraph.
 
-    Mirrors the module-level shapes recognized in ``_detect_in_source``:
-    direct ``StateGraph(...)``, ``StateGraph(...).compile()``, ``<g>.compile()``
-    where ``g`` is a local StateGraph binding, or a return of any such
-    binding by name.
+    Recognized shapes (mirroring ``_detect_in_source``):
+
+    - ``-> CompiledStateGraph`` annotation on the function (trusted on its own).
+    - Body returns ``StateGraph(...)``, ``StateGraph(...).compile()``, or
+      ``<g>.compile()`` where ``<g>`` is a local ``StateGraph`` binding.
+    - Body returns a call to a known factory in ``factory_names``.
+    - Body returns a local name bound to any of the above.
     """
+    if _annotation_is_compiled_state_graph(fn.returns):
+        return True
+
     state_graph_locals: set[str] = set()
     compiled_locals: set[str] = set()
+    factory_result_locals: set[str] = set()
 
     for node in _iter_fn_statements(fn):
         targets = _assign_targets(node)
@@ -311,6 +400,9 @@ def _function_returns_langgraph(
             continue
         if _module_compile_target(rhs, state_graph_locals):
             compiled_locals.update(targets)
+            continue
+        if factory_names and _is_call_to(rhs, factory_names):
+            factory_result_locals.update(targets)
 
     for node in _iter_fn_statements(fn):
         if not isinstance(node, ast.Return) or node.value is None:
@@ -320,8 +412,12 @@ def _function_returns_langgraph(
             return True
         if _module_compile_target(value, state_graph_locals):
             return True
+        if factory_names and _is_call_to(value, factory_names):
+            return True
         if isinstance(value, ast.Name) and (
-            value.id in state_graph_locals or value.id in compiled_locals
+            value.id in state_graph_locals
+            or value.id in compiled_locals
+            or value.id in factory_result_locals
         ):
             return True
     return False

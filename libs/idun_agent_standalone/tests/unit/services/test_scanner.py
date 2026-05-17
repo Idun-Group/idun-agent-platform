@@ -245,6 +245,395 @@ async def test_detect_langgraph_via_build_function_called_twice(tmp_path: Path) 
     assert names == {"alpha", "beta"}
 
 
+async def test_detect_create_deep_agent(tmp_path: Path) -> None:
+    """``agent = create_deep_agent(...)`` is the canonical deepagents shape."""
+    src = (
+        "from deepagents import create_deep_agent\n"
+        "\n"
+        "agent = create_deep_agent(model=None, tools=[])\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    d = result.detected[0]
+    assert d.framework == "LANGGRAPH"
+    assert d.variable_name == "agent"
+    assert d.confidence == "MEDIUM"
+    assert d.source == "source"
+
+
+async def test_detect_create_react_agent(tmp_path: Path) -> None:
+    """``agent = create_react_agent(...)`` is the canonical langgraph prebuilt shape."""
+    src = (
+        "from langgraph.prebuilt import create_react_agent\n"
+        "\n"
+        "agent = create_react_agent(model=None, tools=[])\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].framework == "LANGGRAPH"
+    assert result.detected[0].variable_name == "agent"
+
+
+async def test_detect_factory_with_aliased_import(tmp_path: Path) -> None:
+    """``from deepagents import create_deep_agent as build`` honors the alias."""
+    src = (
+        "from deepagents import create_deep_agent as build\n"
+        "\n"
+        "agent = build(model=None, tools=[])\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "agent"
+
+
+async def test_detect_factory_wrapped_in_function(tmp_path: Path) -> None:
+    """Wrapper function returning a factory call is recognized without an annotation.
+
+    Mirrors the exact text-to-sql-agent shape: a builder function that
+    forwards to ``create_deep_agent`` with no return annotation.
+    """
+    src = (
+        "from deepagents import create_deep_agent\n"
+        "\n"
+        "def make():\n"
+        "    return create_deep_agent(model=None, tools=[])\n"
+        "\n"
+        "agent = make()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "agent"
+
+
+async def test_detect_factory_wrapped_in_async_function(tmp_path: Path) -> None:
+    """``async def make(): return create_deep_agent(...)`` is also a builder."""
+    src = (
+        "from deepagents import create_deep_agent\n"
+        "\n"
+        "async def make():\n"
+        "    return create_deep_agent(model=None, tools=[])\n"
+        "\n"
+        "agent = make()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "agent"
+
+
+async def test_detect_factory_wrapped_via_local_binding(tmp_path: Path) -> None:
+    """Wrapper that binds the factory result and returns the name still counts."""
+    src = (
+        "from deepagents import create_deep_agent\n"
+        "\n"
+        "def make():\n"
+        "    tmp = create_deep_agent(model=None, tools=[])\n"
+        "    return tmp\n"
+        "\n"
+        "agent = make()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "agent"
+
+
+async def test_detect_multiple_factories_in_same_file(tmp_path: Path) -> None:
+    """Two factory calls produce two detections."""
+    src = (
+        "from langgraph.prebuilt import create_react_agent\n"
+        "from deepagents import create_deep_agent\n"
+        "\n"
+        "alpha = create_react_agent(model=None, tools=[])\n"
+        "beta = create_deep_agent(model=None, tools=[])\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    names = {d.variable_name for d in result.detected}
+    assert names == {"alpha", "beta"}
+    assert all(d.framework == "LANGGRAPH" for d in result.detected)
+
+
+async def test_detect_factory_among_other_imports_from_same_module(
+    tmp_path: Path,
+) -> None:
+    """Mixed import list: only the recognized factory name is bound."""
+    src = (
+        "from deepagents import create_deep_agent, FilesystemBackend\n"
+        "\n"
+        "_backend = FilesystemBackend(root_dir='.')\n"
+        "agent = create_deep_agent(model=None, tools=[], backend=_backend)\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    names = {d.variable_name for d in result.detected}
+    assert names == {"agent"}
+
+
+async def test_detect_langgraph_via_compiled_state_graph_return_annotation(
+    tmp_path: Path,
+) -> None:
+    """``def make() -> CompiledStateGraph`` is a builder even with an opaque body."""
+    src = (
+        "from langgraph.graph.state import CompiledStateGraph\n"
+        "\n"
+        "def make() -> CompiledStateGraph:\n"
+        "    return _something_opaque()  # type: ignore[name-defined]\n"
+        "\n"
+        "agent = make()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "agent"
+
+
+async def test_detect_langgraph_via_compiled_state_graph_subscript_annotation(
+    tmp_path: Path,
+) -> None:
+    """Generic ``-> CompiledStateGraph[State]`` is still recognized."""
+    src = (
+        "from langgraph.graph.state import CompiledStateGraph\n"
+        "\n"
+        "def make() -> CompiledStateGraph[dict]:\n"
+        "    return _opaque()  # type: ignore[name-defined]\n"
+        "\n"
+        "agent = make()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "agent"
+
+
+async def test_detect_langgraph_via_compiled_state_graph_dotted_annotation(
+    tmp_path: Path,
+) -> None:
+    """Fully qualified ``langgraph.graph.state.CompiledStateGraph`` is recognized."""
+    src = (
+        "import langgraph.graph.state\n"
+        "\n"
+        "def make() -> langgraph.graph.state.CompiledStateGraph:\n"
+        "    return _opaque()  # type: ignore[name-defined]\n"
+        "\n"
+        "agent = make()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "agent"
+
+
+async def test_detect_async_function_with_compiled_state_graph_annotation(
+    tmp_path: Path,
+) -> None:
+    """Async builder with the annotation is recognized."""
+    src = (
+        "from langgraph.graph.state import CompiledStateGraph\n"
+        "\n"
+        "async def make() -> CompiledStateGraph:\n"
+        "    return _opaque()  # type: ignore[name-defined]\n"
+        "\n"
+        "agent = make()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "agent"
+
+
+async def test_no_detection_for_factory_name_without_import(tmp_path: Path) -> None:
+    """A local function named ``create_deep_agent`` is not a factory.
+
+    Confirms the import gate: only names actually imported from the
+    recognized factory modules count.
+    """
+    src = (
+        "from langgraph.graph import StateGraph\n"  # forces has_lg=True
+        "\n"
+        "def create_deep_agent():\n"
+        "    return 'fake'\n"
+        "\n"
+        "agent = create_deep_agent()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    names = {d.variable_name for d in result.detected}
+    assert "agent" not in names
+
+
+async def test_no_detection_for_factory_import_without_call(tmp_path: Path) -> None:
+    """Imported but never called → no detection."""
+    src = "from deepagents import create_deep_agent\n"
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert result.detected == []
+
+
+async def test_no_detection_for_factory_in_conditional_expression(
+    tmp_path: Path,
+) -> None:
+    """``agent = factory(...) if cond else None`` is an IfExp, not a Call."""
+    src = (
+        "from deepagents import create_deep_agent\n"
+        "\n"
+        "cond = True\n"
+        "agent = create_deep_agent(model=None, tools=[]) if cond else None\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    names = {d.variable_name for d in result.detected}
+    assert "agent" not in names
+
+
+async def test_no_detection_for_factory_in_dict_value(tmp_path: Path) -> None:
+    """Factory call inside a dict literal is not a module-level agent binding."""
+    src = (
+        "from deepagents import create_deep_agent\n"
+        "\n"
+        "agents = {'sql': create_deep_agent(model=None, tools=[])}\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert result.detected == []
+
+
+async def test_no_detection_when_wrapper_discards_factory_result(
+    tmp_path: Path,
+) -> None:
+    """A wrapper that calls the factory but returns ``None`` is not a builder."""
+    src = (
+        "from deepagents import create_deep_agent\n"
+        "\n"
+        "def make():\n"
+        "    create_deep_agent(model=None, tools=[])  # result discarded\n"
+        "    return None\n"
+        "\n"
+        "agent = make()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert result.detected == []
+
+
+async def test_no_detection_for_factory_via_star_import(tmp_path: Path) -> None:
+    """``from deepagents import *`` is not statically resolvable.
+
+    The scanner can't know which names the wildcard brought in, so the
+    safe default is no detection. Documented limitation.
+    """
+    src = (
+        "from deepagents import *\n"
+        "\n"
+        "agent = create_deep_agent(model=None, tools=[])\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert result.detected == []
+
+
+async def test_no_detection_for_compiled_state_graph_annotation_without_langgraph_import(
+    tmp_path: Path,
+) -> None:
+    """A ``-> CompiledStateGraph`` annotation in a file with no langgraph
+    or deepagents import is not enough on its own.
+
+    Pins the contract that ``_annotation_is_compiled_state_graph`` is
+    gate-agnostic and the caller (the ``has_lg`` regex pre-filter) owns
+    the trust decision. Without the import gate firing, the annotation
+    pre-pass never runs.
+    """
+    src = (
+        "def make() -> CompiledStateGraph:  # type: ignore[name-defined]\n"
+        "    return None  # type: ignore[return-value]\n"
+        "\n"
+        "agent = make()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert result.detected == []
+
+
+async def test_detect_compiled_state_graph_annotation_with_none_body(
+    tmp_path: Path,
+) -> None:
+    """The annotation is trusted even when the body returns ``None``.
+
+    The annotation is treated as a declarative contract — we don't try to
+    second-guess the body. This pins that ``trust-the-annotation``
+    contract explicitly.
+    """
+    src = (
+        "from langgraph.graph.state import CompiledStateGraph\n"
+        "\n"
+        "def make() -> CompiledStateGraph:\n"
+        "    return None  # type: ignore[return-value]\n"
+        "\n"
+        "agent = make()\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert len(result.detected) == 1
+    assert result.detected[0].variable_name == "agent"
+
+
+async def test_no_detection_for_factory_via_module_import_attribute_access(
+    tmp_path: Path,
+) -> None:
+    """``import deepagents`` + ``deepagents.create_deep_agent(...)`` is not detected.
+
+    The scanner only resolves bare ``Name`` calls, not ``Attribute``
+    calls. Documented limitation matching the existing scanner's
+    ``StateGraph`` recognizer (which also requires the unqualified
+    name). Users who hit this should switch to ``from deepagents import
+    create_deep_agent``.
+    """
+    src = (
+        "import deepagents\n"
+        "\n"
+        "agent = deepagents.create_deep_agent(model=None, tools=[])\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    assert result.detected == []
+
+
+async def test_factory_and_state_graph_coexist_in_same_file(tmp_path: Path) -> None:
+    """A file with both a StateGraph compile and a factory call emits both."""
+    src = (
+        "from langgraph.graph import StateGraph\n"
+        "from deepagents import create_deep_agent\n"
+        "\n"
+        "graph = StateGraph(int).compile()\n"
+        "agent = create_deep_agent(model=None, tools=[])\n"
+    )
+    (tmp_path / "agent.py").write_text(src)
+    result = await scan_folder(tmp_path)
+    names = {d.variable_name for d in result.detected}
+    assert names == {"graph", "agent"}
+    assert all(d.framework == "LANGGRAPH" for d in result.detected)
+
+
+async def test_factory_in_file_does_not_block_adk_in_another_file(
+    tmp_path: Path,
+) -> None:
+    """Factory detection in one file is independent of ADK detection in another."""
+    (tmp_path / "lg.py").write_text(
+        "from deepagents import create_deep_agent\n"
+        "agent = create_deep_agent(model=None, tools=[])\n"
+    )
+    (tmp_path / "adk.py").write_text(
+        "from google.adk.agents import Agent\n" "root_agent = Agent(name='x')\n"
+    )
+    result = await scan_folder(tmp_path)
+    by_framework = {d.framework: d.variable_name for d in result.detected}
+    assert by_framework == {"LANGGRAPH": "agent", "ADK": "root_agent"}
+
+
 async def test_detect_minimal_adk(tmp_path: Path) -> None:
     (tmp_path / "agent.py").write_text(
         "from google.adk.agents import Agent\n" "root_agent = Agent(name='x')\n"

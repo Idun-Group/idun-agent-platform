@@ -19,6 +19,10 @@ Each adapter implements a common `BaseAgent` protocol. Your clients talk to the 
   </Card>
 </Columns>
 
+<Note>
+  Haystack support was removed in 0.6.0. Existing Haystack agent configs need to be ported to LangGraph or ADK before upgrading.
+</Note>
+
 ## Feature comparison
 
 | Feature | LangGraph | Google ADK |
@@ -28,7 +32,7 @@ Each adapter implements a common `BaseAgent` protocol. Your clients talk to the 
 | CopilotKit support | Yes | No |
 | Guardrails | Yes | Yes |
 | Observability | Yes | Yes |
-| MCP tool governance | Yes | Yes |
+| MCP servers | Yes | Yes |
 
 ## How adapters work
 
@@ -36,36 +40,18 @@ Under the hood, the engine loads your agent through the adapter specified in you
 
 - **Unified API**: All agents expose the same HTTP endpoints for invoke, streaming, and chat.
 - **Shared platform features**: Observability, guardrails, MCP tools, and memory work the same way across frameworks.
-- **Consistent deployment**: Run agents through the Idun Agent Engine standalone or managed by the Agent Manager.
+- **Consistent deployment**: The same `idun serve` command runs any supported framework.
 
-You select the framework when configuring your agent:
+Select the framework by setting the `type` field in the `agent` section of your `config.yaml`:
 
-<Tabs>
-  <Tab title="Manager UI">
-    In the agent creation wizard, Step 1 asks you to select a framework:
+```yaml
+agent:
+  type: LANGGRAPH    # or ADK
+  config:
+    # framework-specific fields
+```
 
-    - **LangGraph**: Build stateful, multi-actor agents with LangGraph
-    - **Google ADK**: Build agents with Google's Agent Development Kit
-
-    ![Select framework in the agent creation wizard](/images/ui/agents-create-step1.png)
-
-    Step 2 configures framework-specific settings such as the graph definition, port, and host.
-
-    ![Framework-specific settings in step 2](/images/ui/agents-create-step2.png)
-  </Tab>
-  <Tab title="Config file">
-    Set the `type` field in the `agent` section of your `config.yaml`:
-
-    ```yaml
-    agent:
-      type: LANGGRAPH    # or ADK
-      config:
-        # framework-specific fields
-    ```
-
-    The engine validates that the `config` type matches the selected `type` at startup.
-  </Tab>
-</Tabs>
+The engine validates that the `config` shape matches the selected `type` at startup. The standalone admin panel at `/admin/agent/` exposes the same field with a dropdown when you want to switch frameworks without editing YAML.
 
 ## Next steps
 

@@ -1,26 +1,29 @@
 ---
 title: Quickstart
 description: Run your first agent in under 5 minutes.
+keywords: ["quickstart", "getting started", "standalone", "idun init", "idun serve", "first agent", "tutorial"]
 ---
 
 ## 1. Install
 
 ```bash
-pip install idun-agent-standalone
+pip install idun-agent-engine
 ```
+
+The wheel bundles the engine, the standalone admin/chat/traces app, and the `idun` console script.
 
 ## 2. Scaffold a project
 
 ```bash
-idun-standalone init my-agent
-cd my-agent
+mkdir my-agent && cd my-agent
+idun init
 ```
 
-This creates:
+`idun init` runs DB migrations and opens your browser at `http://localhost:8000/`. On a fresh directory the chat root redirects to `/onboarding/`, and the wizard scaffolds:
 
-- `agent.py` — a minimal LangGraph echo agent (no LLM key required).
-- `config.yaml` — pointing at the agent.
-- `.env.example` — env-var reference.
+- `agent.py`, a minimal LangGraph echo agent (no LLM key required).
+- `config.yaml` pointing at the agent.
+- `.env.example`, env-var reference.
 - `requirements.txt` and `README.md`.
 
 Edit `agent.py` and `config.yaml` to point at your real agent. The default agent works out of the box for trying the rest of the platform.
@@ -28,36 +31,44 @@ Edit `agent.py` and `config.yaml` to point at your real agent. The default agent
 ## 3. Run
 
 ```bash
-idun-standalone serve
+idun serve
 ```
 
 - **Chat**: `http://localhost:8000/`
 - **Admin**: `http://localhost:8000/admin/`
-- **Traces**: `http://localhost:8000/traces/`
+- **Traces**: `http://localhost:8000/admin/traces/`
 
-By default, auth is `none` on a laptop — admin is open. When deployed inside a container the published image sets `IDUN_IN_CONTAINER=1`, defaulting to `password` and requiring `IDUN_ADMIN_PASSWORD_HASH` and `IDUN_SESSION_SECRET`.
+By default, auth is `none` on a laptop, so admin is open. When deployed inside a container the published image sets `IDUN_IN_CONTAINER=1`, defaulting to `password` and requiring `IDUN_ADMIN_PASSWORD_HASH` and `IDUN_SESSION_SECRET`.
 
 ## 4. Configure password auth
 
 ```bash
-HASH=$(idun-standalone hash-password)
+HASH=$(idun hash-password)
 SECRET=$(openssl rand -hex 32)
 
 IDUN_ADMIN_AUTH_MODE=password \
 IDUN_ADMIN_PASSWORD_HASH="$HASH" \
 IDUN_SESSION_SECRET="$SECRET" \
-idun-standalone serve
+idun serve
 ```
 
 Sign in at `http://localhost:8000/login/` with the password you typed into `hash-password`.
 
 ## 5. Edit the agent live
 
-Open `/admin/agent/`, change the agent name, click "Save & reload". A toast confirms the running agent was hot-swapped. Structural changes (framework, graph_definition path) require a process restart — the UI shows a banner.
+Open `/admin/agent/`, change any field, click **Save**. A toast confirms the running agent was hot-swapped. Structural changes (framework, `graph_definition` path) require a process restart; the UI shows a banner.
+
+![Admin agent configuration page](/images/ui/admin-agent-config.png)
 
 ## 6. Watch traces
 
-Send a few messages from `/`. Open `/traces/` — your sessions appear with the full event timeline.
+Send a few messages from `/`. Open `/admin/traces/`; your runs appear with latency, token counts, cost, and per-span detail.
+
+![Admin traces list view](/images/ui/admin-traces-list.png)
+
+<Note>
+  The trace store is in alpha. If your runs don't appear right away, refresh the page; the write path is asynchronous and the list view doesn't yet auto-poll.
+</Note>
 
 ## Local development from a checkout
 
@@ -68,7 +79,7 @@ git clone https://github.com/Idun-Group/idun-agent-platform.git
 cd idun-agent-platform
 make sync                # Install all Python deps via uv
 make build-standalone-all  # Build the UI and the wheel
-uv run idun-standalone serve --config path/to/your/config.yaml
+IDUN_CONFIG_PATH=path/to/your/config.yaml uv run idun serve
 ```
 
 `make build-standalone-all` runs `pnpm build` for the Next.js UI and `uv build` for the wheel; the UI static export ends up bundled inside the wheel. See the [CLI reference](/standalone/cli) for every flag and env var.
@@ -76,6 +87,5 @@ uv run idun-standalone serve --config path/to/your/config.yaml
 ## Next
 
 - [Deploy to Cloud Run →](/standalone/cloud-run)
-- [Deploy with docker-compose →](/standalone/docker-compose)
 - [Customize the chat UI →](/standalone/customizing-ui)
 - [CLI reference →](/standalone/cli)

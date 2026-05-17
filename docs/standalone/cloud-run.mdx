@@ -1,6 +1,7 @@
 ---
 title: Deploy to Cloud Run
 description: Single-container deploy on Google Cloud Run with managed Postgres.
+keywords: ["Cloud Run", "GCP", "deploy", "Postgres", "Cloud SQL", "container", "production"]
 ---
 
 Cloud Run runs a single container per request, scales to zero by default, and forwards HTTPS. The standalone is designed to fit.
@@ -18,14 +19,14 @@ gcloud sql users create idun --instance=idun-postgres --password='changeme'
 
 URL form (Cloud SQL Auth Proxy / unix socket):
 
-```
+```text
 postgresql+asyncpg://idun:changeme@/idun?host=/cloudsql/PROJECT:REGION:idun-postgres
 ```
 
 ## 2. Store secrets in Secret Manager
 
 ```bash
-echo -n "$(idun-standalone hash-password)" | gcloud secrets create idun-admin-hash --data-file=-
+echo -n "$(idun hash-password)" | gcloud secrets create idun-admin-hash --data-file=-
 openssl rand -hex 32 | gcloud secrets create idun-session-secret --data-file=-
 echo -n "postgresql+asyncpg://..." | gcloud secrets create idun-db-url --data-file=-
 ```

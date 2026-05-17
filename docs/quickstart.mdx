@@ -24,10 +24,10 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
 
   <Step title="Initialize a new agent project">
     ```bash
-    idun init my-agent
-    cd my-agent
+    mkdir my-agent && cd my-agent
+    idun init
     ```
-    Scaffolds:
+    `idun init` runs DB migrations and opens your browser at `http://localhost:8000/`. The onboarding wizard scaffolds:
     - `agent.py` (a minimal LangGraph agent template)
     - `config.yaml` (engine + standalone config)
     - `.env.example` (environment variables stub)
@@ -69,7 +69,7 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
 - [Pick a framework](/frameworks/overview): LangGraph or Google ADK
 - [Add guardrails](/guardrails/overview): 15+ built-in safety guards
 - [Wire observability](/observability/overview): Langfuse, Phoenix, LangSmith, or GCP Trace
-- [Govern MCP tools](/tool-governance/overview): per-agent tool access control
+- [Connect MCP servers](/mcp-servers/overview): stdio, SSE, streamable HTTP, or WebSocket transports
 - [Deploy](/deployment/overview): Cloud Run, Kubernetes, or any single-container host
 
 ## Switching to Postgres
@@ -110,7 +110,3 @@ Postgres unlocks 5–8k spans/sec sustained write (Linux production floor) versu
 | `IDUN_TRACE_RETENTION_DAYS` | `14` | How many days of traces to keep before dropping. On Postgres, expired monthly partitions are detached and dropped. On SQLite, a scheduled `DELETE` runs. |
 | `IDUN_TRACES_INPUT_VALUE_MAX_BYTES` | `65536` | Per-attribute byte cap before truncation. Lower this on heavy-payload deployments to recover throughput, or raise it to keep more raw input/output. |
 | `IDUN_PRICES_REFRESH` | `false` | When `true`, the cost calculator fetches the LiteLLM model-prices snapshot at boot (5-second timeout, snapshot fallback). Default uses the vendored monthly snapshot. |
-
-<Note>
-  The original `docker-compose` and Manager UI quickstart paths were retired in v0.6. If you're upgrading from a pre-v0.6 install, file a [GitHub issue](https://github.com/Idun-Group/idun-agent-platform/issues/new?labels=docs%2Cmigration) and we'll publish a migration note.
-</Note>

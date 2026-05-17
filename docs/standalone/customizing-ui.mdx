@@ -1,22 +1,23 @@
 ---
 title: Customizing the chat UI
 description: Theme, layout, and full UI replacement.
+keywords: ["chat UI", "theme", "customize", "Next.js", "branding", "IDUN_UI_DIR", "standalone UI"]
 ---
 
 The standalone ships a Next.js UI bundled into the wheel. There are three levels of customization.
 
 ## Level 1 — Theme
 
-Open `/admin/settings/`. Change the app name, greeting, layout (branded / minimal / inspector), color palette (light + dark), radius, font, and starter prompts. Save — the change applies immediately to all clients.
+Open `/admin/settings/`. Change the app name, greeting, layout (branded / minimal / inspector), color palette (light + dark), radius, font, and starter prompts. Save, and the change applies immediately to all clients.
 
-The theme is persisted in the `theme` table; you can also dump it via `idun-standalone export` for version control.
+The theme is persisted in the `theme` table alongside the rest of the admin state.
 
 ## Level 2 — Replace the chat UI entirely
 
 The static UI is mounted from a directory. Override it via `IDUN_UI_DIR`:
 
 ```bash
-IDUN_UI_DIR=/path/to/your/built/ui idun-standalone serve
+IDUN_UI_DIR=/path/to/your/built/ui idun serve
 ```
 
 Your UI just needs to:

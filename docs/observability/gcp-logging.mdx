@@ -16,37 +16,40 @@ Before starting, complete the [quickstart guide](/quickstart) to have an agent r
     2. Enable the **Cloud Logging API** in your project
     3. Verify that the environment where your agent runs has credentials with permission to write logs (the `Logs Writer` role)
   </Step>
-  <Step title="Create an observability configuration">
-    1. On the Idun Agent Platform main page, navigate to **Observability**
-    2. Click **Add configuration**
-    3. Select **GCP Logging**
-    4. Enter a **Configuration Name** (for example, "GCP Logging Prod")
-    5. Fill in the required details:
-        - **Project ID**: Your Google Cloud Project ID
-        - **Log Name**: Identifier for the log stream (for example, `idun-agent-logs`)
-        - **Resource Type**: (Optional) For example, `global` or `gce_instance`
-        - **Severity**: Minimum level to record (for example, `INFO`, `WARNING`, `ERROR`)
-        - **Transport**: Delivery method (default `BackgroundThread`)
-    6. Click **Create configuration**
-  </Step>
-  <Step title="Attach GCP Logging to your agent">
-    1. Navigate to the agent you want to add logging to
-    2. Click **Edit Agent**
-    3. Click **Next** to reach the observability configuration step
-    4. Select **GCP Logging** as the observability provider
-    5. Select the configuration you created
-    6. Click **Next**
-    7. Click **Save changes** to finalize
+  <Step title="Configure GCP Logging in the standalone">
+    Open the running standalone at `/admin/observability/` and click **GCP Logging**. Fill in:
 
-    After saving, click **Restart** on your agent page to reload the configuration.
+    - **GCP project ID**: Your Google Cloud project ID
+    - **Region**: (Optional) Region/zone associated with the resource (e.g., `us-central1`)
+    - **Log name**: Identifier for the log stream (e.g., `application-log`)
+    - **Resource type**: Resource type label (e.g., `global`, `gce_instance`, `cloud_run_revision`)
+    - **Severity**: Minimum level to record (`INFO`, `WARNING`, `ERROR`, `CRITICAL`)
+
+    ![Observability admin page with GCP Logging selected](/images/ui/admin-observability-gcp-logging.png)
+
+    Save the form. The reload pipeline re-instantiates the engine with the new observability config; subsequent agent runs ship structured logs to GCP.
+    {/* VERIFY: confirm reload pipeline re-instantiates engine and ships structured logs to GCP. */}
   </Step>
 </Steps>
+
+Alternatively, configure GCP Logging in your `config.yaml` for first-boot seeding or engine-only mode:
+
+```yaml config.yaml
+observability:
+  - provider: "GCP_LOGGING"
+    enabled: true
+    config:
+      project_id: "my-gcp-project"
+      log_name: "idun-agent-logs"
+      resource_type: "cloud_run_revision"
+      severity: "INFO"
+```
 
 ## View log data
 
 Once your agent is running with observability enabled:
 
-1. Interact with your agent
+1. Interact with your agent through the chat UI at `/` or the API at `/agent/run`
 2. Open the [Google Cloud Console](https://console.cloud.google.com/)
 3. Navigate to **Logging** > **Logs Explorer**
 
