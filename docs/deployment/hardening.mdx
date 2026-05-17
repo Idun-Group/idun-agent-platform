@@ -116,7 +116,7 @@ If your reverse proxy is not forwarding `X-Forwarded-Proto`, the `Secure` flag w
 
 ## Engine route protection
 
-Admin-panel auth (`IDUN_ADMIN_AUTH_MODE=password`) gates the `/admin/*` UI and admin REST. It does **not** gate the `/agent/*` runtime routes. To require an OIDC JWT on the agent API, enable per-agent SSO. See [Agent route protection](/auth/overview).
+Admin-panel auth (`IDUN_ADMIN_AUTH_MODE=password`) gates the `/admin/*` UI and admin REST. It does **not** gate the `/agent/*` runtime routes. To require an OIDC JWT on the agent API, enable per-agent SSO. See [SSO](/auth/sso). {/* VERIFY: gating scope (admin-only) sourced from libs/idun_agent_standalone/src/idun_agent_standalone/services/auth.py and the SSO dependency in libs/idun_agent_engine/src/idun_agent_engine/server/dependencies.py; recheck before each release that no admin route is left ungated and no agent route is gated by the session cookie. */}
 
 ## CORS
 
@@ -139,5 +139,5 @@ Before a production deploy:
 
 ## What's next
 
-- [Agent route protection](/auth/overview): require an OIDC JWT on the agent API
+- [SSO](/auth/sso): require an OIDC JWT on the agent API
 - [Troubleshooting](/troubleshooting): what to do when reload fails or the admin panel says `agent_not_ready`

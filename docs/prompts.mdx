@@ -1,29 +1,39 @@
 ---
-title: "Prompt management"
-description: "Version, store, and assign prompt templates to agents with Jinja2 variable support and immutable versioning."
+title: "Prompts"
+description: "Version, store, and render prompt templates with Jinja2 variables. Edit them from the admin panel or seed from YAML."
 keywords: ["prompts", "prompt management", "versioning", "Jinja2", "templates", "prompt engineering"]
 ---
 
-Prompt management lets you version, store, and assign prompt templates to agents. Instead of hardcoding prompts in your agent code, define them in the Manager or YAML config and assign specific versions to agents. Prompts support Jinja2 variables (`{{ variable }}`) for dynamic content at runtime.
+Prompt management lets you version, store, and render prompt templates without hardcoding them in agent code. Define them in `config.yaml` (the seed shape) or edit them through the standalone admin panel at `/admin/prompts/`. Prompts support Jinja2 variables (`{{ variable }}`) for dynamic content at runtime.
 
 ## Key concepts
 
 | Concept | Description |
 |---|---|
-| **Prompt ID** | A logical name for a prompt family (e.g., `system-prompt`, `rag-query`) |
-| **Versions** | Each prompt ID can have multiple versions. Content is immutable after creation. Updating a prompt creates a new version |
-| **Latest tag** | The `latest` tag always points to the highest version and is managed automatically |
-| **Agent assignment** | Specific prompt versions are assigned to agents. Agents are pinned to a version until you reassign |
+| **Prompt ID** | A logical name for a prompt family (e.g., `system-prompt`, `rag-query`). |
+| **Versions** | Each prompt ID can have multiple versions. Content is immutable after creation. Updating a prompt creates a new version. |
+| **Latest tag** | The `latest` tag always points to the highest version and is managed automatically. |
+| **Tags** | Free-form labels (`production`, `staging`, `reviewed`) plus the managed `latest`. |
 
 ## Define prompts
 
 <Tabs>
-  <Tab title="Manager UI">
-    Prompts are assigned to agents from the agent detail **Prompts** tab.
+  <Tab title="Admin UI">
+    <Steps>
+      <Step title="Open the prompts admin page">
+        Navigate to `/admin/prompts/` in the running standalone. The Prompt library lists every version with its variables, version number, and a row of actions.
 
-    ![Agent detail prompts tab](/images/ui/agents-detail-prompts.png)
+        ![Prompts admin page](/images/ui/admin-prompts.png)
+      </Step>
+      <Step title="Create a new prompt">
+        Click **New prompt**. Give it a unique `Name` (prompt ID), write the `Body` using `{{ name }}` syntax for variables, optionally add tags. The right panel surfaces detected variables as you type.
 
-    The Prompts page in the sidebar shows all prompts in your workspace. Create prompts with a name, content (using the built-in editor), and tags.
+        ![New prompt drawer](/images/ui/admin-prompts-new.png)
+      </Step>
+      <Step title="Save">
+        Save. The reload pipeline re-instantiates the engine with the new prompt available to `get_prompt()`. Subsequent saves with the same name allocate the next version automatically.
+      </Step>
+    </Steps>
   </Tab>
   <Tab title="Config file">
     ```yaml config.yaml
@@ -46,23 +56,32 @@ Prompt management lets you version, store, and assign prompt templates to agents
 
     | Field | Type | Description |
     |---|---|---|
-    | `prompt_id` | `string` | Logical identifier for the prompt family |
-    | `version` | `integer` | Version number (auto-incremented when using the Manager) |
-    | `content` | `string` | Prompt text, supports Jinja2 `{{ variables }}` |
-    | `tags` | `list[string]` | Metadata tags. `latest` is auto-managed by the Manager |
+    | `prompt_id` | `string` | Logical identifier for the prompt family. |
+    | `version` | `integer` | Version number. Auto-incremented per `prompt_id` on admin-API writes. |
+    | `content` | `string` | Prompt text, supports Jinja2 `{{ variables }}`. Immutable once created. |
+    | `tags` | `list[string]` | Free-form labels. `latest` is server-managed. |
   </Tab>
 </Tabs>
 
-## Manager API
+## Admin REST API
 
-The Manager provides full CRUD and assignment endpoints at `/api/v1/prompts/`.
+The standalone exposes the same operations at `/admin/api/v1/prompts/`. All routes require an authenticated admin session (the cookie set by `/admin/api/v1/auth/login`).
 
-### Create a prompt
+### List versions
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/prompts/ \
+curl http://localhost:8000/admin/api/v1/prompts \
+  -b "idun_session=<session_cookie>"
+```
+
+Returns every prompt version ordered by `prompt_id` then `version DESC`.
+
+### Create a new version
+
+```bash
+curl -X POST http://localhost:8000/admin/api/v1/prompts \
   -H "Content-Type: application/json" \
-  -b "sid=<session_cookie>" \
+  -b "idun_session=<session_cookie>" \
   -d '{
     "prompt_id": "system-prompt",
     "content": "You are a helpful assistant for {{ domain }}.",
@@ -70,93 +89,47 @@ curl -X POST http://localhost:8000/api/v1/prompts/ \
   }'
 ```
 
-The first version is automatically `v1`. Subsequent POST requests with the same `prompt_id` auto-increment the version and move the `latest` tag.
-
-### List and filter prompts
-
-```bash
-# List all prompts
-curl http://localhost:8000/api/v1/prompts/ -b "sid=<session_cookie>"
-
-# Filter by prompt_id
-curl "http://localhost:8000/api/v1/prompts/?prompt_id=system-prompt" \
-  -b "sid=<session_cookie>"
-
-# Filter by tag
-curl "http://localhost:8000/api/v1/prompts/?tag=latest" \
-  -b "sid=<session_cookie>"
-```
+The first write for a given `prompt_id` is version 1. Subsequent POSTs with the same `prompt_id` allocate the next version and move the `latest` tag onto the new row. The write triggers the reload pipeline; the response includes the new row plus the reload outcome.
 
 ### Update tags
 
-Content is immutable. Only tags can be updated:
+Content is immutable. Only tags can be patched:
 
 ```bash
-curl -X PATCH http://localhost:8000/api/v1/prompts/{id} \
+curl -X PATCH http://localhost:8000/admin/api/v1/prompts/{prompt_row_id} \
   -H "Content-Type: application/json" \
-  -b "sid=<session_cookie>" \
+  -b "idun_session=<session_cookie>" \
   -d '{"tags": ["production", "reviewed"]}'
 ```
 
 <Note>
-  The `latest` tag is managed server-side. Even if you remove it in a PATCH request, it is re-added if this is the highest version. You cannot assign `latest` to an older version manually.
+  The `latest` tag is managed server-side. Removing it from a PATCH body is a no-op if the row is still the highest version; you cannot assign `latest` to an older version manually.
 </Note>
-
-### Assign prompts to agents
-
-```bash
-# Assign a prompt version to an agent
-curl -X POST http://localhost:8000/api/v1/prompts/{prompt_uuid}/assign/{agent_uuid} \
-  -b "sid=<session_cookie>"
-
-# Unassign
-curl -X DELETE http://localhost:8000/api/v1/prompts/{prompt_uuid}/assign/{agent_uuid} \
-  -b "sid=<session_cookie>"
-
-# List prompts assigned to an agent
-curl http://localhost:8000/api/v1/prompts/agent/{agent_uuid} \
-  -b "sid=<session_cookie>"
-```
-
-Assigned prompts are automatically injected into the agent's `engine_config.prompts` list when the engine fetches its config.
 
 ### Delete a version
 
 ```bash
-curl -X DELETE http://localhost:8000/api/v1/prompts/{id} \
-  -b "sid=<session_cookie>"
+curl -X DELETE http://localhost:8000/admin/api/v1/prompts/{prompt_row_id} \
+  -b "idun_session=<session_cookie>"
 ```
 
-If the deleted version had the `latest` tag, it is automatically promoted to the next-highest remaining version.
+If the deleted row carried `latest`, the tag is automatically promoted onto the next-highest remaining version of the same `prompt_id`.
 
 ## Using prompts in agent code
-
-### Load prompts
-
-The engine provides helpers to load prompts from YAML or the Manager API:
 
 ```python
 from idun_agent_engine.prompts import get_prompt
 
-# Loads from YAML config, IDUN_CONFIG_PATH env, or Manager API
-prompt = get_prompt("system-prompt")
-```
-
-Resolution priority:
-
-1. Explicit `config_path` argument
-2. `IDUN_CONFIG_PATH` environment variable
-3. Manager API (requires `IDUN_AGENT_API_KEY` + `IDUN_MANAGER_HOST`)
-
-### Render with Jinja2
-
-Use `format()` to render template variables:
-
-```python
 prompt = get_prompt("system-prompt")
 rendered = prompt.format(domain="healthcare")
 # "You are a helpful assistant specializing in healthcare."
 ```
+
+Resolution order:
+
+1. Explicit `config_path` argument.
+2. The standalone's in-process snapshot (set by the reload pipeline; covers the admin-UI / REST path).
+3. `IDUN_CONFIG_PATH` YAML file (engine-only mode).
 
 <Warning>
   `format()` uses Jinja2 strict mode. Missing variables raise a `ValueError` with a message including the prompt ID and version.
@@ -179,28 +152,28 @@ result = lc_prompt.format(context="AI is...", query="What is AI?")
 
 ## Best practices
 
-- Use descriptive prompt IDs like `system-prompt`, `rag-query`, `summarization` (not `prompt-1`)
-- Keep prompts atomic: one prompt per concern (system instructions, query template, output format)
-- Create new versions for meaningful changes, not typo fixes
-- Use tags like `production`, `staging`, `experimental` to track lifecycle
-- Pin specific versions to production agents rather than relying on `latest`
+- Use descriptive prompt IDs like `system-prompt`, `rag-query`, `summarization` (not `prompt-1`).
+- Keep prompts atomic: one prompt per concern (system instructions, query template, output format).
+- Create new versions for meaningful changes, not typo fixes.
+- Use tags like `production`, `staging`, `experimental` to track lifecycle.
+- Pin specific versions in your agent code rather than always resolving against `latest`.
 
 ## Troubleshooting
 
 <AccordionGroup>
-  <Accordion title="Prompt not showing up in agent config">
-    1. Verify the prompt is assigned to the agent (check the Prompts tab in agent detail)
-    2. Confirm both the prompt and agent are in the same workspace
-    3. Check that the agent's API key is valid (`GET /agents/config` requires Bearer auth)
+  <Accordion title="Prompt not found at runtime">
+    1. Confirm the prompt exists at `/admin/prompts/` (or in the YAML you bootstrapped from).
+    2. If you just created it via REST, the reload pipeline must complete before `get_prompt()` sees it; check the response's `reload.status` field.
+    3. In engine-only mode, verify `IDUN_CONFIG_PATH` points at a YAML containing the prompt.
   </Accordion>
 
   <Accordion title="Variables not rendering">
-    1. Use double braces: `{{ variable }}`, not `{ variable }`
-    2. Pass all required variables to `format()`
-    3. The error message includes the prompt ID and version to help identify the issue
+    1. Use double braces: `{{ variable }}`, not `{ variable }`.
+    2. Pass all required variables to `format()`.
+    3. The error message includes the prompt ID and version to help identify the issue.
   </Accordion>
 
   <Accordion title="Version numbers not incrementing">
-    Version auto-increment is scoped to `(workspace_id, prompt_id)`. If you create prompts in a different workspace, versioning starts from 1.
+    Auto-increment is scoped per `prompt_id`. Creating a version with a different `prompt_id` starts at 1.
   </Accordion>
 </AccordionGroup>

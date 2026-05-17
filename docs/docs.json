@@ -47,9 +47,6 @@
   "metadata": {
     "timestamp": true
   },
-  "api": {
-    "openapi": ["/api-reference/openapi.json"]
-  },
   "navigation": {
     "tabs": [
       {
@@ -97,14 +94,19 @@
             "pages": ["observability/overview", "observability/traces", "observability/langfuse", "observability/arize-phoenix", "observability/langsmith", "observability/gcp-trace", "observability/gcp-logging", "observability/custom-handler", "observability/telemetry-events"]
           },
           {
-            "group": "Tool governance",
+            "group": "MCP Servers",
             "icon": "screwdriver-wrench",
-            "pages": ["tool-governance/overview", "tool-governance/docker-toolkit"]
+            "pages": ["mcp-servers/overview", "mcp-servers/docker-toolkit"]
+          },
+          {
+            "group": "Prompts",
+            "icon": "file-lines",
+            "pages": ["prompts"]
           },
           {
             "group": "Authentication",
             "icon": "lock",
-            "pages": ["auth/overview"]
+            "pages": ["auth/overview", "auth/sso"]
           },
           {
             "group": "Integrations",
@@ -112,26 +114,28 @@
               "integrations/discord",
               "integrations/google-chat",
               "integrations/slack",
+              "integrations/teams",
               "integrations/whatsapp"
             ]
           },
           {
             "group": "Deployment",
             "icon": "server",
-            "pages": ["deployment/overview", "deployment/hardening", "deployment/gcp"]
+            "pages": ["deployment/overview", "deployment/hardening"]
           },
           {
             "group": "Guides",
             "pages": [
               "guides/connect-your-agent",
               "guides/langgraph-production-deployment",
+              "guides/idun-assistant-copilot",
               "guides/programmatic-chat"
             ]
           },
           {
             "group": "Advanced",
             "icon": "gear",
-            "pages": ["configuration", "prompts", "cli/overview", "troubleshooting", "faq"]
+            "pages": ["configuration", "cli/overview", "troubleshooting", "faq"]
           }
         ]
       },
@@ -143,21 +147,6 @@
             "pages": [
               "guides/overview"
             ]
-          }
-        ]
-      },
-      {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoints",
-            "openapi": "/api-reference/openapi.json"
           }
         ]
       },
@@ -239,10 +228,15 @@
     { "source": "/memory/index", "destination": "/memory/overview" },
     { "source": "/memory/memory-langgraph", "destination": "/memory/langgraph" },
     { "source": "/memory/memory-adk", "destination": "/memory/adk" },
-    { "source": "/mcp/overview", "destination": "/tool-governance/overview" },
-    { "source": "/mcp/docker-mcp", "destination": "/tool-governance/docker-toolkit" },
-    { "source": "/sso-rbac/overview", "destination": "/auth/overview" },
-    { "source": "/deployment/gcp-self-hosted", "destination": "/deployment/gcp" },
+    { "source": "/tool-governance/overview", "destination": "/mcp-servers/overview" },
+    { "source": "/tool-governance/docker-toolkit", "destination": "/mcp-servers/docker-toolkit" },
+    { "source": "/mcp/overview", "destination": "/mcp-servers/overview" },
+    { "source": "/mcp/docker-toolkit", "destination": "/mcp-servers/docker-toolkit" },
+    { "source": "/mcp/docker-mcp", "destination": "/mcp-servers/docker-toolkit" },
+    { "source": "/sso-rbac/overview", "destination": "/auth/sso" },
+    { "source": "/deployment/gcp", "destination": "/standalone/cloud-run" },
+    { "source": "/deployment/gcp-self-hosted", "destination": "/standalone/cloud-run" },
+    { "source": "/api-reference/introduction", "destination": "/standalone/cli" },
     { "source": "/prompts/overview", "destination": "/prompts" },
     { "source": "/more/faq", "destination": "/faq" },
     { "source": "/concepts/overview", "destination": "/architecture" }

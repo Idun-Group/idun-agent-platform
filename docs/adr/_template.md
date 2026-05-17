@@ -3,7 +3,7 @@
 - **Status:** Proposed | Accepted | Superseded by [NNNN](NNNN-other.md)
 - **Date:** YYYY-MM-DD
 - **Authors:** `<names>`
-- **Affected packages:** schema | engine | standalone | manager | UI | infra
+- **Affected packages:** schema | engine | standalone | UI | infra
 
 ## Context
 

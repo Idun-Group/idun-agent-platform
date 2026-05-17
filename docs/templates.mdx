@@ -48,27 +48,12 @@ Each template is a self-contained folder with its own config, dependencies, and 
     # Edit .env with your API keys
     ```
   </Step>
-  <Step title="Run standalone">
+  <Step title="Run it">
     ```bash
-    idun web --port 8010
+    idun init
     ```
 
-    This runs the agent locally without the Manager. Good for testing your agent logic before connecting to the platform.
-  </Step>
-  <Step title="Connect to the platform">
-    Once your agent works locally, connect it to the Manager for centralized management:
-
-    ```bash
-    export IDUN_MANAGER_HOST=http://localhost:8000
-    export IDUN_AGENT_API_KEY=<your-api-key>
-    idun agent serve --source manager
-    ```
-
-    The agent fetches its config from the platform. Guardrails, observability, memory, and MCP tools configured in the Manager UI are applied automatically.
-
-    <Info>
-      Get your API key from the **API Integration** tab on the agent detail page in the [Manager UI](/manager/tutorial).
-    </Info>
+    Runs migrations, seeds the DB from the template's `config.yaml`, opens the browser at `http://localhost:8000/`, and serves the standalone app. Subsequent boots just need `idun serve`.
   </Step>
 </Steps>
 
@@ -83,4 +68,4 @@ Each template is a self-contained folder with its own config, dependencies, and 
 
 ## Templates vs. the quickstart
 
-The [quickstart](/quickstart) walks you through the minimal steps to run an agent (a few lines of code). Templates give you more structure: proper project layout, config files, environment management, and patterns you'll need as your agent grows. Both paths end at the same place: an agent connected to the platform.
+The [quickstart](/quickstart) walks you through the minimal steps to run an agent (a few lines of code). Templates give you more structure: proper project layout, config files, environment management, and patterns you'll need as your agent grows. Both paths end at the same place: an agent running under the standalone with chat UI, admin, and traces.

@@ -1,108 +1,59 @@
 ---
 title: "Glossary"
-description: "Definitions of Idun's products: Engine, Standalone, Manager, and Web UI — and which install path to choose."
-keywords: ["glossary", "engine", "standalone", "manager", "web ui", "install path"]
+description: "Definitions of the Idun packages and where each one fits."
+keywords: ["glossary", "engine", "standalone", "install path"]
 ---
 
-The word "Idun" covers four distinct products. They share schemas and observability conventions, but each has its own scope, install path, and intended audience. Pick the one that matches what you ship.
+Idun ships as a small set of packages with a clear relationship. This page defines each one and explains which install path you actually want to follow.
 
-## Products
+## Packages
 
-### Engine
+### Idun Agent Engine
 
-Package: `idun-agent-engine`. CLI entry point: `idun`.
+Package: `idun-agent-engine`. Console script: `idun`.
 
-A Python SDK and FastAPI runtime that wraps a LangGraph or Google ADK agent into a production endpoint. You point it at a YAML config and a Python module, and it serves your agent over the AG-UI streaming protocol with optional guardrails, observability providers, MCP tool registries, and prompt loading.
+The Python SDK and FastAPI runtime that wraps a LangGraph or Google ADK agent into a production endpoint. You point it at a YAML config and a Python module, and it serves your agent over the AG-UI streaming protocol with optional guardrails, observability providers, MCP tool registries, and prompt loading.
 
-Constraints:
+The wheel bundles the standalone admin/chat/traces app and the `idun-agent-schema` runtime, so a single `pip install idun-agent-engine` is everything you need on a fresh machine. Engine-only mode (no DB, no UI, no admin REST) is available through `idun agent serve --source file --path config.yaml` if you want a thin runtime layer for your own platform.
 
-- No database, no UI, no admin surface. The engine is a single long-running process.
-- One agent per process.
-- Configuration comes from a YAML file or the Manager API. The engine itself does not persist config changes.
+### Idun Agent Standalone
 
-Use this when you have your own deployment story (Kubernetes, your own admin stack, your own observability) and you want the engine to be a thin runtime layer.
+Source: `libs/idun_agent_standalone` inside the engine wheel.
 
-### Standalone
-
-Package: `idun-agent-standalone`. CLI entry point: `idun-standalone`.
-
-A single-process, single-tenant product that wraps the engine with an embedded chat UI, an admin REST surface, traces capture, and local DB-backed persistence. One binary you can deploy on a laptop, VM, or Cloud Run.
+The single-process, single-tenant product that wraps the engine with an embedded chat UI, an admin REST surface, traces capture, and a local DB. One binary you can deploy on a laptop, VM, or Cloud Run.
 
 What it adds on top of the engine:
 
-- A bundled Next.js UI at `/` (chat), `/admin/` (config editing), and `/traces/` (recent run events).
+- A bundled Next.js UI at `/` (chat), `/admin/` (config editing), and `/admin/traces/` (recent run events).
 - Admin REST endpoints under `/admin/api/v1/*` for editing agent, guardrails, MCP servers, prompts, observability, integrations, and theme.
 - A SQLite-backed database by default (Postgres optional) holding admin state and AG-UI trace events.
-- Password authentication (`none` mode for local laptop use, `password` mode for containers). OIDC is deferred to a later release.
+- Password authentication for the admin panel (`none` for laptops, `password` for containers), and per-agent OIDC SSO on the `/agent/*` runtime routes with email/domain allowlists. See [Authentication](/auth/overview) and [SSO](/auth/sso).
 - A reload orchestrator that rebuilds the engine on every admin write and swaps it atomically.
 
-Use this when you ship one agent end-to-end and want chat, admin, and traces in one process without standing up a control plane.
+Use this when you ship one agent end-to-end and want chat, admin, and traces in one process.
 
-### Manager
+### Idun Agent Schema
 
-Package: `idun-agent-manager` (service, not on PyPI).
+Package: `idun-agent-schema`.
 
-A multi-tenant control plane API for managing fleets of agents, workspaces, memberships, and shared resources (guardrails, MCP servers, observability configs, memory configs, integrations, prompts, SSO). Stores everything in PostgreSQL and exposes a REST API at `/api/v1/*`.
+The Pydantic models that define the config structure consumed by the engine and standalone. Schema changes start here and propagate. Installed automatically as a transitive dependency of `idun-agent-engine`; you rarely import it directly.
 
-What it ships:
+## Install path
 
-- Workspace-scoped CRUD for agents and resources, plus M:N junctions (an agent can attach multiple guardrails, MCP servers, observabilities, integrations).
-- Per-agent materialized `engine_config` JSONB so the engine can fetch its full config in one call.
-- Session cookie auth with two modes: email/password (bcrypt) or Google OIDC.
-- Append-only versioned prompts with agent assignment.
-- Cascade recompute of materialized configs when a shared resource changes.
-
-Pairs with the Web UI. The engine talks to the Manager when started with `--source manager`.
-
-### Web UI
-
-Package: `idun-agent-web` (service, not on PyPI).
-
-A React 19 admin dashboard for the Manager. Provides agent CRUD, the agent detail tabs (overview, config, prompts, logs), resource pages (observability, memory, MCP, guardrails, SSO, integrations), workspace and user management, and a settings panel.
-
-Talks only to the Manager API. Has no runtime relationship with the engine or standalone.
-
-## Install paths
-
-Two ways to get an agent running. Pick one based on what you ship.
-
-### Engine-only
-
-Best when you already have an admin layer, your own observability stack, and your own config delivery pipeline.
+One command on any host with Python 3.12+:
 
 ```bash
 pip install idun-agent-engine
+mkdir my-agent && cd my-agent
+idun init
+```
+
+`idun init` runs DB migrations and opens your browser at `http://localhost:8000/`. The onboarding wizard scaffolds `agent.py`, `config.yaml`, and `.env.example` and seeds the local DB. After that, the DB is the source of truth and admin edits persist across restarts. Visit `/` for the chat UI, `/admin/` to edit config, `/admin/traces/` to inspect AG-UI events.
+
+If you have your own admin stack and only want the runtime layer, skip the standalone surface and use engine-only mode:
+
+```bash
 idun agent serve --source file --path config.yaml
 ```
 
-You write the YAML, you run the process, you handle deployment. No DB, no UI.
-
-### Standalone product
-
-Best when you ship a single agent and want a chat UI, admin panel, and traces in one process.
-
-```bash
-pip install idun-agent-standalone
-idun-standalone init my-agent
-cd my-agent
-cp .env.example .env
-idun-standalone serve
-```
-
-The first boot seeds the local DB from `IDUN_CONFIG_PATH` (the YAML inside the scaffold). After that, the DB is the source of truth and admin edits persist across restarts. Visit `http://127.0.0.1:8001` for the chat UI, `/admin/` to edit config, `/traces/` to inspect AG-UI events.
-
-### Manager + Web UI
-
-A control plane for teams that run more than one agent, or that need workspaces and OIDC. Run the Manager (Postgres-backed FastAPI) and the Web UI together (Docker Compose works). Engines started with `--source manager` fetch their configs from it.
-
-This path is not a single `pip install`. Use the dev `docker-compose.dev.yml` from the repo to spin up both services and Postgres.
-
-## Choosing a path
-
-| You ship... | Use |
-|---|---|
-| One agent, want a chat + admin UI in one process | Standalone |
-| One agent, you have your own admin stack | Engine |
-| Multiple agents, multiple workspaces, OIDC | Manager + Web UI (engines fetch from Manager) |
-
-When in doubt, start with the standalone product. You can move to the Manager + Web UI path later by exporting your config (`idun-standalone export`) and importing it into the Manager.
+No DB, no UI, no admin REST. You bring your own deployment story.

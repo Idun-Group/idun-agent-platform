@@ -25,7 +25,7 @@ postgresql+asyncpg://idun:changeme@/idun?host=/cloudsql/PROJECT:REGION:idun-post
 ## 2. Store secrets in Secret Manager
 
 ```bash
-echo -n "$(idun-standalone hash-password)" | gcloud secrets create idun-admin-hash --data-file=-
+echo -n "$(idun hash-password)" | gcloud secrets create idun-admin-hash --data-file=-
 openssl rand -hex 32 | gcloud secrets create idun-session-secret --data-file=-
 echo -n "postgresql+asyncpg://..." | gcloud secrets create idun-db-url --data-file=-
 ```
