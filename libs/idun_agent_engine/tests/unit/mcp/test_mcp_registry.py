@@ -1,11 +1,42 @@
 import copy
+import dataclasses
 import sys
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from idun_agent_schema.engine.mcp_server import MCPServer
+from langchain_core.tools import StructuredTool
+from pydantic import BaseModel
 
-from idun_agent_engine.mcp.registry import MCPClientRegistry, _DeepcopySafeStderr
+from idun_agent_engine.mcp.registry import (
+    MCPClientRegistry,
+    _DeepcopySafeStderr,
+    _serialization_safe_shim,
+)
+
+
+class _FakeArgs(BaseModel):
+    query: str = ""
+
+
+def _make_fake_mcp_tool(name: str = "fake_tool", result: Any = "ok") -> Any:
+    """Build a stand-in for a langchain-mcp-adapters StructuredTool.
+
+    Has the three attributes ``_serialization_safe_shim`` reads
+    (``name``, ``description``, ``args_schema``) plus an ``ainvoke``
+    coroutine the shim forwards to.
+    """
+
+    async def _ainvoke(kwargs: dict[str, Any]) -> Any:
+        return result
+
+    tool = MagicMock()
+    tool.name = name
+    tool.description = f"description of {name}"
+    tool.args_schema = _FakeArgs
+    tool.ainvoke = _ainvoke
+    return tool
 
 
 @pytest.mark.unit
@@ -188,11 +219,11 @@ class TestMCPRegistryGetTools:
         ]
         registry = MCPClientRegistry(configs=configs)
 
-        mock_tools = [{"name": "tool1"}, {"name": "tool2"}]
+        mock_tools = [_make_fake_mcp_tool("tool1"), _make_fake_mcp_tool("tool2")]
         registry._client.get_tools = AsyncMock(return_value=mock_tools)
 
         tools = await registry.get_tools()
-        assert tools == mock_tools
+        assert [t.name for t in tools] == ["tool1", "tool2"]
         registry._client.get_tools.assert_called_once_with(server_name="test-server")
 
     @pytest.mark.asyncio
@@ -207,11 +238,11 @@ class TestMCPRegistryGetTools:
         ]
         registry = MCPClientRegistry(configs=configs)
 
-        mock_tools = [{"name": "tool1"}]
+        mock_tools = [_make_fake_mcp_tool("tool1")]
         registry._client.get_tools = AsyncMock(return_value=mock_tools)
 
         tools = await registry.get_tools(name="test-server")
-        assert tools == mock_tools
+        assert [t.name for t in tools] == ["tool1"]
         registry._client.get_tools.assert_called_once_with(server_name="test-server")
 
     @pytest.mark.asyncio
@@ -226,11 +257,11 @@ class TestMCPRegistryGetTools:
         ]
         registry = MCPClientRegistry(configs=configs)
 
-        mock_tools = [{"name": "tool1"}]
+        mock_tools = [_make_fake_mcp_tool("tool1")]
         registry._client.get_tools = AsyncMock(return_value=mock_tools)
 
         tools = await registry.get_langchain_tools(name="test-server")
-        assert tools == mock_tools
+        assert [t.name for t in tools] == ["tool1"]
         registry._client.get_tools.assert_called_once_with(server_name="test-server")
 
 
@@ -354,9 +385,13 @@ class TestMCPRegistryGetADKToolsetsTransports:
         mock_toolset_class = MagicMock()
         mock_sse_params = MagicMock()
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset_class), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset_class),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch(
+                "idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params
+            ),
+        ):
             toolsets = registry.get_adk_toolsets()
 
             mock_sse_params.assert_called_once()
@@ -367,15 +402,21 @@ class TestMCPRegistryGetADKToolsetsTransports:
 
     def test_sse_config_omits_none_optional_fields(self):
         configs = [
-            MCPServer(name="sse-minimal", transport="sse", url="https://mcp.example.com/sse")
+            MCPServer(
+                name="sse-minimal", transport="sse", url="https://mcp.example.com/sse"
+            )
         ]
         registry = MCPClientRegistry(configs=configs)
 
         mock_sse_params = MagicMock()
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch(
+                "idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params
+            ),
+        ):
             registry.get_adk_toolsets()
 
             kwargs = mock_sse_params.call_args[1]
@@ -395,9 +436,13 @@ class TestMCPRegistryGetADKToolsetsTransports:
 
         mock_sse_params = MagicMock()
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch(
+                "idun_agent_engine.mcp.registry.SseConnectionParams", mock_sse_params
+            ),
+        ):
             registry.get_adk_toolsets()
 
             kwargs = mock_sse_params.call_args[1]
@@ -420,9 +465,14 @@ class TestMCPRegistryGetADKToolsetsTransports:
         mock_toolset_class = MagicMock()
         mock_http_params = MagicMock()
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset_class), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StreamableHTTPConnectionParams", mock_http_params):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset_class),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch(
+                "idun_agent_engine.mcp.registry.StreamableHTTPConnectionParams",
+                mock_http_params,
+            ),
+        ):
             toolsets = registry.get_adk_toolsets()
 
             mock_http_params.assert_called_once()
@@ -434,12 +484,16 @@ class TestMCPRegistryGetADKToolsetsTransports:
 
     def test_websocket_config_skipped_with_warning(self, caplog):
         configs = [
-            MCPServer(name="ws-server", transport="websocket", url="wss://mcp.example.com/ws")
+            MCPServer(
+                name="ws-server", transport="websocket", url="wss://mcp.example.com/ws"
+            )
         ]
         registry = MCPClientRegistry(configs=configs)
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+        ):
             toolsets = registry.get_adk_toolsets()
 
             assert len(toolsets) == 0
@@ -448,45 +502,64 @@ class TestMCPRegistryGetADKToolsetsTransports:
     def test_mixed_transports_creates_correct_toolsets(self):
         configs = [
             MCPServer(name="stdio-srv", transport="stdio", command="echo", args=["hi"]),
-            MCPServer(name="sse-srv", transport="sse", url="https://mcp.example.com/sse"),
-            MCPServer(name="http-srv", transport="streamable_http", url="https://mcp.example.com/mcp"),
+            MCPServer(
+                name="sse-srv", transport="sse", url="https://mcp.example.com/sse"
+            ),
+            MCPServer(
+                name="http-srv",
+                transport="streamable_http",
+                url="https://mcp.example.com/mcp",
+            ),
         ]
         registry = MCPClientRegistry(configs=configs)
 
         mock_toolset = MagicMock()
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StdioConnectionParams", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StreamableHTTPConnectionParams", MagicMock()):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.StdioConnectionParams", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.SseConnectionParams", MagicMock()),
+            patch(
+                "idun_agent_engine.mcp.registry.StreamableHTTPConnectionParams",
+                MagicMock(),
+            ),
+        ):
             toolsets = registry.get_adk_toolsets()
             assert len(toolsets) == 3
 
     def test_sse_skipped_when_import_unavailable(self, caplog):
         configs = [
-            MCPServer(name="sse-srv", transport="sse", url="https://mcp.example.com/sse")
+            MCPServer(
+                name="sse-srv", transport="sse", url="https://mcp.example.com/sse"
+            )
         ]
         registry = MCPClientRegistry(configs=configs)
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", None):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.SseConnectionParams", None),
+        ):
             toolsets = registry.get_adk_toolsets()
             assert len(toolsets) == 0
             assert "SseConnectionParams not available" in caplog.text
 
     def test_toolset_creation_failure_skips_server(self, caplog):
         configs = [
-            MCPServer(name="bad-srv", transport="sse", url="https://mcp.example.com/sse")
+            MCPServer(
+                name="bad-srv", transport="sse", url="https://mcp.example.com/sse"
+            )
         ]
         registry = MCPClientRegistry(configs=configs)
 
         mock_toolset = MagicMock(side_effect=RuntimeError("boom"))
 
-        with patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset), \
-             patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()), \
-             patch("idun_agent_engine.mcp.registry.SseConnectionParams", MagicMock()):
+        with (
+            patch("idun_agent_engine.mcp.registry.McpToolset", mock_toolset),
+            patch("idun_agent_engine.mcp.registry.StdioServerParameters", MagicMock()),
+            patch("idun_agent_engine.mcp.registry.SseConnectionParams", MagicMock()),
+        ):
             toolsets = registry.get_adk_toolsets()
             assert len(toolsets) == 0
             assert "Failed to create ADK toolset" in caplog.text
@@ -534,6 +607,142 @@ class TestDeepcopySafeStderr:
         copied = copy.deepcopy(toolset)
         assert copied is not None
         assert hasattr(copied, "_errlog")
+
+
+@pytest.mark.unit
+class TestSerializationSafeShim:
+    """The MCP-tool wrapper that breaks AG-UI's asdict-recurse failure mode.
+
+    Without the shim, native langchain-mcp-adapters tools carry a
+    runtime ref via their ``MCPToolCallRequest`` dataclass; AG-UI's
+    ``make_json_safe`` then ``dataclasses.asdict()``s emitted event
+    payloads and chokes on ``_GatheringFuture``. The shim exposes
+    only ``**kwargs`` (no ``runtime`` parameter) so LangGraph's
+    ToolNode never injects the runtime through the wrapper's frame.
+    """
+
+    def test_shim_preserves_name_and_description(self):
+        underlying = _make_fake_mcp_tool("ban_words", "blocked")
+        wrapped = _serialization_safe_shim(underlying)
+        assert isinstance(wrapped, StructuredTool)
+        assert wrapped.name == "ban_words"
+        assert wrapped.description == "description of ban_words"
+        assert wrapped.args_schema is _FakeArgs
+
+    def test_shim_falls_back_to_empty_description(self):
+        underlying = _make_fake_mcp_tool("nameless")
+        underlying.description = None
+        wrapped = _serialization_safe_shim(underlying)
+        assert wrapped.description == ""
+
+    def test_shim_coroutine_does_not_declare_runtime_kwarg(self):
+        """The whole point: LangGraph injects ``runtime`` only into
+        coroutines that declare it. A wrapper without it never sees
+        the runtime ref, which is what kept it out of asdict's deep-copy."""
+        import inspect
+
+        underlying = _make_fake_mcp_tool("any")
+        wrapped = _serialization_safe_shim(underlying)
+        sig = inspect.signature(wrapped.coroutine)
+        assert "runtime" not in sig.parameters
+
+    @pytest.mark.asyncio
+    async def test_shim_forwards_str_results_unchanged(self):
+        underlying = _make_fake_mcp_tool("echo", "hello world")
+        wrapped = _serialization_safe_shim(underlying)
+        result = await wrapped.coroutine(query="anything")
+        assert result == "hello world"
+
+    @pytest.mark.asyncio
+    async def test_shim_flattens_text_content_blocks(self):
+        underlying = _make_fake_mcp_tool(
+            "blocks",
+            [
+                {"type": "text", "text": "first"},
+                {"type": "text", "text": "second"},
+            ],
+        )
+        wrapped = _serialization_safe_shim(underlying)
+        result = await wrapped.coroutine(query="x")
+        assert result == "first\nsecond"
+
+    @pytest.mark.asyncio
+    async def test_shim_str_coerces_other_returns(self):
+        underlying = _make_fake_mcp_tool("num", 42)
+        wrapped = _serialization_safe_shim(underlying)
+        result = await wrapped.coroutine(query="x")
+        assert result == "42"
+
+    def test_shim_does_not_capture_runtime_in_closure(self):
+        """The closure carries only the underlying tool reference.
+
+        Inspecting ``__closure__`` on the shim's coroutine should show
+        a single cell holding the underlying tool — no LangGraph
+        Runtime, no _GatheringFuture, nothing AG-UI's recursive
+        asdict would choke on.
+        """
+        underlying = _make_fake_mcp_tool("plain")
+        wrapped = _serialization_safe_shim(underlying)
+        cells = wrapped.coroutine.__closure__
+        assert cells is not None
+        captured = [c.cell_contents for c in cells]
+        # Exactly one captured object — the underlying mcp_tool.
+        assert len(captured) == 1
+        assert captured[0] is underlying
+
+    def test_shim_emitted_payload_survives_dataclass_asdict(self):
+        """Reproduce the AG-UI failure mode against our wrapper.
+
+        AG-UI's make_json_safe drops the wrapped tool's name into a
+        small dataclass it then ``asdict()``s recursively. With native
+        MCP tools the recursion eventually meets a Runtime ref and
+        crashes; with our shim it terminates on plain str/dict fields.
+        """
+
+        @dataclasses.dataclass
+        class _FakeAGUIFrame:
+            tool_name: str
+            tool_description: str
+
+        underlying = _make_fake_mcp_tool("safe_tool")
+        wrapped = _serialization_safe_shim(underlying)
+        frame = _FakeAGUIFrame(
+            tool_name=wrapped.name,
+            tool_description=wrapped.description,
+        )
+        # Should not raise.
+        as_dict = dataclasses.asdict(frame)
+        assert as_dict == {
+            "tool_name": "safe_tool",
+            "tool_description": "description of safe_tool",
+        }
+
+    @pytest.mark.asyncio
+    async def test_get_tools_returns_shimmed_tools_not_raw(self):
+        """Top-level guarantee: callers always get the shim, never raw."""
+        configs = [
+            MCPServer(
+                name="test-server",
+                transport="stdio",
+                command="test-cmd",
+                args=["--test"],
+            )
+        ]
+        registry = MCPClientRegistry(configs=configs)
+        raw = _make_fake_mcp_tool("raw")
+        registry._client.get_tools = AsyncMock(return_value=[raw])
+
+        tools = await registry.get_tools()
+        assert len(tools) == 1
+        # Wrapper is a fresh StructuredTool, not the raw mock.
+        assert tools[0] is not raw
+        assert isinstance(tools[0], StructuredTool)
+        assert tools[0].name == "raw"
+        # And the wrapper coroutine carries no `runtime` kwarg.
+        import inspect
+
+        sig = inspect.signature(tools[0].coroutine)
+        assert "runtime" not in sig.parameters
 
 
 @pytest.fixture
@@ -614,14 +823,17 @@ async def test_mcp_registry_invokes_tool_from_live_server(aws_docs_mcp_config):
 
         result = await search_tool.ainvoke({"search_phrase": "s3"})
 
+        # The serialization-safe shim flattens the underlying tool's
+        # list-of-content-blocks (or str) return into a plain str so
+        # AG-UI's recursive asdict can't reach a runtime ref. The JSON
+        # the live server emits as a single text content block is
+        # preserved verbatim — we just parse it directly here.
         assert result is not None
-        assert isinstance(result, list)
-        assert len(result) > 0
+        assert isinstance(result, str)
 
-        text_content = result[0]["text"]
         import json
 
-        response = json.loads(text_content)
+        response = json.loads(result)
 
         assert "search_results" in response
         assert len(response["search_results"]) > 0

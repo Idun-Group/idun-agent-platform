@@ -1,18 +1,16 @@
-<p align="center">
+<div align="center">
+
+<img alt="Idun Agent Platform" src="docs/images/readme/banner.png">
+
+<p>
   <strong>English</strong> | <a href="docs/readme/README.fr.md">Français</a> | <a href="docs/readme/README.es.md">Español</a> | <a href="docs/readme/README.zh.md">中文</a> | <a href="docs/readme/README.ar.md">العربية</a>
 </p>
 
-<div align="center">
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/logo/light.svg">
-  <source media="(prefers-color-scheme: light)" srcset="docs/logo/dark.svg">
-  <img alt="Idun Agent Platform" src="docs/logo/dark.svg" width="200">
-</picture>
-
 <br/>
 
-### Everything you need to deploy AI agents to production
+### Productionize LangGraph & ADK agents.
+
+Self-hosted. Open source. No vendor lock-in.
 
 <br/>
 
@@ -25,7 +23,7 @@
 
 <br/>
 
-[Cloud](https://cloud.idunplatform.com) · [Quickstart](https://docs.idunplatform.com/quickstart) · [Docs](https://docs.idunplatform.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Book a demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
+[Cloud](https://cloud.idunplatform.com) · [Quickstart](https://docs.idun-group.com/quickstart) · [Docs](https://docs.idun-group.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Book a demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
 
 ⭐ If you find this useful, please star the repo. It helps others discover the project.
 
@@ -33,36 +31,39 @@
 
 <br/>
 
-<p align="center">Idun Agent Platform is an open-source, self-hosted control plane for <b>LangGraph</b> and <b>Google ADK</b> agents. Enroll your agent and get a production-grade service with built-in observability, guardrails, memory persistence, MCP tool governance, prompt management, and SSO with workspace isolation.</p>
-
-> **Why Idun?** Teams building agents face a bad tradeoff: build the platform yourself (slow, expensive) or adopt a SaaS (lock-in, no sovereignty). Idun is the third path: you keep your agent code, your data, and your infrastructure. The platform handles the production layer.
+<p align="center">Idun Agent Platform is an open-source, self-hosted production wrapper for <b>LangGraph</b> and <b>Google ADK</b> agents. <code>pip install idun-agent-engine</code> and your agent runs as a FastAPI process with built-in chat UI, admin panel, traces, observability, guardrails, memory persistence, MCP tool governance, and prompt management.</p>
 
 <p align="center">
-  <img src="docs/images/readme/demo.gif" alt="Idun Agent Platform demo" width="100%"/>
+  <img src="docs/images/readme/demo.webp" alt="Idun Agent Platform demo" width="100%"/>
 </p>
+
+> **Why Idun?** Teams building agents face a tradeoff: build the production wrapper yourself (FastAPI + traces + guardrails + admin UI — slow), or adopt a SaaS like LangGraph Cloud or LangSmith (sovereignty trade-off). Idun is the third path: pip install a self-sufficient FastAPI process that bundles your agent with chat UI, admin, traces, and guardrails — all open source, all on your infrastructure.
 
 ---
 
 ## Quick start
 
-> **Prerequisites**: Docker and Git.
+> **Prerequisites**: Python 3.12+ and pip.
 
 ```bash
-git clone https://github.com/Idun-Group/idun-agent-platform.git && cd idun-agent-platform
-cp .env.example .env
-docker compose -f docker-compose.dev.yml up --build
+pip install idun-agent-engine
+idun init my-agent
+cd my-agent && idun serve
 ```
 
-Open [localhost:3000](http://localhost:3000). Create an account. Deploy your first agent in 3 clicks.
+Open [http://localhost:8000](http://localhost:8000). Chat with your agent, then explore the admin at [/admin](http://localhost:8000/admin) and traces at [/admin/traces](http://localhost:8000/admin/traces).
 
-> [!TIP]
-> **Don't need the full platform?** Run a standalone agent with no Manager and no database:
-> ```bash
-> pip install idun-agent-engine && idun init
-> ```
-> The interactive TUI configures framework, memory, observability, guardrails, and MCP in one pass. See the [CLI docs](https://docs.idunplatform.com/cli/overview).
-
----
+> **What `pip install idun-agent-engine` delivers**
+>
+> A single wheel that bundles three Python packages:
+>
+> - **`idun_agent_engine`** — the engine SDK (FastAPI app factory, MCP registry, observability, guardrails).
+> - **`idun_agent_standalone`** — the `idun` CLI, the admin REST API, and the chat / admin / traces UIs.
+> - **`idun_agent_schema`** — the Pydantic config schemas.
+>
+> The `idun` command on your `$PATH` (`setup`, `serve`, `init`, `hash-password`, `agent serve`) is provided by the bundled standalone — it is not a separately published package. You won't see `idun-agent-standalone` in the engine's declared PyPI dependencies because it ships co-installed inside the wheel, not as a transitive dep.
+>
+> See [docs.idun-group.com/architecture](https://docs.idun-group.com/architecture) for the full layering.
 
 ## What's inside
 
@@ -114,31 +115,17 @@ Conversations persist across restarts. Pick a backend per agent.
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td colspan="2" valign="top" align="center">
 
 ### Prompt management
 
 Versioned templates with Jinja2 variables. Assign prompts to agents from the UI or API.
 
-<img src="docs/images/readme/prompts.png" alt="Prompts" width="100%"/>
-
-</td>
-<td width="50%" valign="top">
-
-### Messaging integrations
-
-WhatsApp · Discord · Slack
-
-Bidirectional: receive messages, invoke agents, send replies. Webhook verification handled.
-
-<img src="docs/images/readme/integrations.png" alt="Integrations" width="100%"/>
+<img src="docs/images/readme/prompts.png" alt="Prompts" width="50%"/>
 
 </td>
 </tr>
 </table>
-
-> [!NOTE]
-> **SSO and multi-tenancy** — OIDC with Google and Okta, or username/password. Role-based workspaces (owner, admin, member, viewer). Every resource is scoped to a workspace.
 
 > [!NOTE]
 > **AG-UI streaming** — Every agent gets a standards-based streaming API, compatible with CopilotKit clients. Built-in chat playground for testing.
@@ -151,42 +138,19 @@ Bidirectional: receive messages, invoke agents, send replies. Webhook verificati
 
 ## Architecture
 
-| | |
-|---|---|
-| **Engine** | Wraps LangGraph/ADK agents into a FastAPI service with AG-UI streaming, checkpointing, guardrails, observability, MCP, and SSO. Config from YAML or Manager API. |
-| **Manager** | Control plane. Agent CRUD, resource management, multi-tenant workspaces. Serves materialized configs to engines. |
-| **Web UI** | React 19 admin dashboard. Agent creation wizard, resource config, built-in chat, user management. |
+Idun ships as one process: **`idun-agent-standalone`**. It bundles the engine SDK, a Next.js chat UI, an admin panel, and a traces viewer — your agent runs inside this process, configured from a YAML file and re-loaded live from the admin REST.
 
 ```mermaid
 flowchart LR
-  subgraph Actors
-    Users["End users / Apps"]
-    Admin["Admin / DevOps"]
-    CICD["CI/CD"]
-  end
-
-  subgraph Platform["Idun Agent Platform"]
+  subgraph Idun["idun-agent-standalone (one process)"]
     direction TB
-    UI["Web UI"]
-    MGR["Manager API"]
-    subgraph Engines["Engines"]
-      ENG1["LangGraph"]
-      ENG2["ADK"]
-    end
-    DB[(PostgreSQL)]
+    UI["Chat UI / Admin / Traces"] --> ENG["Engine SDK"]
+    ENG --> DB[(Postgres / SQLite)]
   end
-
-  subgraph Infra["Your stack"]
-    OBS["Observability"]
-    MEM[(Memory)]
-    LLM["LLMs"]
-    TOOLS["MCP tools"]
-  end
-
-  Admin --> UI --> MGR --> DB
-  Engines -- "config" --> MGR
-  CICD --> Engines
-  Users --> Engines --> Infra
+  Users --> UI
+  Admin --> UI
+  ENG --> Agent["Your LangGraph / ADK agent"]
+  Agent --> LLM["LLMs / MCP / tools"]
 ```
 
 ---
@@ -194,42 +158,37 @@ flowchart LR
 ## Integrations
 
 <p align="center">
-  <img src="old-docs/images/logo/langgraph-color.png" alt="LangGraph" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/agent-development-kit.png" alt="ADK" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/langfuse-color.png" alt="Langfuse" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/mcp.png" alt="MCP" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/Postgresql_elephant.png" alt="PostgreSQL" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/phoenix.svg" alt="Phoenix" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/langsmith-color.png" alt="LangSmith" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/google-cloud.png" alt="Google Cloud" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/Okta-Logo.png" alt="Okta" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/guardrails-ai.png" alt="Guardrails AI" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/langchain-color.png" alt="LangChain" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/A2A.png" alt="A2A" style="height:36px; margin:6px; vertical-align:middle;" />
-  <img src="old-docs/images/logo/ag-ui.png" alt="AG-UI" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/langgraph-color.png" alt="LangGraph" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/agent-development-kit.png" alt="ADK" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/langfuse-color.png" alt="Langfuse" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/mcp.png" alt="MCP" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/Postgresql_elephant.png" alt="PostgreSQL" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/phoenix.svg" alt="Phoenix" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/langsmith-color.png" alt="LangSmith" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/google-cloud.png" alt="Google Cloud" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/guardrails-ai.png" alt="Guardrails AI" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/langchain-color.png" alt="LangChain" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/A2A.png" alt="A2A" style="height:36px; margin:6px; vertical-align:middle;" />
+  <img src="docs/images/logos/ag-ui.png" alt="AG-UI" style="height:36px; margin:6px; vertical-align:middle;" />
 </p>
+
+> [!NOTE]
+> **Framework support** — LangGraph and Google ADK are first-class today, with full adapters in the engine. LangChain is supported via the LangGraph adapter; broader native LangChain compatibility is on the [roadmap](https://docs.idun-group.com/roadmap).
 
 ---
 
 ## Idun vs alternatives
 
-| | **Idun Platform** | **LangGraph Cloud** | **LangSmith** | **DIY (FastAPI + glue)** |
+| | **Idun Engine** | **LangGraph Cloud** | **LangSmith** | **DIY (FastAPI + glue)** |
 |---|:---:|:---:|:---:|:---:|
 | Self-hosted / on-prem | ✅ | ❌ | ❌ | ✅ |
-| Multi-framework (LangGraph + ADK) | ✅ | LangGraph only | ❌ (observability only) | Manual |
-| Guardrails (PII, toxicity, topic) | ✅ 15+ built-in | ❌ | ❌ | Build yourself |
+| Multi-framework (LangGraph + ADK) | ✅ | LangGraph only | ❌ obs only | Manual |
+| Guardrails (15+ built-in) | ✅ | ❌ | ❌ | Build yourself |
 | MCP tool governance | ✅ per-agent | ❌ | ❌ | Build yourself |
-| Multi-tenant workspaces + RBAC | ✅ | ❌ | ✅ | Build yourself |
-| SSO (OIDC, Okta, Google) | ✅ | ❌ | ✅ | Build yourself |
-| Observability (Langfuse, Phoenix, LangSmith, GCP) | ✅ multi-provider | ❌ LangSmith only | ✅ LangSmith only | Manual |
+| Observability (multi-provider) | ✅ Langfuse, Phoenix, LangSmith, GCP | ❌ LangSmith only | ✅ LangSmith only | Manual |
 | Memory / checkpointing | ✅ Postgres, SQLite, in-memory | ✅ | ❌ | Build yourself |
-| Prompt management (versioned, Jinja2) | ✅ | ❌ | ✅ Hub | Build yourself |
-| Messaging (WhatsApp, Discord, Slack) | ✅ | ❌ | ❌ | Build yourself |
 | AG-UI / CopilotKit streaming | ✅ | ✅ | ❌ | Manual |
-| Admin UI | ✅ | ✅ | ✅ | ❌ |
-| Vendor lock-in | **None** | High | High | None |
-| Open source | ✅ GPLv3 | ❌ | ❌ | — |
-| Maintenance burden | Low | Low | Low | **High** |
+| Open source (GPLv3) | ✅ | ❌ | ❌ | — |
 
 > [!NOTE]
 > Idun is not a replacement for LangSmith (observability) or LangGraph Cloud (hosting). It is the layer between your agent code and production that handles governance, security, and operations, regardless of which observability or hosting you choose.
@@ -237,6 +196,30 @@ flowchart LR
 ---
 
 ## Configuration
+
+### Components in this install
+
+After `pip install idun-agent-engine`, your `$PATH` and `site-packages` contain:
+
+| Module | Distributed via | Purpose |
+|---|---|---|
+| `idun_agent_engine` | declared in `requires_dist` | FastAPI app factory, MCP registry, observability, guardrails wiring |
+| `idun_agent_schema` | declared in `requires_dist` | Pydantic config models for `config.yaml` |
+| `idun_agent_standalone` | **co-bundled in the engine wheel** | `idun` CLI, admin REST under `/admin/api/v1/`, chat / admin / traces UIs at `/`, `/admin/`, `/admin/traces/` |
+| `idun` (console script) | `[project.scripts] idun = "idun_agent_standalone.cli:main"` | Subcommands: `setup`, `serve`, `init`, `hash-password`, `agent serve` |
+
+The bundled-install model means **you do not need to `pip install idun-agent-standalone` separately** — it isn't published. To verify your install carries everything:
+
+```bash
+python -c "import idun_agent_engine, idun_agent_standalone, idun_agent_schema; print('all 3 modules importable')"
+idun --help
+```
+
+Both checks are smoke-tested in the release pipeline before any wheel is published.
+
+Heads up: both `pypi.org` and `test.pypi.org` JSON APIs report `entry_points: null` and omit `idun-agent-standalone` from `requires_dist`. This is a Warehouse rendering quirk — the wheel itself still wires the `idun` console script and bundles standalone. The smoke-test commands above are the canonical way to verify a healthy install.
+
+### YAML reference
 
 Every agent is configured through a single YAML file. Here is a complete example with all features enabled:
 
@@ -282,120 +265,21 @@ prompts:
     version: 1
     content: "You are a support agent for {{ company_name }}."
     tags: ["latest"]
-
-sso:
-  enabled: true
-  issuer: "https://accounts.google.com"
-  client_id: "123456789.apps.googleusercontent.com"
-  allowed_domains: ["yourcompany.com"]
-
-integrations:
-  - provider: "WHATSAPP"
-    enabled: true
-    config:
-      access_token: "${WHATSAPP_ACCESS_TOKEN}"
-      phone_number_id: "${WHATSAPP_PHONE_ID}"
-      verify_token: "${WHATSAPP_VERIFY_TOKEN}"
 ```
 
 > [!TIP]
 > Environment variables like `${LANGFUSE_SECRET_KEY}` are resolved at startup. You can use `.env` files or inject them through Docker/Kubernetes.
 
-Serve from a file:
+Serve the engine directly from a YAML file (no admin UI, just the agent endpoints):
 
 ```bash
-pip install idun-agent-engine
 idun agent serve --source file --path config.yaml
 ```
 
-Or fetch config from the Manager:
-
-```bash
-export IDUN_AGENT_API_KEY=your-agent-api-key
-export IDUN_MANAGER_HOST=https://manager.example.com
-idun agent serve --source manager
-```
-
 > [!IMPORTANT]
-> Full config reference: [docs.idunplatform.com/configuration](https://docs.idunplatform.com/configuration)
+> Full config reference: [docs.idun-group.com/configuration](https://docs.idun-group.com/configuration)
 >
 > 9 runnable agent examples: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
-
----
-
-## ❓ FAQ
-
-### What is Idun Agent Platform?
-
-Idun Agent Platform is an open-source, self-hosted control plane for **LangGraph** and **Google ADK** agents. It provides production-grade infrastructure with observability, guardrails, memory persistence, MCP tool governance, prompt management, and SSO with workspace isolation.
-
-### How is Idun different from LangGraph Cloud or other agent platforms?
-
-**Idun vs LangGraph Cloud**: Idun is self-hosted, giving you full control over data and infrastructure. LangGraph Cloud is a managed service.
-
-**Idun vs SaaS platforms**: Idun offers sovereignty — you keep your agent code, data, and infrastructure. No vendor lock-in, no data leaving your environment.
-
-**Idun vs building from scratch**: Idun handles the production layer (observability, guardrails, memory, MCP, SSO) so you focus on agent logic.
-
-### How do I get started?
-
-**Full platform**:
-```bash
-git clone https://github.com/Idun-Group/idun-agent-platform.git && cd idun-agent-platform
-cp .env.example .env
-docker compose -f docker-compose.dev.yml up --build
-```
-
-Open [localhost:3000](http://localhost:3000) to create an account and deploy your first agent.
-
-**Standalone engine**:
-```bash
-pip install idun-agent-engine && idun init
-```
-The interactive TUI configures framework, memory, observability, guardrails, and MCP.
-
-### What LLM providers are supported?
-
-Idun supports any LLM provider compatible with LangGraph or Google ADK. Popular options include OpenAI, Anthropic, Google Gemini, Azure OpenAI, AWS Bedrock, and local models via Ollama.
-
-### What observability options are available?
-
-Idun integrates multiple observability providers: Langfuse, Arize Phoenix, LangSmith, GCP Trace, and GCP Logging. You can connect multiple providers simultaneously through configuration.
-
-### How do guardrails work?
-
-Guardrails use Guardrails AI to apply policies per agent on input, output, or both. Available checks: PII detection, toxic language, ban lists, topic restriction, bias checks, NSFW, and 9 more.
-
-### What is MCP tool governance?
-
-Idun lets you register MCP servers (stdio, SSE, streamable HTTP, WebSocket) and control which tools each agent can access. This provides centralized tool management with per-agent permissions.
-
-### How does memory persistence work?
-
-Idun supports PostgreSQL, SQLite, In-memory, Vertex AI, and ADK Database backends. Conversations persist across restarts, and you can pick a backend per agent.
-
-### What messaging integrations are available?
-
-Idun supports WhatsApp, Discord, and Slack with bidirectional messaging. Receive messages, invoke agents, and send replies with webhook verification handled automatically.
-
-### How do I manage prompts?
-
-Idun provides versioned prompt templates with Jinja2 variables. Assign prompts to agents from the UI or API, enabling centralized prompt management with version control.
-
-### Is there SSO and multi-tenancy?
-
-Yes. Idun supports OIDC with Google and Okta, plus username/password authentication. Role-based workspaces (owner, admin, member, viewer) scope every resource to a workspace.
-
-### What is AG-UI streaming?
-
-Every agent gets a standards-based streaming API compatible with CopilotKit clients. This enables real-time responses with a built-in chat playground for testing.
-
-### Where can I get help?
-
-- 📖 [Documentation](https://docs.idunplatform.com)
-- 💬 [Discord](https://discord.gg/KCZ6nW2jQe)
-- 🌐 [Cloud Platform](https://cloud.idunplatform.com)
-- 📅 [Book a Demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
 
 ---
 
@@ -411,11 +295,11 @@ Every agent gets a standards-based streaming API compatible with CopilotKit clie
 
 ## Commercial support
 
-Maintained by [Idun Group](https://idunplatform.com). We help with platform architecture, deployment, and IdP/compliance integration. [Book a call](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
+Maintained by [Idun Group](https://idun-group.com). We help with platform architecture, deployment, and IdP/compliance integration. [Book a call](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
 
 ## Telemetry
 
-Minimal, anonymous usage metrics via PostHog. No PII. [View source](libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Opt out: `IDUN_TELEMETRY_ENABLED=false`
+Minimal, anonymous usage metrics + masked session replay via PostHog. No message content, no PII beyond email after sign-in (set `IDUN_TELEMETRY_IDENTIFY_USERS=false` to disable). [View source](libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Off: `IDUN_TELEMETRY_ENABLED=false`. Replay-only off: `IDUN_TELEMETRY_SESSION_REPLAY=false`.
 
 ## License
 

@@ -10,6 +10,17 @@ from .capabilities import (  # noqa: F401
     OutputDescriptor,
 )
 from .engine import EngineConfig  # noqa: F401
+from .graph import (  # noqa: F401
+    AgentGraph,
+    AgentGraphEdge,
+    AgentGraphMetadata,
+    AgentGraphNode,
+    AgentKind,
+    AgentNode,
+    EdgeKind,
+    ToolKind,
+    ToolNode,
+)
 from .integrations import (  # noqa: F401
     DiscordIntegrationConfig,
     IntegrationConfig,
@@ -25,4 +36,10 @@ from .observability import ObservabilityConfig  # noqa: F401
 from .observability_v2 import ObservabilityConfig as ObservabilityConfigV2  # noqa: F401
 from .prompt import PromptConfig  # noqa: F401
 from .server import ServerAPIConfig, ServerConfig  # noqa: F401
+from .sessions import (  # noqa: F401
+    HistoryCapabilities,
+    SessionDetail,
+    SessionMessage,
+    SessionSummary,
+)
 from .sso import SSOConfig  # noqa: F401

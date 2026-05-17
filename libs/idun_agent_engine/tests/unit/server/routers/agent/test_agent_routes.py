@@ -1,7 +1,5 @@
 """Tests for agent router endpoints with real agents."""
 
-from pathlib import Path
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -38,41 +36,6 @@ class TestAgentInvokeRoute:
             assert response.status_code == 200
             data = response.json()
             assert data["session_id"] == "test-123"
-            assert "response" in data
-
-    def test_invoke_with_haystack_agent(self):
-        """Invoke endpoint with Haystack mock agent."""
-        mock_pipeline_path = (
-            Path(__file__).parent.parent.parent.parent.parent
-            / "fixtures"
-            / "agents"
-            / "mock_haystack_pipeline.py"
-        )
-
-        config_dict = {
-            "server": {"api": {"port": 8000}},
-            "agent": {
-                "type": "HAYSTACK",
-                "config": {
-                    "name": "Test Haystack Agent",
-                    "component_type": "pipeline",
-                    "component_definition": f"{mock_pipeline_path}:mock_haystack_pipeline",
-                },
-            },
-        }
-
-        config = ConfigBuilder.from_dict(config_dict).build()
-        app = create_app(engine_config=config)
-
-        with TestClient(app) as client:
-            response = client.post(
-                "/agent/invoke",
-                json={"session_id": "haystack-123", "query": "Test query"},
-            )
-
-            assert response.status_code == 200
-            data = response.json()
-            assert data["session_id"] == "haystack-123"
             assert "response" in data
 
 
@@ -139,8 +102,11 @@ class TestAgentConfigRoute:
 class TestAgentConfigRouteErrors:
     """Test /agent/config endpoint error cases."""
 
-    def test_get_config_not_available(self):
-        """Config endpoint returns 404 when engine_config not set."""
+    def test_get_config_returns_503_when_unconfigured(self):
+        """Config endpoint returns 503 ``agent_not_ready`` when engine_config
+        not set. This aligns with the unconfigured-boot contract: routes
+        exist, but a 503 with a structured error code signals "service
+        available, agent not ready" rather than the misleading 404."""
         from fastapi import FastAPI
 
         from idun_agent_engine.server.routers.agent import agent_router
@@ -151,8 +117,10 @@ class TestAgentConfigRouteErrors:
         with TestClient(app) as client:
             response = client.get("/config")
 
-            assert response.status_code == 404
-            assert "Configuration not available" in response.json()["detail"]
+            assert response.status_code == 503
+            detail = response.json()["detail"]
+            assert isinstance(detail, dict)
+            assert detail["error"]["code"] == "agent_not_ready"
 
 
 @pytest.mark.unit

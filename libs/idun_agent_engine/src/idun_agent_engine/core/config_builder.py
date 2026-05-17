@@ -13,7 +13,6 @@ import yaml
 from idun_agent_schema.engine.adk import AdkAgentConfig
 from idun_agent_schema.engine.agent_framework import AgentFramework
 from idun_agent_schema.engine.guardrails_v2 import GuardrailsV2 as Guardrails
-from idun_agent_schema.engine.haystack import HaystackAgentConfig
 from idun_agent_schema.engine.langgraph import (
     LangGraphAgentConfig,
     SqliteCheckpointConfig,
@@ -107,9 +106,7 @@ class ConfigBuilder:
         headers = {"auth": f"Bearer {agent_api_key}"}
         try:
             logger.info(f"Fetching config from {url}/api/v1/agents/config")
-            response = requests.get(
-                url=url + "/api/v1/agents/config", headers=headers
-            )
+            response = requests.get(url=url + "/api/v1/agents/config", headers=headers)
             if response.status_code != 200:
                 raise ValueError(
                     f"Error retrieving config from url. response: {response.text}"
@@ -129,7 +126,9 @@ class ConfigBuilder:
 
             return self
         except Exception as e:
-            raise ValueError(f"Error occurred while getting config from api: {e}") from e
+            raise ValueError(
+                f"Error occurred while getting config from api: {e}"
+            ) from e
 
     def with_langgraph_agent(
         self,
@@ -196,11 +195,6 @@ class ConfigBuilder:
                 config=LangGraphAgentConfig.model_validate(config),
             )
 
-        elif agent_type == AgentFramework.HAYSTACK:
-            self._agent_config = AgentConfig(
-                type=AgentFramework.HAYSTACK,
-                config=HaystackAgentConfig.model_validate(config),
-            )
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
         return self
@@ -398,17 +392,6 @@ class ConfigBuilder:
             )
             agent_instance = LanggraphAgent()
 
-        elif agent_type == AgentFramework.HAYSTACK:
-            from idun_agent_engine.agent.haystack.haystack import HaystackAgent
-
-            try:
-                validated_config = HaystackAgentConfig.model_validate(agent_config_obj)
-
-            except Exception as e:
-                raise ValueError(
-                    f"Cannot validate into a HaystackAgentConfig model. Got {agent_config_obj}"
-                ) from e
-            agent_instance = HaystackAgent()
         elif agent_type == AgentFramework.ADK:
             from idun_agent_engine.agent.adk.adk import AdkAgent
 

@@ -1,54 +1,60 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
-  "name": "Idun Platform",
+  "name": "Idun Engine",
   "colors": {
-    "primary": "#8C52FF",
-    "light": "#0ED4A5",
-    "dark": "#8C52FF"
+    "primary": "#3D2A8E",
+    "light": "#3D2A8E",
+    "dark": "#15131F"
   },
   "css": "/styles.css",
   "favicon": "/favicon.svg",
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg",
-    "href": "https://idunplatform.com"
+    "href": "https://idun-group.com"
   },
   "fonts": {
     "body": {
-      "family": "Figtree",
+      "family": "Inter",
       "weight": 400
     },
     "heading": {
-      "family": "Space Grotesk",
+      "family": "Inter",
       "weight": 600
     }
   },
   "appearance": {
-    "default": "dark"
+    "default": "light",
+    "strict": true
   },
   "background": {
-    "decoration": "grid"
+    "color": {
+      "light": "#F4F1EA",
+      "dark": "#040210"
+    }
   },
   "styling": {
     "eyebrows": "breadcrumbs",
-    "codeblocks": "dark"
+    "codeblocks": {
+      "theme": {
+        "light": "github-light",
+        "dark": "github-dark"
+      }
+    }
   },
   "search": {
-    "prompt": "Search Idun docs..."
+    "prompt": "Search Idun Engine docs..."
   },
   "seo": {
     "metatags": {
-      "og:site_name": "Idun Platform Documentation",
+      "og:site_name": "Idun Engine Documentation",
       "og:locale": "en_US"
     },
     "indexing": "navigable"
   },
   "metadata": {
     "timestamp": true
-  },
-  "api": {
-    "openapi": ["/api-reference/openapi.json"]
   },
   "navigation": {
     "tabs": [
@@ -61,14 +67,25 @@
             "pages": ["index", "quickstart", "templates", "architecture"]
           },
           {
-            "group": "Manager",
-            "icon": "grid-2",
-            "pages": ["manager/overview", "manager/tutorial"]
+            "group": "Concepts",
+            "icon": "compass",
+            "pages": ["glossary", "roadmap"]
+          },
+          {
+            "group": "Standalone",
+            "icon": "box",
+            "pages": [
+              "standalone/overview",
+              "standalone/quickstart",
+              "standalone/cli",
+              "standalone/cloud-run",
+              "standalone/customizing-ui"
+            ]
           },
           {
             "group": "Agent frameworks",
             "icon": "layer-group",
-            "pages": ["frameworks/overview", "frameworks/langgraph", "frameworks/adk"]
+            "pages": ["frameworks/overview", "frameworks/langgraph", "frameworks/adk", "frameworks/custom-adapter"]
           },
           {
             "group": "Guardrails",
@@ -83,17 +100,22 @@
           {
             "group": "Observability",
             "icon": "chart-line",
-            "pages": ["observability/overview", "observability/langfuse", "observability/arize-phoenix", "observability/langsmith", "observability/gcp-trace", "observability/gcp-logging"]
+            "pages": ["observability/overview", "observability/traces", "observability/langfuse", "observability/arize-phoenix", "observability/langsmith", "observability/gcp-trace", "observability/gcp-logging", "observability/custom-handler", "observability/telemetry-events"]
           },
           {
-            "group": "Tool governance",
+            "group": "MCP Servers",
             "icon": "screwdriver-wrench",
-            "pages": ["tool-governance/overview", "tool-governance/docker-toolkit"]
+            "pages": ["mcp-servers/overview", "mcp-servers/docker-toolkit"]
+          },
+          {
+            "group": "Prompts",
+            "icon": "file-lines",
+            "pages": ["prompts"]
           },
           {
             "group": "Authentication",
             "icon": "lock",
-            "pages": ["auth/overview"]
+            "pages": ["auth/overview", "auth/sso"]
           },
           {
             "group": "Integrations",
@@ -101,24 +123,29 @@
               "integrations/discord",
               "integrations/google-chat",
               "integrations/slack",
+              "integrations/teams",
               "integrations/whatsapp"
             ]
           },
           {
             "group": "Deployment",
             "icon": "server",
-            "pages": ["deployment/overview", "deployment/gcp"]
+            "pages": ["deployment/overview", "deployment/hardening"]
           },
           {
             "group": "Guides",
             "pages": [
-              "guides/langgraph-production-deployment"
+              "guides/connect-your-agent",
+              "guides/langgraph-production-deployment",
+              "guides/idun-assistant-copilot",
+              "guides/deepagents-with-idun",
+              "guides/programmatic-chat"
             ]
           },
           {
             "group": "Advanced",
             "icon": "gear",
-            "pages": ["configuration", "prompts", "cli/overview", "faq"]
+            "pages": ["configuration", "cli/overview", "troubleshooting", "faq"]
           }
         ]
       },
@@ -130,21 +157,6 @@
             "pages": [
               "guides/overview"
             ]
-          }
-        ]
-      },
-      {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoints",
-            "openapi": "/api-reference/openapi.json"
           }
         ]
       },
@@ -204,8 +216,8 @@
       {
         "header": "Product",
         "items": [
-          { "label": "Website", "href": "https://idunplatform.com" },
-          { "label": "Cloud", "href": "https://cloud.idunplatform.com" }
+          { "label": "Idun Group", "href": "https://idun-group.com" },
+          { "label": "Engine", "href": "https://idun-group.com/engine" }
         ]
       },
       {
@@ -226,14 +238,18 @@
     { "source": "/memory/index", "destination": "/memory/overview" },
     { "source": "/memory/memory-langgraph", "destination": "/memory/langgraph" },
     { "source": "/memory/memory-adk", "destination": "/memory/adk" },
-    { "source": "/mcp/overview", "destination": "/tool-governance/overview" },
-    { "source": "/mcp/docker-mcp", "destination": "/tool-governance/docker-toolkit" },
-    { "source": "/sso-rbac/overview", "destination": "/auth/overview" },
-    { "source": "/deployment/gcp-self-hosted", "destination": "/deployment/gcp" },
+    { "source": "/tool-governance/overview", "destination": "/mcp-servers/overview" },
+    { "source": "/tool-governance/docker-toolkit", "destination": "/mcp-servers/docker-toolkit" },
+    { "source": "/mcp/overview", "destination": "/mcp-servers/overview" },
+    { "source": "/mcp/docker-toolkit", "destination": "/mcp-servers/docker-toolkit" },
+    { "source": "/mcp/docker-mcp", "destination": "/mcp-servers/docker-toolkit" },
+    { "source": "/sso-rbac/overview", "destination": "/auth/sso" },
+    { "source": "/deployment/gcp", "destination": "/standalone/cloud-run" },
+    { "source": "/deployment/gcp-self-hosted", "destination": "/standalone/cloud-run" },
+    { "source": "/api-reference/introduction", "destination": "/standalone/cli" },
     { "source": "/prompts/overview", "destination": "/prompts" },
     { "source": "/more/faq", "destination": "/faq" },
-    { "source": "/concepts/overview", "destination": "/architecture" },
-    { "source": "/agent-manager/overview", "destination": "/manager/overview" }
+    { "source": "/concepts/overview", "destination": "/architecture" }
   ],
   "integrations": {
     "posthog": {

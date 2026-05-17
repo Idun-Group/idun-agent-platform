@@ -7,6 +7,7 @@ from .helpers import (
     get_langchain_tools,
     get_langchain_tools_from_api,
     get_langchain_tools_from_file,
+    get_langchain_tools_sync,
 )
 from .registry import MCPClientRegistry, get_active_registry, set_active_registry
 
@@ -20,4 +21,5 @@ __all__ = [
     "get_langchain_tools",
     "get_langchain_tools_from_api",
     "get_langchain_tools_from_file",
+    "get_langchain_tools_sync",
 ]

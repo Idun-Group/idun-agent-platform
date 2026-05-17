@@ -1,0 +1,17 @@
+server:
+  api:
+    port: {{ port | default(8000) }}
+
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "e2e-lg-multiturn"
+    graph_definition: "{{ agent_module_path }}:graph"
+    checkpointer:
+      type: "sqlite"
+      db_url: "sqlite:///{{ checkpointer_db }}"
+    {%- if system_prompt %}
+    prompts:
+      system: |
+        {{ system_prompt | indent(8) }}
+    {%- endif %}

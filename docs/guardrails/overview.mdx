@@ -18,18 +18,20 @@ You can configure multiple guardrails at each position. All guardrails at a give
 ## Configuration
 
 <Tabs>
-  <Tab title="Manager UI">
+  <Tab title="Admin UI">
     <Steps>
-      <Step title="Browse the guardrail catalog">
-        Navigate to **Guardrails** in the sidebar. The page groups guards by category: Content Safety, Identity & Security, Enterprise, and Context & Quality. Each guard type shows as a card with a "+" button.
-        ![Guardrails catalog](/images/ui/guardrails-catalog.png)
+      <Step title="Open the guardrails admin page">
+        Navigate to `/admin/guardrails/` in the running standalone. The catalog at the top groups guards by category; configured guards are listed below.
+
+        ![Guardrails admin page](/images/ui/admin-guardrails.png)
       </Step>
       <Step title="Create a guardrail">
-        Click **+** on the guard type you want (e.g., Ban List, Detect PII, Toxic Language). Fill in the configuration form. A Guardrails AI API key is required. Get one from [hub.guardrailsai.com](https://hub.guardrailsai.com).
-        ![Create ban list guardrail](/images/ui/guardrails-create-banlist.png)
+        Click the guard type you want (e.g., Ban List, Detect PII, Toxic Language). Fill in the configuration form, including the **Guardrails AI API key** field on the first guard you create. Get a key from [hub.guardrailsai.com](https://hub.guardrailsai.com). The key is persisted in the guardrail row and re-hydrated into the process environment on every boot, so you only enter it once.
+
+        ![Add a Ban List guardrail](/images/ui/admin-guardrails-add.png)
       </Step>
-      <Step title="Attach to an agent">
-        The guardrail appears as a card showing "Used by N agents." Attach it to agents from the agent detail **Overview** tab.
+      <Step title="Save">
+        Save the form. The reload pipeline validates the new config, re-instantiates the engine, and the guard is live. A bad save rolls back without disturbing the running agent.
       </Step>
     </Steps>
 
@@ -56,12 +58,12 @@ You can configure multiple guardrails at each position. All guardrails at a give
           threshold: 0.8
     ```
 
-    Infrastructure fields (`api_key`, `guard_url`, `reject_message`) are populated automatically. The `api_key` is read from the `GUARDRAILS_API_KEY` environment variable. You only need to specify the `config_id` and guard-specific parameters.
+    Infrastructure fields (`api_key`, `guard_url`, `reject_message`) are populated automatically. For YAML-based configs the `api_key` is read from the `GUARDRAILS_API_KEY` environment variable. You only need to specify the `config_id` and guard-specific parameters.
   </Tab>
 </Tabs>
 
 <Warning>
-  Guardrails require the `GUARDRAILS_API_KEY` environment variable. Get your API key from [Guardrails AI](https://guardrailsai.com). Set it in your `.env` file or in the service environment for Manager deployments.
+  Guardrails need a Guardrails AI API key. Either set it once in the admin form on your first guardrail (the standalone persists and re-hydrates it on boot), or export it as `GUARDRAILS_API_KEY` in your environment. Get a key from [Guardrails AI](https://guardrailsai.com).
 </Warning>
 
 ## Available guardrail types
@@ -86,31 +88,9 @@ All 15 guardrail types and their key parameters:
 | `model_armor` | Google Cloud Model Armor integration | `project_id`, `location`, `template_id` |
 | `custom_llm` | Define custom validation rules using an LLM | `model`, `prompt` |
 
-## Adding guardrails through the Manager UI
-
-You can also configure guardrails when creating or editing an agent in the Agent Manager:
-
-<Steps>
-  <Step title="Open agent creation or edit">
-    Navigate to your agent in the Manager UI and go to the guardrails step.
-  </Step>
-  <Step title="Select guardrail type">
-    Choose a guardrail type from the dropdown menu (for example, "Ban List" or "PII Detector").
-  </Step>
-  <Step title="Configure parameters">
-    Fill in the guard-specific parameters. For ban list, enter the words to block. For PII detection, select which PII entity types to detect.
-  </Step>
-  <Step title="Set position">
-    Choose whether the guardrail applies to input, output, or both.
-  </Step>
-  <Step title="Save and wait for installation">
-    Save the agent configuration. The engine downloads and initializes the guardrail validators from Guardrails AI. Wait for installation to complete before testing.
-  </Step>
-</Steps>
-
 ## Adding guardrails through config file
 
-For standalone deployments using local config, add guardrails directly to your `config.yaml`:
+For first-boot seeding (or engine-only mode), add guardrails directly to your `config.yaml`:
 
 <Tabs>
   <Tab title="Input guardrails">

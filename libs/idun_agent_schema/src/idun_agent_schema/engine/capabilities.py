@@ -7,6 +7,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from .agent_framework import AgentFramework
+from .sessions import HistoryCapabilities
 
 
 class CapabilityFlags(BaseModel):
@@ -47,3 +48,4 @@ class AgentCapabilities(BaseModel):
     capabilities: CapabilityFlags
     input: InputDescriptor
     output: OutputDescriptor
+    history: HistoryCapabilities | None = Field(default=None)

@@ -1,0 +1,117 @@
+---
+title: CLI reference
+description: Every idun command, the flags it accepts, and what it does.
+keywords: ["idun", "cli", "serve", "init", "setup", "hash-password", "agent serve"]
+---
+
+`idun` is the console script installed by the `idun-agent-engine` wheel (the standalone is bundled). All commands accept `--help` for inline documentation.
+
+## serve
+
+Run the standalone server. The DB is the source of truth in steady state; on first boot, if the DB is empty and `IDUN_CONFIG_PATH` points to a YAML file, the file seeds the DB.
+
+```bash
+idun serve
+```
+
+No flags. All configuration is read from environment variables (see the table below).
+
+## init
+
+Initialize Idun in the current folder and launch chat + admin in one step. Runs migrations, seeds from `config.yaml` if present, opens the browser, and boots the standalone server. Idempotent, so re-running on an already-initialized folder just re-launches.
+
+```bash
+idun init
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--port <int>` | `IDUN_PORT` env, then `8000` | Bind port. |
+| `--no-browser` | off | Skip the automatic browser open. Useful for headless / Cloud Run. |
+
+## setup
+
+Create the DB schema and seed it from YAML if the DB is empty. Called automatically by `serve` and `init`, but operators can run it directly to pre-stage migrations during a deploy.
+
+```bash
+idun setup
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--config <path>` | `IDUN_CONFIG_PATH` env, then `./config.yaml` | Bootstrap YAML file. |
+
+## hash-password
+
+Print a bcrypt hash suitable for `IDUN_ADMIN_PASSWORD_HASH`. Used once at deploy time when setting up `password` auth mode.
+
+```bash
+idun hash-password
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--password <plaintext>` | prompted (with confirmation) | Plaintext password to hash. Prompted if omitted. |
+
+## agent serve
+
+Run an engine-only server with no DB and no admin surface. Useful when you have your own admin stack and only want the runtime layer.
+
+```bash
+idun agent serve --source file --path ./config.yaml
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--source` | required | Must be `file` (load config from a local YAML). |
+| `--path <path>` | required when `--source=file` | Path to the YAML. |
+
+<Note>
+  `--source manager` is still present in `idun agent serve --help` as a leftover from the pre-0.6.0 manager-tier deployment model. It is deprecated and unsupported: the manager service no longer ships with the platform. Use `--source file` only.
+</Note>
+
+## Environment variables
+
+`serve` (and the server side of `init`) reads every setting from the environment. The defaults below match what the standalone uses out of the box.
+
+### Server binding
+
+| Variable | Default | Description |
+|---|---|---|
+| `IDUN_HOST` | `127.0.0.1` | Bind address. Set `0.0.0.0` for containers (requires `IDUN_ADMIN_AUTH_MODE=password` or `IDUN_ALLOW_OPEN_ADMIN=1`). |
+| `IDUN_PORT` | `8000` | Bind port. |
+| `IDUN_UI_DIR` | bundled static export | Override the chat/admin UI directory. |
+
+### Database
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | `sqlite+aiosqlite:///./idun_standalone.db` | SQLAlchemy URL. Use `postgresql+asyncpg://…` for Postgres. |
+| `IDUN_CONFIG_PATH` | `./config.yaml` | Bootstrap YAML file used by `setup` / `init` on an empty DB. |
+
+### Admin auth
+
+| Variable | Default | Description |
+|---|---|---|
+| `IDUN_ADMIN_AUTH_MODE` | `none` | Admin gate. `none` for laptop dev; `password` for containers. |
+| `IDUN_ADMIN_PASSWORD_HASH` | empty | Bcrypt admin hash. Required on the first boot under `IDUN_ADMIN_AUTH_MODE=password` to seed the singleton admin row; subsequent boots ignore this variable and read the hash from the DB. Generate with `idun hash-password`. |
+| `IDUN_SESSION_SECRET` | empty | At least 32 characters. Signs the `idun_session` cookie. Required when `IDUN_ADMIN_AUTH_MODE=password`; startup fails fast if shorter. |
+| `IDUN_SESSION_TTL_HOURS` | `24` | Session cookie lifetime in hours (range `1..720`). |
+| `IDUN_ALLOW_OPEN_ADMIN` | `false` | Opt-in flag that lets `auth_mode=none` bind `0.0.0.0` / `::`. Containers and trusted networks only. |
+
+### Trace store
+
+| Variable | Default | Description |
+|---|---|---|
+| `IDUN_TRACE_RETENTION_DAYS` | `14` | Days of trace events the daily retention task keeps before dropping. |
+| `IDUN_TRACES_INPUT_VALUE_MAX_BYTES` | `65536` | Per-attribute byte cap before the exporter truncates trace input/output values. |
+| `IDUN_PRICES_REFRESH` | `false` | When `true`, fetch the LiteLLM model-prices snapshot at boot (5 s timeout, snapshot fallback). |
+
+### Telemetry
+
+| Variable | Default | Description |
+|---|---|---|
+| `IDUN_TELEMETRY_ENABLED` | `true` | Set to `false` to disable anonymous usage telemetry. |
+| `IDUN_DEPLOYMENT_TYPE` | `self-hosted` | Tag events with `cloud`, `self-hosted`, or `dev`. |
+| `IDUN_TELEMETRY_IDENTIFY_USERS` | `true` | Set to `false` to keep all browser events anonymous (no email-level `identify`). |
+| `IDUN_TELEMETRY_SESSION_REPLAY` | `true` | Set to `false` to ship browser analytics without recording sessions. |

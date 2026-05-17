@@ -1,0 +1,22 @@
+server:
+  api:
+    port: {{ port | default(8000) }}
+
+agent:
+  type: "LANGGRAPH"
+  config:
+    name: "e2e-lg-guardrail"
+    graph_definition: "{{ agent_module_path }}:graph"
+    checkpointer:
+      type: "memory"
+
+guardrails:
+  input:
+    - config_id: "detect_pii"
+      reject_message: "PII detected"
+      guard_url: "hub://guardrails/detect_pii"
+      pii_entities:
+        - "EMAIL_ADDRESS"
+        - "PHONE_NUMBER"
+        - "US_SSN"
+      on_fail: "exception"

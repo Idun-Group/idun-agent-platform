@@ -1,0 +1,137 @@
+---
+title: "Programmatic chat: the /agent/run contract"
+description: "Drive your Idun-hosted agent from a script using the AG-UI request shape, plus the structured-mode trap to watch out for."
+keywords: ["agent run", "AG-UI", "SSE", "programmatic chat", "RunAgentInput", "structured input", "LangGraph", "input schema"]
+---
+
+The `/agent/run` endpoint streams [AG-UI](https://github.com/CopilotKit/ag-ui) events over Server-Sent Events. The bundled chat UI uses it. Your scripts and integrations call the same endpoint.
+
+## Request shape
+
+The body is an AG-UI `RunAgentInput`:
+
+| Field | Type | Common value |
+| --- | --- | --- |
+| `threadId` | string | a unique conversation ID |
+| `runId` | string | a unique-per-call ID |
+| `state` | object | `{}` for chat-mode agents |
+| `messages` | array | `[{id, role, content}]` |
+| `tools` | array | `[]` if your agent has none |
+| `context` | array | `[]` for the default case |
+| `forwardedProps` | object | `{}` for the default case |
+
+`parentRunId` is optional, used when resuming a run.
+
+All seven required fields must be present (even when empty), or the endpoint returns `422 Unprocessable Entity`.
+
+## Curl example
+
+```bash
+curl -N -X POST http://127.0.0.1:8000/agent/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "threadId": "demo-1",
+    "runId": "run-1",
+    "state": {},
+    "messages": [
+      {"id":"msg-1","role":"user","content":"Hello"}
+    ],
+    "tools": [],
+    "context": [],
+    "forwardedProps": {}
+  }'
+```
+
+The response is an SSE stream (`Content-Type: text/event-stream`) of AG-UI events: `RunStarted`, `TextMessageStart` / `Content` / `End`, `ToolCallStart` / `Args` / `End`, `ThinkingStart` / `End`, `RunFinished`.
+
+## Structured-mode agents
+
+If your LangGraph agent declares an explicit `input_schema` on the `StateGraph` that contains fields beyond `messages`, the engine auto-detects `input.mode = "structured"` and requires `messages[-1].content` to be valid JSON matching the input schema. The chat surface returns a `RUN_ERROR` SSE event with `code: VALIDATION_ERROR` if you send plain text.
+
+Example explicit-schema agent:
+
+```python
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
+
+class InputState(TypedDict):
+    user_input: str
+
+class OutputState(TypedDict):
+    graph_output: str
+
+class OverallState(TypedDict):
+    user_input: str
+    intermediate: str
+    graph_output: str
+
+builder = StateGraph(
+    OverallState,
+    input_schema=InputState,
+    output_schema=OutputState,
+)
+```
+
+For this agent, the chat content must be JSON:
+
+```json
+{
+  "messages": [
+    {
+      "id": "msg-1",
+      "role": "user",
+      "content": "{\"user_input\": \"Hello\"}"
+    }
+  ]
+}
+```
+
+The bundled chat UI handles this auto-wrap. If you call `/agent/run` directly, build the JSON yourself.
+
+## Implicit-state agents (the common case)
+
+When your agent declares one `OverallState` TypedDict with `messages` plus internal carry-fields and does not supply `input_schema=`, the engine resolves to `input.mode = "chat"`. Plain-text content works as expected. The internal scalars (`intent`, `draft`, etc.) get populated by your nodes during the run.
+
+```python
+class AgentState(TypedDict, total=False):
+    messages: list[BaseMessage]
+    intent: str
+    draft: str
+    response: str
+
+builder = StateGraph(AgentState)  # no input_schema, chat mode
+```
+
+For a strict typed public input contract, follow the explicit-schema idiom from [LangGraph's input/output schema how-to](https://langchain-ai.github.io/langgraph/how-tos/input_output_schema/). Otherwise the implicit default keeps chat plain-text-friendly.
+
+## Reading the SSE stream
+
+Every event line is `data: <json>\n\n`. Decode and dispatch on `type`. A minimal Python reader:
+
+```python
+import json
+import requests
+
+with requests.post(
+    "http://127.0.0.1:8000/agent/run",
+    json={
+        "threadId": "demo-1",
+        "runId": "run-1",
+        "state": {},
+        "messages": [{"id": "msg-1", "role": "user", "content": "Hello"}],
+        "tools": [],
+        "context": [],
+        "forwardedProps": {},
+    },
+    stream=True,
+    headers={"Accept": "text/event-stream"},
+) as response:
+    for line in response.iter_lines():
+        if not line or not line.startswith(b"data: "):
+            continue
+        event = json.loads(line[len(b"data: "):])
+        if event.get("type") == "TextMessageContent":
+            print(event["content"], end="", flush=True)
+```
+
+For TypeScript and React, use the AG-UI client SDK or the bundled chat UI hook. Both handle reconnects and token-level streaming for you.

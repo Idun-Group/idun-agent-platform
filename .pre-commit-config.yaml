@@ -4,14 +4,26 @@ repos:
     hooks:
     -   id: check-added-large-files
         name: "📏 files · Check for large files"
-        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
+        # LiteLLM model_prices_and_context_window.json is a ~1.4 MB vendored
+        # snapshot used by the standalone trace-cost calculator (see
+        # tasks/trace-feature-08-05-2026/06-cost-token-capture.md). Refreshed
+        # monthly via Dependabot-style chore PR.
+        # docs/images/readme/demo.webp is the README hero asset (~5 MB animated
+        # WebP, replaced a 14.5 MB GIF). PyPI/GitHub render it inline; size is
+        # inherent to a multi-second product demo.
+        exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/|(^|/)libs/idun_agent_standalone/src/idun_agent_standalone/infrastructure/traces/data/litellm_prices\.json$|(^|/)docs/images/readme/demo\.webp$
     -   id: check-ast
         name: "🐍 syntax · Check Python AST"
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: check-json
         name: "📋 format · Check JSON syntax"
-        # Note: VSCode launch configs and TS configs are JSONC (allow comments/trailing commas)
-        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)package-lock\.json$|(^|/)\.vscode/launch\.json$|(^|/)services/idun_agent_web/tsconfig\.(app|node)\.json$
+        # Note: VSCode launch configs and TS configs are JSONC (allow comments/trailing commas).
+        # LiteLLM prices snapshot has occasional upstream duplicate keys
+        # (e.g. zai.glm-5); Python json.loads accepts duplicates (last wins),
+        # but the strict pre-commit JSON check does not. The snapshot is a
+        # verbatim vendored mirror of an upstream file — refresh PRs surface
+        # malformed snapshots via the unit tests in test_costs.py.
+        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)package-lock\.json$|(^|/)\.vscode/launch\.json$|(^|/)services/idun_agent_web/tsconfig\.(app|node)\.json$|(^|/)libs/idun_agent_standalone/src/idun_agent_standalone/infrastructure/traces/data/litellm_prices\.json$
     -   id: check-merge-conflict
         name: "🔀 merge · Check for merge conflicts"
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
@@ -27,8 +39,8 @@ repos:
         exclude: ^(.*/)?(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)/
     -   id: detect-private-key
         name: "🔑 security · Detect private keys"
-        # PostHog "project API key" (public) is embedded for telemetry; don't flag it as a private key.
-        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry\.py$
+        # PostHog "project API key" (public) and redaction-marker strings ("PRIVATE KEY") are embedded for telemetry; don't flag them as real keys.
+        exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry\.py$|(^|/)services/idun_agent_standalone_ui/lib/telemetry/(sanitize\.ts|__tests__/sanitize\.test\.ts)$
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.9
     hooks:
@@ -56,4 +68,33 @@ repos:
     -   id: gitleaks
         name: "🔒 security · Detect hardcoded secrets"
         exclude: (^|/)(node_modules|\.venv|venv|build|dist|\.git|\.ruff_cache|__pycache__)(/|$)|(^|/)libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry\.py$
-default_stages: [commit]
+# Wrapper repo for suzuki-shunsuke/pinact (pinact itself does not ship a
+# .pre-commit-hooks.yaml). The `language: golang` hook fetches the actual
+# pinact binary from suzuki-shunsuke/pinact v3.9.2 at first run.
+# Pinned to a commit SHA on ref-app/prek-pinact so the wrapper repo cannot
+# be rewritten upstream — same hardening rationale as the workflow pins.
+-   repo: https://github.com/ref-app/prek-pinact
+    rev: 2e61063ef6f6509e31512d739dba8e25cabbcd29  # v3.9.2
+    hooks:
+    -   id: pinact
+        name: "🔒 security · Verify GitHub Actions are SHA-pinned"
+        # Runs `pinact run --check`. Fails the commit if any workflow
+        # references an action by tag/branch instead of a full commit SHA.
+        # To auto-rewrite locally, install pinact directly
+        # (`go install github.com/suzuki-shunsuke/pinact/v3/cmd/pinact@latest`
+        # or `brew install pinact`) and run `pinact run --fix`. The
+        # auto-rewrite hook isn't wired up on purpose — see PR #641.
+-   repo: local
+    hooks:
+    -   id: commitlint-advisory
+        name: "📝 commits · commitlint (advisory)"
+        # Advisory only — `|| true` masks the exit code so non-Conventional
+        # commits still go through. `verbose: true` makes commitlint findings
+        # visible even when the hook reports "Passed". Graduates to a blocking
+        # hook in Phase 2 by removing `|| true`.
+        entry: bash -c 'npx --yes @commitlint/cli@19 --edit "$1" || true' --
+        language: system
+        stages: [commit-msg]
+        pass_filenames: false
+        verbose: true
+default_stages: [pre-commit]

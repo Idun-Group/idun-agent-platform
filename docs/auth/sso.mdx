@@ -1,0 +1,94 @@
+---
+title: "SSO"
+description: "Per-agent OIDC SSO that validates a JWT on every `/agent/*` request, with per-user allowlists by domain or email."
+keywords: ["SSO", "OIDC", "JWT", "agent auth", "Google OAuth", "Microsoft Entra", "Okta"]
+---
+
+Idun Agent Platform's agent runtime supports per-agent OIDC SSO. When enabled, every request to `/agent/*` requires a valid `Authorization: Bearer <jwt>` header. The canonical AG-UI entry point is `POST /agent/run`; deprecated shims (`/agent/invoke`, `/agent/stream`, `/agent/copilotkit/stream`) are gated by the same dependency. Tokens are validated against the issuer's JWKS endpoint discovered via `{issuer}/.well-known/openid-configuration`; nothing is stored or cached beyond the JWKS rotation window.
+
+Health and metadata routes (`/health`, `/_engine/info`) stay open. SSO does not gate the admin panel; see [Authentication](/auth/overview) for that surface.
+
+## Configuration
+
+<Tabs>
+  <Tab title="Admin UI">
+    Open the running standalone at `/admin/sso/`. Pick a provider preset (Google, Microsoft Entra ID, Okta, or Custom OIDC), paste the issuer URL, client ID, audience, and any domain or email allowlists, then save. The reload pipeline validates the config and re-instantiates the engine with the new SSO settings.
+
+    ![SSO admin page](/images/ui/admin-sso.png)
+  </Tab>
+  <Tab title="YAML">
+    Add an `sso` block to your engine `config.yaml`:
+
+    ```yaml config.yaml
+    sso:
+      enabled: true
+      issuer: "https://accounts.google.com"
+      client_id: "123456789012-abc123def456ghi789.apps.googleusercontent.com"
+      audience: "123456789012-abc123def456ghi789.apps.googleusercontent.com"
+      allowed_domains:
+        - "example.com"
+      allowed_emails:
+        - "auditor@partner.example"
+    ```
+  </Tab>
+</Tabs>
+
+## Fields
+
+| Field | Required | Description |
+|---|---|---|
+| `enabled` | yes | Toggle SSO enforcement on protected routes. |
+| `issuer` | yes | OIDC issuer URL. Used to discover the JWKS endpoint via `.well-known/openid-configuration`. |
+| `client_id` | yes | OAuth 2.0 client ID. Used as the default audience for JWT validation. |
+| `audience` | no | Expected JWT `aud` claim. Defaults to `client_id` if not set. (Okta client-credentials tokens use `api://default`.) |
+| `allowed_domains` | no | Allow only tokens whose `email` claim matches one of these email domains. Example: `["company.com"]`. |
+| `allowed_emails` | no | Allow only tokens whose `email` claim exactly matches one of these addresses. Example: `["admin@partner.com"]`. |
+
+## Restricting access to specific users
+
+Use `allowed_domains` and `allowed_emails` together. Both lists are applied after JWT signature verification; a valid token from an allowed provider is still rejected if its email doesn't match either list.
+
+```yaml
+sso:
+  enabled: true
+  issuer: "https://accounts.google.com"
+  client_id: "123456789012-abc123def456ghi789.apps.googleusercontent.com"
+  allowed_domains:
+    - "example.com"                       # everyone with a @example.com Google account
+  allowed_emails:
+    - "auditor@partner.example"           # plus this one outside contractor
+```
+
+If both lists are unset, any valid token from the configured issuer is accepted (still scoped by `client_id` / `audience`).
+
+## Supported providers
+
+Any OIDC-compliant provider works as long as it publishes a JWKS endpoint via `.well-known/openid-configuration`. Tested presets in the admin UI:
+
+- **Google Workspace** — issuer `https://accounts.google.com`
+- **Microsoft Entra ID / Azure AD** — multi-tenant `https://login.microsoftonline.com/common`, or single-tenant `https://login.microsoftonline.com/11111111-2222-3333-4444-555555555555`
+- **Okta** — issuer typically `https://example.okta.com/oauth2/default`; audience usually `api://default`
+- **Custom OIDC** — any provider that publishes a `.well-known/openid-configuration` document
+
+## How validation works
+
+1. The engine discovers the JWKS endpoint from the issuer's `.well-known/openid-configuration` at startup.
+2. Per request, the engine reads `Authorization: Bearer <jwt>`.
+3. JWT signature validated against JWKS. Algorithm and key come from the JWT header.
+4. `aud` and `iss` claims matched against `audience` and `issuer`.
+5. If `allowed_domains` or `allowed_emails` is set, the token's `email` claim is checked against both lists.
+6. On success: request proceeds. On any failure: `401 Unauthorized`.
+
+## What users see
+
+With SSO enabled, the bundled chat UI prompts users to sign in with the configured provider before any conversation starts. The standalone runs the OAuth flow against your issuer and stores the resulting session locally.
+
+![Chat UI with SSO sign-in](/images/ui/chat-sso-login.png)
+
+After successful sign-in, the chat connects to `/agent/run` with the token attached. If the user's email doesn't match `allowed_domains` / `allowed_emails`, the engine returns `401` and the chat shows the sign-in screen again. For programmatic clients, obtain the token through your provider's OAuth 2.0 + PKCE flow and call `/agent/run` with the resulting access token in `Authorization: Bearer <jwt>`.
+
+## What's next
+
+- [Authentication](/auth/overview) — admin-panel auth (`none` / `password`) for `/admin/*`.
+- [Production hardening](/deployment/hardening) — env-var checklist + reverse-proxy / TLS notes.
+- [Troubleshooting](/troubleshooting) — what `agent_not_ready` and reload-pipeline errors mean.

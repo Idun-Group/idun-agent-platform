@@ -1,0 +1,24 @@
+id: SCHEMA-001
+title: Schema changes ship in idun_agent_schema before consumers
+category: schema
+severity: warn
+layer: [pr-review-agent]
+detection:
+  type: manual
+  spec: cross-package diff sniffer in PR-review subagent
+owner: schema-team
+description: |
+  Pydantic models in idun_agent_schema must change before any consumer
+  (idun_agent_engine, idun_agent_standalone, services/idun_agent_standalone_ui)
+  references the new field. A PR that updates a consumer without first updating
+  the schema breaks the schema-flows-first invariant from CLAUDE.md.
+fix_hint: |
+  Split the change: (1) add the field to idun_agent_schema, ship that PR;
+  (2) consume it in engine/standalone/UI in a follow-up PR.
+graduation:
+  promote_to_block_when: "false-positive rate <5% over 4 weeks"
+  default_block_target: pr-review-agent
+  current_phase: advisory
+state: active
+since: 2026-05-09
+last_updated: 2026-05-09

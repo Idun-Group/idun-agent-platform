@@ -3,12 +3,13 @@
     "libs/idun_agent_engine/src",
     "libs/idun_agent_engine/tests",
     "libs/idun_agent_schema/src",
-    "services/idun_agent_manager/src"
+    "libs/idun_agent_standalone/src",
+    "libs/idun_agent_standalone/tests"
   ],
   "extraPaths": [
     "libs/idun_agent_engine/src",
     "libs/idun_agent_schema/src",
-    "services/idun_agent_manager/src"
+    "libs/idun_agent_standalone/src"
   ],
   "venvPath": ".",
   "venv": ".venv",

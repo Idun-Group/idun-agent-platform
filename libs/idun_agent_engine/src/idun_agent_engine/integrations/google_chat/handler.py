@@ -16,7 +16,7 @@ from .verify import verify_google_chat_token
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["Runtime"])
 
 
 async def _handle_message(
@@ -47,18 +47,14 @@ async def google_chat_webhook(request: Request) -> Response:
         request.app.state, "google_chat_project_number", None
     )
     if not project_number:
-        logger.warning(
-            "Google Chat webhook received but project number not configured"
-        )
+        logger.warning("Google Chat webhook received but project number not configured")
         return Response(
             status_code=503, content="Google Chat integration not configured"
         )
 
     auth_header = request.headers.get("Authorization", "")
     bearer_token = auth_header.removeprefix("Bearer ").strip()
-    local_mode: bool = getattr(
-        request.app.state, "google_chat_local_mode", False
-    )
+    local_mode: bool = getattr(request.app.state, "google_chat_local_mode", False)
     if not bearer_token or not verify_google_chat_token(
         bearer_token,
         project_number,
@@ -87,12 +83,8 @@ async def google_chat_webhook(request: Request) -> Response:
         request.app.state, "google_chat_client", None
     )
     if not agent or not client:
-        logger.error(
-            "Google Chat webhook received but agent or client not initialized"
-        )
-        return Response(
-            status_code=503, content="Google Chat integration not ready"
-        )
+        logger.error("Google Chat webhook received but agent or client not initialized")
+        return Response(status_code=503, content="Google Chat integration not ready")
 
     # Use argumentText (text without the @mention) if available, fallback to text
     text = message.argument_text.strip() if message.argument_text else message.text

@@ -1,162 +1,64 @@
 ---
-title: "Authentication and authorization"
-description: "Configure user authentication with username/password or OIDC SSO (Google, Microsoft), and manage access with role-based access control."
-keywords: ["authentication", "authorization", "SSO", "OIDC", "RBAC", "roles", "Google OAuth", "Google OIDC", "Microsoft", "Azure AD", "Entra ID"]
+title: "Authentication"
+description: "Admin-panel auth modes (`none` / `password`) and the environment variables that drive them."
+keywords: ["authentication", "auth", "password", "session", "admin auth", "IDUN_ADMIN_AUTH_MODE", "bcrypt"]
 ---
 
-Idun Agent Platform supports two authentication modes for the Manager and a per-agent SSO layer for engine route protection. Role-based access control (RBAC) governs what authenticated users can do within each workspace.
+The standalone has two distinct authentication surfaces. This page covers the admin panel; for agent-route SSO, see [SSO](/auth/sso).
 
-## Authentication modes
+| Surface | Routes | Mechanism | Where it lives |
+|---|---|---|---|
+| **Admin panel** | `/admin/*`, `/login/`, `/admin/api/v1/*` | `none` or `password` (bcrypt + signed session cookie) | Environment variables |
+| **Agent runtime** | `/agent/*` (chat side) | OIDC JWT validation with per-user allowlists | `sso:` block in config — see [SSO](/auth/sso) |
 
-The Manager supports two mutually exclusive authentication modes, controlled by the `AUTH__DISABLE_USERNAME_PASSWORD` environment variable.
+Health and metadata routes (`/health`, `/_engine/info`) stay open on both surfaces. Treat the engine as a process running inside a trusted boundary; see [Production hardening](/deployment/hardening) for network-layer controls.
 
-<Tabs>
-  <Tab title="Username/password (default)">
-    The default mode. Users register and log in with email and password.
+## Environment variables
 
-    - `POST /api/v1/auth/basic/signup` to register
-    - `POST /api/v1/auth/basic/login` to log in
-    - Passwords are hashed with bcrypt
+The admin panel is configured by environment, not config. The mode is selected by `IDUN_ADMIN_AUTH_MODE`.
 
-    No additional configuration is required. This mode is active when `AUTH__DISABLE_USERNAME_PASSWORD` is `false` (the default).
-  </Tab>
-  <Tab title="OIDC SSO">
-    Enable SSO by setting `AUTH__DISABLE_USERNAME_PASSWORD=true` and configuring one or more OIDC providers. Each provider is registered automatically when its `client_id` env var is set.
-
-    - `GET /api/v1/auth/providers` lists enabled providers
-    - `GET /api/v1/auth/login/{provider}` redirects to the provider's authorization page
-    - `GET /api/v1/auth/callback` exchanges the authorization code for tokens and sets a session cookie
-    - Users are automatically created on first login
-
-    <Tabs>
-      <Tab title="Google">
-        ```bash
-        AUTH__DISABLE_USERNAME_PASSWORD=true
-        AUTH__GOOGLE_CLIENT_ID=your-google-client-id
-        AUTH__GOOGLE_CLIENT_SECRET=your-google-client-secret
-        AUTH__REDIRECT_URI=https://your-domain.com/api/v1/auth/callback
-        AUTH__FRONTEND_URL=https://your-domain.com
-        ```
-      </Tab>
-      <Tab title="Microsoft (Entra ID)">
-        ```bash
-        AUTH__DISABLE_USERNAME_PASSWORD=true
-        AUTH__MICROSOFT_CLIENT_ID=your-azure-app-client-id
-        AUTH__MICROSOFT_CLIENT_SECRET=your-azure-app-client-secret
-        # Optional: defaults to "common" (any Entra tenant + personal Microsoft accounts)
-        # AUTH__MICROSOFT_TENANT_ID=common
-        AUTH__REDIRECT_URI=https://your-domain.com/api/v1/auth/callback
-        AUTH__FRONTEND_URL=https://your-domain.com
-        ```
-
-        `AUTH__MICROSOFT_TENANT_ID` defaults to `common`, which uses the multi-tenant Microsoft authority (`https://login.microsoftonline.com/common`) and accepts users from any Entra tenant as well as personal Microsoft accounts (Outlook, Hotmail, Live). Your Entra app registration must also be configured for **multi-tenant + personal Microsoft accounts** (the "Accounts in any organizational directory and personal Microsoft accounts" option).
-
-        To restrict sign-in to a single Entra tenant, set `AUTH__MICROSOFT_TENANT_ID` to that tenant's UUID. The Manager validates that ID tokens are issued by a Microsoft tenant (`https://login.microsoftonline.com/<tenant-uuid>/v2.0`) regardless of which authority is used; the JWKS signature check guarantees the token came from Microsoft.
-      </Tab>
-    </Tabs>
-
-    You can configure both providers simultaneously. The login page will show buttons for each enabled provider.
-  </Tab>
-</Tabs>
-
-### Session management
-
-Both modes use signed HTTP-only cookies for session management.
-
-| Setting | Environment variable | Default |
+| Variable | Default | Description |
 |---|---|---|
-| Session secret | `AUTH__SESSION_SECRET` | Required, min 32 characters |
-| Session TTL | `AUTH__SESSION_TTL_SECONDS` | `86400` (24 hours) |
-| Secure cookies (HTTPS) | `AUTH__COOKIE_SECURE` | `false` |
+| `IDUN_ADMIN_AUTH_MODE` | `none` | Admin gate. `none` for laptop dev; `password` for containers and shared deployments. |
+| `IDUN_ADMIN_PASSWORD_HASH` | empty | Bcrypt hash that seeds the singleton admin row on first boot. Required when `auth_mode = password`. Generate with `idun hash-password`. |
+| `IDUN_SESSION_SECRET` | empty | At least 32 characters. Signs the `idun_session` cookie. Required when `auth_mode = password`; startup fails fast if shorter. |
+| `IDUN_SESSION_TTL_HOURS` | `24` | Session cookie lifetime in hours (range `1..720`). Sliding renewal extends the cookie on every request. |
+| `IDUN_ALLOW_OPEN_ADMIN` | `false` | Opt-in flag that lets `auth_mode=none` bind `0.0.0.0` / `::`. Containers and trusted networks only. Without this, an open-admin process is forced to loopback. |
 
-## Role-based access control
+## `IDUN_ADMIN_AUTH_MODE=none`
 
-Each workspace has its own set of members with assigned roles. Roles determine what actions a user can perform within that workspace.
+Every admin route is open. No login screen. Anyone who can reach the process can read and write configuration through `/admin/`.
 
-| Role | Level | Capabilities |
-|---|---|---|
-| **Owner** | 4 | Full control. Can delete the workspace, manage all members including other owners |
-| **Admin** | 3 | Can invite and remove members, update roles (except owners), manage all resources |
-| **Member** | 2 | Can create, read, update, and delete agents and resources within the workspace |
-| **Viewer** | 1 | Read-only access to agents and resources |
+Intended for laptop development. The runtime binds to `127.0.0.1` by default so the open admin is not exposed beyond `localhost`. To bind to `0.0.0.0` (e.g., inside a container) you must set `IDUN_ALLOW_OPEN_ADMIN=1` — the runtime refuses otherwise.
 
-Roles are hierarchical. A higher-level role includes all permissions of lower-level roles.
+## `IDUN_ADMIN_AUTH_MODE=password`
 
-### Workspace invitations
+A single admin user logs in at `/login/` with a password. The standalone signs an `idun_session` cookie (`HttpOnly`, `SameSite=Lax`, `Secure` when behind HTTPS) and gates `/admin/*` on it. The published container image flips this mode on by default.
 
-Admins and owners can invite users by email. The invitation specifies a role and is consumed when the invited user signs up or logs in:
+Setup is two env vars at first boot:
 
-1. Admin sends an invitation for `user@company.com` with role `member`
-2. When that user signs up (via either auth mode), the invitation is consumed
-3. The user is added to the workspace with the assigned role
-4. If it is the user's first workspace, it becomes their default
+```bash
+# 1. Generate the bcrypt hash on a workstation (never on the server).
+idun hash-password
+# Password: ********
+# Confirm:  ********
+# $2b$12$abc...   <- copy this
 
-## Per-agent SSO (engine route protection)
+# 2. Inject both at deploy time.
+IDUN_ADMIN_AUTH_MODE=password \
+IDUN_ADMIN_PASSWORD_HASH='$2b$12$abc...' \
+IDUN_SESSION_SECRET="$(openssl rand -hex 32)" \
+idun serve
+```
 
-Separate from Manager authentication, the engine can enforce OIDC JWT validation on agent API routes. When enabled, clients must provide a valid JWT in the `Authorization` header to call agent endpoints.
-
-Protected routes:
-- `/agent/invoke`
-- `/agent/stream`
-- `/agent/copilotkit/stream`
-
-### SSO config
-
-<Tabs>
-  <Tab title="Manager UI">
-    **SSO/OIDC configuration**
-
-    Navigate to the SSO page to manage SSO configurations for your workspace.
-
-    ![SSO page](/images/ui/sso-page.png)
-
-    Click **Add SSO config** and fill in the issuer URL, client ID, and allowed domains.
-
-    **User management**
-
-    The User Management page shows a table of workspace members with their assigned roles.
-
-    ![Workspace users list](/images/ui/users-list.png)
-
-    From this page you can invite new users by email and assign them a role: **Owner**, **Admin**, **Member**, or **Viewer**. You can also update an existing member's role or remove them from the workspace.
-  </Tab>
-  <Tab title="Config file">
-    Configure per-agent SSO directly in YAML:
-
-    ```yaml config.yaml
-    sso:
-      enabled: true
-      issuer: "https://accounts.google.com"
-      client_id: "your-oauth-client-id"
-      audience: "your-oauth-client-id"
-      allowed_domains:
-        - "company.com"
-      allowed_emails:
-        - "admin@partner.com"
-    ```
-
-    | Field | Description |
-    |---|---|
-    | `enabled` | Toggle SSO enforcement on protected routes |
-    | `issuer` | OIDC issuer URL. Used to discover the JWKS endpoint via `.well-known/openid-configuration` |
-    | `client_id` | OAuth 2.0 client ID. Used as the default audience for JWT validation |
-    | `audience` | Expected JWT `aud` claim. Defaults to `client_id` if not set |
-    | `allowed_domains` | Optional list of allowed email domains (e.g., `["company.com"]`) |
-    | `allowed_emails` | Optional list of specific email addresses allowed access |
-  </Tab>
-</Tabs>
-
-### Supported providers
-
-The Manager supports the following OIDC providers for SSO authentication:
-
-- **Google Workspace** (issuer: `https://accounts.google.com`)
-- **Microsoft Entra ID / Azure AD** (multi-tenant via `https://login.microsoftonline.com/common`, or single-tenant via `https://login.microsoftonline.com/<tenant-uuid>`)
-
-Both can be enabled simultaneously. The login page shows a button for each configured provider.
-
-For per-agent SSO, the engine validates JWTs against any OIDC-compliant provider's JWKS endpoint.
+`IDUN_ADMIN_PASSWORD_HASH` is consumed only on first boot to seed the singleton admin row. Subsequent boots ignore the env var. Rotate the password from the admin UI, or truncate the `standalone_admin_user` table and reboot to re-seed from the env.
 
 <Note>
-  Domain and email allowlists are applied after JWT signature verification. A valid token from an allowed provider is still rejected if the email domain or address is not in the allowlist.
+  The standalone supports **exactly one admin user**. The `standalone_admin_user` table has a fixed primary key of `"singleton"` and the admin URL never carries an id. There is no allowlist or multi-user concept for the admin panel today. For per-user policy, restrict access at the network layer (VPN, mTLS gateway, IP allowlist on the load balancer). See [Production hardening](/deployment/hardening) for the full checklist.
 </Note>
+
+## What's next
+
+- [SSO](/auth/sso) — per-agent OIDC for `/agent/*` runtime routes, with `allowed_domains` / `allowed_emails` allowlists.
+- [Production hardening](/deployment/hardening) — env-var checklist for `password` mode + reverse-proxy / TLS notes.
+- [Troubleshooting](/troubleshooting) — what `agent_not_ready` and reload-pipeline errors mean.

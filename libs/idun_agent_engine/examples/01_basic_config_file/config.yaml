@@ -28,8 +28,6 @@ agent:
         # collector_endpoint: ${PHOENIX_COLLECTOR_ENDPOINT}
         # project_name: "default"
         # run_name: "idun-langgraph-run"
-        # Phoenix local options (if provider: phoenix-local)
-        # No configuration required for Phoenix local
 
     # Optional: Enable conversation persistence
     checkpointer:

@@ -34,7 +34,9 @@ class TestAppFactoryConfigSources:
 
         response = client.get("/health")
         assert response.status_code == 200
-        assert response.json()["status"] == "ok"
+        # No lifespan ran (TestClient used without `with`), so no agent is
+        # registered on app.state and /health correctly reports degraded.
+        assert response.json()["status"] == "degraded"
 
         assert app.state.engine_config.server.api.port == 8888
         assert app.state.engine_config.agent.config.name == "YAML Test Agent"
@@ -106,6 +108,7 @@ class TestAppFactoryConfigSources:
         assert agent_config.checkpointer.type == "sqlite"
         assert "test_checkpoint.db" in agent_config.checkpointer.db_url
 
+
 @pytest.mark.unit
 class TestAppFactoryRoutes:
     """Test basic routes on the created app."""
@@ -128,7 +131,9 @@ class TestAppFactoryRoutes:
 
         resp = client.get("/health")
         assert resp.status_code == 200
-        assert resp.json().get("status") == "ok"
+        # No lifespan (TestClient used without `with`), so app.state.agent is
+        # never set — /health reports degraded by design (see FIX 02 / L10-1).
+        assert resp.json().get("status") == "degraded"
 
         resp = client.get("/")
         assert resp.status_code == 200
@@ -158,7 +163,7 @@ class TestAppFactoryCors:
         response = client.options(
             "/reload",
             headers={
-                "Origin": "https://cloud.idunplatform.com",
+                "Origin": "https://idun-group.com",
                 "Access-Control-Request-Method": "POST",
                 "Access-Control-Request-Private-Network": "true",
             },
@@ -167,7 +172,7 @@ class TestAppFactoryCors:
         assert response.status_code == 200
         assert (
             response.headers.get("access-control-allow-origin")
-            == "https://cloud.idunplatform.com"
+            == "https://idun-group.com"
         )
         assert response.headers.get("access-control-allow-private-network") == "true"
 

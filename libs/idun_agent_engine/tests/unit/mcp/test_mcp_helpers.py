@@ -7,16 +7,51 @@ Verifies the resolution order:
   4. Manager API fallback
 """
 
+import asyncio
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from idun_agent_schema.engine.mcp_server import MCPServer
+from pydantic import BaseModel
 
 from idun_agent_engine.mcp.helpers import get_adk_tools, get_langchain_tools
 from idun_agent_engine.mcp.registry import (
     MCPClientRegistry,
     set_active_registry,
 )
+
+
+class _FakeArgs(BaseModel):
+    query: str = ""
+
+
+@dataclass
+class _FakeMCPTool:
+    """Stand-in for a langchain-mcp-adapters tool that survives the shim.
+
+    The shim reads ``name``/``description``/``args_schema`` and forwards
+    via ``ainvoke``. ``args_schema`` must be a real pydantic model class
+    (not a MagicMock) because ``StructuredTool`` validates it at
+    construction time.
+    """
+
+    name: str
+    description: str
+    args_schema: type[BaseModel]
+
+    async def ainvoke(self, _kwargs: Mapping[str, object]) -> str:
+        return "ok"
+
+
+def _fake_mcp_tool(name: str) -> _FakeMCPTool:
+    return _FakeMCPTool(
+        name=name,
+        description=f"description of {name}",
+        args_schema=_FakeArgs,
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -76,30 +111,47 @@ class TestGetLangchainToolsResolution:
     @pytest.mark.asyncio
     async def test_uses_active_registry_when_enabled(self):
         """When no config_path and active registry is enabled, use it."""
-        expected_tools = [MagicMock(name="tool1"), MagicMock(name="tool2")]
+        expected_tools = [_fake_mcp_tool("tool1"), _fake_mcp_tool("tool2")]
         registry = _make_enabled_registry(tools=expected_tools)
         set_active_registry(registry)
 
         result = await get_langchain_tools()
-        assert result == expected_tools
+        # ``MCPClientRegistry.get_tools`` wraps each underlying tool in
+        # ``_serialization_safe_shim``, so identity comparison no
+        # longer applies. Match by name instead.
+        assert [t.name for t in result] == ["tool1", "tool2"]
         registry._client.get_tools.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_skips_disabled_active_registry(self, monkeypatch):
-        """When active registry has no servers (disabled), fall through."""
+    async def test_disabled_active_registry_returns_empty(self, monkeypatch, caplog):
+        """When active registry has no servers (disabled), it is the definitive
+        answer — return [] and skip env/API fallbacks."""
         registry = MCPClientRegistry()  # no configs → disabled
         set_active_registry(registry)
 
         monkeypatch.setenv("IDUN_CONFIG_PATH", "/fake/path.yaml")
+        monkeypatch.setenv("IDUN_AGENT_API_KEY", "should-not-be-used")
+        monkeypatch.setenv("IDUN_MANAGER_HOST", "http://should-not-be-used")
 
-        with patch(
-            "idun_agent_engine.mcp.helpers.get_langchain_tools_from_file",
-            new_callable=AsyncMock,
-            return_value=["from-env"],
-        ) as mock_file:
-            result = await get_langchain_tools()
-            mock_file.assert_called_once_with("/fake/path.yaml")
-            assert result == ["from-env"]
+        with (
+            patch(
+                "idun_agent_engine.mcp.helpers.get_langchain_tools_from_file",
+                new_callable=AsyncMock,
+            ) as mock_file,
+            patch(
+                "idun_agent_engine.mcp.helpers.get_langchain_tools_from_api",
+                new_callable=AsyncMock,
+            ) as mock_api,
+        ):
+            with caplog.at_level("INFO", logger="idun_agent_engine.mcp.helpers"):
+                result = await get_langchain_tools()
+
+            assert result == []
+            mock_file.assert_not_called()
+            mock_api.assert_not_called()
+            assert any(
+                "no usable servers" in rec.message for rec in caplog.records
+            ), "expected info log when disabled registry returns empty"
 
     @pytest.mark.asyncio
     async def test_falls_back_to_env_var(self, monkeypatch):
@@ -142,16 +194,15 @@ class TestGetLangchainToolsResolution:
     @pytest.mark.asyncio
     async def test_no_new_registry_constructed_when_active(self):
         """Active registry is used directly — no MCPClientRegistry is constructed."""
-        expected_tools = [MagicMock(name="tool1")]
+        expected_tools = [_fake_mcp_tool("tool1")]
         registry = _make_enabled_registry(tools=expected_tools)
         set_active_registry(registry)
 
-        with patch(
-            "idun_agent_engine.mcp.helpers._build_registry"
-        ) as mock_build:
+        with patch("idun_agent_engine.mcp.helpers._build_registry") as mock_build:
             result = await get_langchain_tools()
             mock_build.assert_not_called()
-            assert result == expected_tools
+            # Wrapped via _serialization_safe_shim — match by name.
+            assert [t.name for t in result] == ["tool1"]
 
     @pytest.mark.asyncio
     async def test_active_registry_returns_empty_list(self):
@@ -197,26 +248,37 @@ class TestGetAdkToolsResolution:
         set_active_registry(registry)
 
         expected_toolsets = [MagicMock(name="toolset1")]
-        with patch.object(
-            registry, "get_adk_toolsets", return_value=expected_toolsets
-        ):
+        with patch.object(registry, "get_adk_toolsets", return_value=expected_toolsets):
             result = get_adk_tools()
             assert result == expected_toolsets
 
-    def test_skips_disabled_active_registry(self, monkeypatch):
-        """When active registry has no servers (disabled), fall through."""
+    def test_disabled_active_registry_returns_empty(self, monkeypatch, caplog):
+        """When active registry has no servers (disabled), it is the definitive
+        answer — return [] and skip env/API fallbacks."""
         registry = MCPClientRegistry()  # disabled
         set_active_registry(registry)
 
         monkeypatch.setenv("IDUN_CONFIG_PATH", "/fake/path.yaml")
+        monkeypatch.setenv("IDUN_AGENT_API_KEY", "should-not-be-used")
+        monkeypatch.setenv("IDUN_MANAGER_HOST", "http://should-not-be-used")
 
-        with patch(
-            "idun_agent_engine.mcp.helpers.get_adk_tools_from_file",
-            return_value=["from-env"],
-        ) as mock_file:
-            result = get_adk_tools()
-            mock_file.assert_called_once_with("/fake/path.yaml")
-            assert result == ["from-env"]
+        with (
+            patch(
+                "idun_agent_engine.mcp.helpers.get_adk_tools_from_file",
+            ) as mock_file,
+            patch(
+                "idun_agent_engine.mcp.helpers.get_adk_tools_from_api",
+            ) as mock_api,
+        ):
+            with caplog.at_level("INFO", logger="idun_agent_engine.mcp.helpers"):
+                result = get_adk_tools()
+
+            assert result == []
+            mock_file.assert_not_called()
+            mock_api.assert_not_called()
+            assert any(
+                "no usable servers" in rec.message for rec in caplog.records
+            ), "expected info log when disabled registry returns empty"
 
     def test_falls_back_to_env_var(self, monkeypatch):
         """No active registry, no config_path → uses IDUN_CONFIG_PATH."""
@@ -257,12 +319,8 @@ class TestGetAdkToolsResolution:
         set_active_registry(registry)
 
         expected_toolsets = [MagicMock(name="toolset1")]
-        with patch.object(
-            registry, "get_adk_toolsets", return_value=expected_toolsets
-        ):
-            with patch(
-                "idun_agent_engine.mcp.helpers._build_registry"
-            ) as mock_build:
+        with patch.object(registry, "get_adk_toolsets", return_value=expected_toolsets):
+            with patch("idun_agent_engine.mcp.helpers._build_registry") as mock_build:
                 result = get_adk_tools()
                 mock_build.assert_not_called()
                 assert result == expected_toolsets
@@ -275,3 +333,257 @@ class TestGetAdkToolsResolution:
         with patch.object(registry, "get_adk_toolsets", return_value=[]):
             result = get_adk_tools()
             assert result == []
+
+
+# ---------------------------------------------------------------------------
+# API fetch timeout (defense against indefinite hangs)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestFetchConfigFromApiTimeout:
+    def test_passes_timeout_to_requests_get(self, monkeypatch):
+        """_fetch_config_from_api must bound the request so it never hangs forever."""
+        from idun_agent_engine.mcp import helpers
+        from idun_agent_engine.mcp.helpers import _fetch_config_from_api
+
+        monkeypatch.setenv("IDUN_AGENT_API_KEY", "k")
+        monkeypatch.setenv("IDUN_MANAGER_HOST", "http://example.invalid")
+
+        fake_response = MagicMock()
+        fake_response.text = "engine_config: {}"
+        fake_response.raise_for_status = MagicMock()
+
+        with patch.object(helpers.requests, "get", return_value=fake_response) as get:
+            _fetch_config_from_api()
+
+        get.assert_called_once()
+        assert (
+            "timeout" in get.call_args.kwargs
+        ), "requests.get must be called with a timeout to prevent indefinite hangs"
+        assert get.call_args.kwargs["timeout"] == helpers._API_FETCH_TIMEOUT_SECONDS
+
+
+@pytest.mark.unit
+class TestGetLangchainToolsSync:
+    def test_returns_async_result(self):
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        expected = [_fake_mcp_tool("alpha"), _fake_mcp_tool("beta")]
+        with patch(
+            "idun_agent_engine.mcp.helpers.get_langchain_tools",
+            new=AsyncMock(return_value=expected),
+        ):
+            result = get_langchain_tools_sync()
+        assert result == expected
+
+    def test_forwards_string_config_path(self, tmp_path):
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text("engine_config: {}")
+
+        mock = AsyncMock(return_value=[])
+        with patch("idun_agent_engine.mcp.helpers.get_langchain_tools", new=mock):
+            get_langchain_tools_sync(config_path=str(config_file))
+
+        mock.assert_awaited_once_with(str(config_file))
+
+    def test_forwards_path_object(self, tmp_path):
+        """``Path`` objects pass through unconverted — matches the async signature."""
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text("engine_config: {}")
+
+        mock = AsyncMock(return_value=[])
+        with patch("idun_agent_engine.mcp.helpers.get_langchain_tools", new=mock):
+            get_langchain_tools_sync(config_path=config_file)
+
+        mock.assert_awaited_once_with(config_file)
+
+    def test_propagates_value_error(self):
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        async def _boom(_=None):
+            raise ValueError("bad-config")
+
+        with patch("idun_agent_engine.mcp.helpers.get_langchain_tools", new=_boom):
+            with pytest.raises(ValueError, match="bad-config"):
+                get_langchain_tools_sync()
+
+    @pytest.mark.asyncio
+    async def test_works_from_inside_running_event_loop(self):
+        """Load-bearing: a naive ``asyncio.run`` wrapper would raise here."""
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        expected = [_fake_mcp_tool("from-loop")]
+        with patch(
+            "idun_agent_engine.mcp.helpers.get_langchain_tools",
+            new=AsyncMock(return_value=expected),
+        ):
+            result = get_langchain_tools_sync()
+        assert result == expected
+
+    def test_async_helper_actually_runs(self):
+        """Coroutine body executes — not a passthrough."""
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        ran = {"value": False}
+
+        async def _real_async(_=None):
+            import asyncio as _asyncio
+
+            await _asyncio.sleep(0)
+            ran["value"] = True
+            return [_fake_mcp_tool("awaited")]
+
+        with patch(
+            "idun_agent_engine.mcp.helpers.get_langchain_tools", new=_real_async
+        ):
+            result = get_langchain_tools_sync()
+        assert ran["value"] is True
+        assert len(result) == 1
+
+    def test_exported_from_mcp_package(self):
+        import idun_agent_engine.mcp as mcp
+
+        assert hasattr(mcp, "get_langchain_tools_sync")
+        assert "get_langchain_tools_sync" in mcp.__all__
+
+    def test_works_with_no_active_event_loop(self):
+        """Pure sync caller, no loop in the thread — the other half of the matrix."""
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        with pytest.raises(RuntimeError):
+            asyncio.get_running_loop()  # confirm: no loop in this thread
+
+        expected = [_fake_mcp_tool("no-loop")]
+        with patch(
+            "idun_agent_engine.mcp.helpers.get_langchain_tools",
+            new=AsyncMock(return_value=expected),
+        ):
+            assert get_langchain_tools_sync() == expected
+
+    def test_explicit_none_config_path(self):
+        """Passing ``None`` explicitly is equivalent to omitting the arg."""
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        mock = AsyncMock(return_value=[])
+        with patch("idun_agent_engine.mcp.helpers.get_langchain_tools", new=mock):
+            get_langchain_tools_sync(config_path=None)
+        mock.assert_awaited_once_with(None)
+
+    @pytest.mark.parametrize(
+        "exc_type, message",
+        [
+            (KeyError, "missing-key"),
+            (FileNotFoundError, "no-such-config"),
+            (RuntimeError, "downstream-failure"),
+        ],
+    )
+    def test_propagates_arbitrary_exceptions(self, exc_type, message):
+        """Exceptions of any type bubble up unchanged."""
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        async def _raise(_=None):
+            raise exc_type(message)
+
+        with patch("idun_agent_engine.mcp.helpers.get_langchain_tools", new=_raise):
+            with pytest.raises(exc_type, match=message):
+                get_langchain_tools_sync()
+
+    def test_returns_list_type(self):
+        """Return is a plain ``list``, not a tuple or generator."""
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        with patch(
+            "idun_agent_engine.mcp.helpers.get_langchain_tools",
+            new=AsyncMock(return_value=[_fake_mcp_tool("x")]),
+        ):
+            result = get_langchain_tools_sync()
+        assert isinstance(result, list)
+
+    def test_sequential_calls_independent(self):
+        """Each call rebuilds the worker — return values don't bleed."""
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        a = [_fake_mcp_tool("a")]
+        b = [_fake_mcp_tool("b1"), _fake_mcp_tool("b2")]
+
+        mock = AsyncMock(side_effect=[a, b])
+        with patch("idun_agent_engine.mcp.helpers.get_langchain_tools", new=mock):
+            r1 = get_langchain_tools_sync()
+            r2 = get_langchain_tools_sync()
+        assert r1 == a and r2 == b
+        assert mock.await_count == 2
+
+    def test_concurrent_calls_from_multiple_threads(self):
+        """Two threads invoking concurrently both complete with their own results.
+
+        ``patch`` is applied OUTSIDE the threads so it isn't racing
+        module-level state mutation — the helper itself is what's under
+        test, not ``unittest.mock``'s reentrancy.
+        """
+        import threading
+
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        async def _slow(_=None):
+            await asyncio.sleep(0.02)
+            return [_fake_mcp_tool("concurrent")]
+
+        results: list[list[Any]] = []
+        errors: list[BaseException] = []
+        lock = threading.Lock()
+
+        def _call() -> None:
+            try:
+                r = get_langchain_tools_sync()
+                with lock:
+                    results.append(r)
+            except BaseException as exc:
+                with lock:
+                    errors.append(exc)
+
+        with patch("idun_agent_engine.mcp.helpers.get_langchain_tools", new=_slow):
+            threads = [threading.Thread(target=_call) for _ in range(4)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=5)
+
+        assert errors == []
+        assert len(results) == 4
+        assert all(len(r) == 1 for r in results)
+
+    def test_traceback_preserved_through_bridge(self):
+        """Frame information from the coroutine survives the thread hop."""
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        async def _raise(_=None):
+            raise ValueError("traceback-marker")
+
+        with patch("idun_agent_engine.mcp.helpers.get_langchain_tools", new=_raise):
+            with pytest.raises(ValueError) as excinfo:
+                get_langchain_tools_sync()
+
+        tb_text = "".join(
+            __import__("traceback").format_exception(excinfo.value)
+        )
+        assert "_raise" in tb_text
+
+    def test_no_lingering_non_daemon_thread(self):
+        """``ThreadPoolExecutor`` shuts down on ``with`` exit — no thread leak."""
+        import threading
+
+        from idun_agent_engine.mcp.helpers import get_langchain_tools_sync
+
+        before = {t.ident for t in threading.enumerate() if not t.daemon}
+        with patch(
+            "idun_agent_engine.mcp.helpers.get_langchain_tools",
+            new=AsyncMock(return_value=[]),
+        ):
+            get_langchain_tools_sync()
+        after = {t.ident for t in threading.enumerate() if not t.daemon}
+        assert after.issubset(before | {None})  # only pre-existing non-daemons remain

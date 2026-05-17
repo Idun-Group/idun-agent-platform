@@ -12,10 +12,15 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from idun_agent_schema.engine.api import ChatRequest, ChatResponse
 from idun_agent_schema.engine.capabilities import AgentCapabilities
+from idun_agent_schema.engine.graph import AgentGraph
 from idun_agent_schema.engine.guardrails import Guardrail
+from idun_agent_schema.engine.sessions import SessionDetail, SessionSummary
+from openinference.instrumentation import using_user
 from pydantic import BaseModel
 
 from idun_agent_engine.agent.base import BaseAgent
+from idun_agent_engine.agent.observers import RunContext
+from idun_agent_engine.identity import current_user_id
 from idun_agent_engine.server.auth import get_verified_user
 from idun_agent_engine.server.dependencies import (
     get_agent,
@@ -24,7 +29,7 @@ from idun_agent_engine.server.dependencies import (
 )
 
 logger = logging.getLogger(__name__)
-agent_router = APIRouter()
+agent_router = APIRouter(tags=["Runtime"])
 
 
 def _extract_text_values(data: Any) -> list[str]:
@@ -55,9 +60,7 @@ def _guardrail_input_from(input_data: RunAgentInput) -> str | None:
     return None
 
 
-def _run_guardrails(
-    guardrails: list[Guardrail], text: str, position: str
-) -> None:
+def _run_guardrails(guardrails: list[Guardrail], text: str, position: str) -> None:
     """Validate text against guardrails matching the given position."""
     for guard in guardrails:
         if guard.position != position:  # type: ignore[attr-defined]
@@ -75,12 +78,80 @@ async def capabilities(
     return caps
 
 
+def _resolve_user_id(user: dict | None) -> str | None:
+    """Map a verified SSO claims dict to a user identifier for scoping.
+
+    Prefers ``email`` (matches ADK's per-user session model), falls back
+    to ``sub``. Returns ``None`` when SSO is off — the route relies on the
+    adapter's own scoping rules in that case.
+    """
+    if not user:
+        return None
+    return user.get("email") or user.get("sub")
+
+
+@agent_router.get("/sessions", response_model=list[SessionSummary])
+async def list_sessions(
+    request: Request,
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    user: Annotated[dict | None, Depends(get_verified_user)],
+):
+    """List session summaries from the active memory backend.
+
+    Returns 501 when the adapter doesn't support listing (an ADK agent,
+    or a LangGraph agent without a checkpointer). When SSO is enabled,
+    the user id from the JWT is forwarded to the adapter for per-user
+    scoping.
+    """
+    caps = agent.history_capabilities()
+    if not caps.can_list:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail={
+                "error": "listing not supported by current memory backend",
+                "agent_type": agent.agent_type,
+            },
+        )
+    user_id = _resolve_user_id(user)
+    return await agent.list_sessions(user_id=user_id)
+
+
+@agent_router.get("/sessions/{session_id}", response_model=SessionDetail)
+async def get_session(
+    session_id: str,
+    request: Request,
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    user: Annotated[dict | None, Depends(get_verified_user)],
+):
+    """Return a single session's reconstructed text-only message thread.
+
+    Returns 501 when the adapter doesn't support detail retrieval and
+    404 when the session id is unknown (or when the SSO-scoped user
+    isn't allowed to see it — the adapter enforces that and returns
+    ``None``).
+    """
+    caps = agent.history_capabilities()
+    if not caps.can_get:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail={
+                "error": "session detail not supported by current memory backend",
+                "agent_type": agent.agent_type,
+            },
+        )
+    user_id = _resolve_user_id(user)
+    detail = await agent.get_session(session_id, user_id=user_id)
+    if detail is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return detail
+
+
 @agent_router.post("/run")
 async def run(
     input_data: RunAgentInput,
     request: Request,
     agent: Annotated[BaseAgent, Depends(get_agent)],
-    _user: Annotated[dict | None, Depends(get_verified_user)],
+    user: Annotated[dict | None, Depends(get_verified_user)],
 ):
     """Canonical AG-UI interaction endpoint.
 
@@ -88,7 +159,11 @@ async def run(
     """
     last_msg = input_data.messages[-1] if input_data.messages else None
     last_content = str(last_msg.content)[:120] if last_msg else "<empty>"
-    logger.info(f"Run — thread_id={input_data.thread_id}, message={last_content}")
+    resolved_user_id = _resolve_user_id(user) or current_user_id.get()
+    logger.info(
+        f"Run — thread_id={input_data.thread_id}, "
+        f"user_id={resolved_user_id}, message={last_content}"
+    )
 
     guardrails = getattr(request.app.state, "guardrails", [])
     if guardrails:
@@ -100,26 +175,45 @@ async def run(
     encoder = EventEncoder(accept=accept_header or "")
 
     async def event_generator():
+        # Bind for the streaming task so adapter user_id_extractors and
+        # session-listing fallbacks see the same value.
+        token = current_user_id.set(resolved_user_id)
         try:
-            async for event in agent.run(input_data):
-                try:
-                    yield encoder.encode(event)
-                except Exception as encoding_error:
-                    logger.error(
-                        f"Event encoding error: {encoding_error}", exc_info=True
-                    )
-                    from ag_ui.core import EventType, RunErrorEvent
-
-                    error_event = RunErrorEvent(
-                        type=EventType.RUN_ERROR,
-                        message=f"Event encoding failed: {encoding_error}",
-                        code="ENCODING_ERROR",
+            # Project the resolved user into OTel context so
+            # LangChainInstrumentor stamps user.id on every span emitted
+            # while agent.run is running. See
+            # tasks/trace-feature-08-05-2026/15-user-session-propagation.md.
+            with using_user(resolved_user_id):
+                async for event in agent.run(input_data):
+                    # Registry isolates per-observer exceptions, so dispatch cannot
+                    # masquerade as an agent failure here. Route-synthesized
+                    # RunErrorEvent fallbacks below are NOT dispatched — observers
+                    # see only events yielded by the agent itself.
+                    await agent.run_event_observers.dispatch(
+                        event,
+                        RunContext(
+                            thread_id=input_data.thread_id,
+                            run_id=input_data.run_id,
+                        ),
                     )
                     try:
-                        yield encoder.encode(error_event)
-                    except Exception:
-                        yield 'event: error\ndata: {"error": "Event encoding failed"}\n\n'
-                    break
+                        yield encoder.encode(event)
+                    except Exception as encoding_error:
+                        logger.error(
+                            f"Event encoding error: {encoding_error}", exc_info=True
+                        )
+                        from ag_ui.core import EventType, RunErrorEvent
+
+                        error_event = RunErrorEvent(
+                            type=EventType.RUN_ERROR,
+                            message=f"Event encoding failed: {encoding_error}",
+                            code="ENCODING_ERROR",
+                        )
+                        try:
+                            yield encoder.encode(error_event)
+                        except Exception:
+                            yield 'event: error\ndata: {"error": "Event encoding failed"}\n\n'
+                        break
         except Exception as agent_error:
             logger.error(f"Agent run error: {agent_error}", exc_info=True)
             from ag_ui.core import EventType, RunErrorEvent
@@ -133,38 +227,87 @@ async def run(
                 yield encoder.encode(error_event)
             except Exception:
                 yield 'event: error\ndata: {"error": "Agent execution failed"}\n\n'
+        finally:
+            current_user_id.reset(token)
+            logger.debug(f"Run — reset user_id token thread_id={input_data.thread_id}")
 
     return StreamingResponse(event_generator(), media_type=encoder.get_content_type())
 
 
-@agent_router.get("/graph")
-async def get_graph(
+@agent_router.get("/graph", response_model=AgentGraph)
+async def get_graph_ir(
     agent: Annotated[BaseAgent, Depends(get_agent)],
     _user: Annotated[dict | None, Depends(get_verified_user)],
-):
-    """Return the Mermaid diagram of the compiled LangGraph agent."""
-    from langgraph.graph.state import CompiledStateGraph
-
-    instance = getattr(agent, "_agent_instance", None)
-    if not isinstance(instance, CompiledStateGraph):
+) -> AgentGraph:
+    """Framework-agnostic JSON IR — primary contract for UI rendering."""
+    try:
+        return agent.get_graph_ir()
+    except NotImplementedError as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
+        logger.exception("Graph IR extraction failed")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Graph visualization is only available for LangGraph agents",
-        )
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Graph introspection failed",
+        ) from e
 
-    return {"graph": instance.get_graph().draw_mermaid()}
+
+@agent_router.get("/graph/mermaid")
+async def get_graph_mermaid(
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    _user: Annotated[dict | None, Depends(get_verified_user)],
+) -> dict[str, str]:
+    """Mermaid source string."""
+    try:
+        return {"mermaid": agent.draw_mermaid()}
+    except NotImplementedError as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
+        logger.exception("Mermaid rendering failed")
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Mermaid rendering failed",
+        ) from e
+
+
+@agent_router.get("/graph/ascii")
+async def get_graph_ascii(
+    agent: Annotated[BaseAgent, Depends(get_agent)],
+    _user: Annotated[dict | None, Depends(get_verified_user)],
+) -> dict[str, str]:
+    """ASCII art rendering."""
+    try:
+        return {"ascii": agent.draw_ascii()}
+    except NotImplementedError as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+    except Exception as e:
+        logger.exception("ASCII rendering failed")
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="ASCII rendering failed",
+        ) from e
 
 
 @agent_router.get("/config")
 async def get_config(request: Request):
-    """Get the current agent configuration."""
-    if not hasattr(request.app.state, "engine_config"):
-        logger.error("Engine config not available on app state")
+    """Get the current agent configuration.
+
+    Returns 503 ``agent_not_ready`` when the engine booted unconfigured
+    and ``configure_app`` hasn't run yet (no agent → no config to expose).
+    """
+    engine_config = getattr(request.app.state, "engine_config", None)
+    if engine_config is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Configuration not available"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "error": {
+                    "code": "agent_not_ready",
+                    "message": "Agent has not been configured yet.",
+                }
+            },
         )
 
-    config = request.app.state.engine_config.agent
+    config = engine_config.agent
     logger.debug(
         f"Returning config for agent '{config.config.name}' (type={config.type})"
     )
@@ -332,9 +475,7 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
         """Invoke the agent with a message and get a response."""
         guardrails = getattr(request.app.state, "guardrails", [])
         if guardrails:
-            _run_guardrails(
-                guardrails, text=input_data.query, position="input"
-            )
+            _run_guardrails(guardrails, text=input_data.query, position="input")
 
         try:
             query = input_data.query[:120]
@@ -370,6 +511,5 @@ def register_invoke_route(app: FastAPI, input_model: type[BaseModel]) -> None:
         invoke,
         methods=["POST"],
         response_model=ChatResponse,
-        tags=["Agent"],
         deprecated=True,
     )

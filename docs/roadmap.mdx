@@ -1,0 +1,44 @@
+---
+title: "Roadmap"
+description: "Where Idun Agent Platform is today and what we're building next."
+keywords: ["roadmap", "langchain", "oidc", "observability"]
+---
+
+This page is the honest version. Things in "Today" exist in code on `main`. Things in "Next" are committed work but not shipped. Things in "Later" are direction, not commitments. No dates.
+
+If you depend on something in "Next" or "Later", open an issue or talk to us in [Discord](https://discord.gg/KCZ6nW2jQe). Priority follows what users actually need.
+
+## Today
+
+Shipped on `main` and used by every install.
+
+- **Agent frameworks.** LangGraph (primary, with full AG-UI streaming) and Google ADK (mature, session + memory services, no stream yet).
+- **Single install path.** `pip install idun-agent-engine` ships the engine, the standalone admin/chat/traces app, and the `idun` console script. One wheel, one process, SQLite by default, Postgres optional.
+- **Engine-only mode.** `idun agent serve --source file --path config.yaml` runs the runtime layer without the DB or admin surface for teams with their own admin stack.
+- **Auth.** Admin panel: `none` (laptop default) or `password` (containerized default). Agent routes: per-agent OIDC JWT validation.
+- **Persistence.** LangGraph checkpointers in `InMemorySaver`, `AsyncSqliteSaver`, `AsyncPostgresSaver`. ADK session services in InMemory, VertexAI, Database (PostgreSQL).
+- **Observability.** Langfuse, Arize Phoenix, LangSmith, GCP Trace, GCP Logging. Multiple providers can run at once. Local trace store always on.
+- **Guardrails.** Guardrails AI Hub integration: `BanList`, `DetectPII`, `NSFWText`, `CompetitorCheck`, `BiasCheck`, `ValidLanguage`, `GibberishText`, `ToxicLanguage`, `RestrictToTopic`. Split into input and output stages.
+- **MCP toolchain.** Stdio, SSE, and HTTP transports via `langchain-mcp-adapters`. Helpers for both LangGraph and ADK agents.
+- **Messaging integrations.** WhatsApp Cloud API and Discord Interactions Endpoint, with webhook verification.
+- **Deployment.** Cloud Run + Docker images for the standalone.
+- **Telemetry.** Anonymous usage events to PostHog. Opt out with `IDUN_TELEMETRY_ENABLED=false`.
+
+## Next
+
+Committed work that is in scope but not yet shipped. These appear in design specs, open issues, or active branches.
+
+- **OIDC for the admin panel.** Today the standalone ships `none` and `password` auth modes. OIDC is the next mode.
+- **Hub for community templates.** A way to import a vetted starter agent into your scaffold, instead of copy-pasting from the template repo.
+- **Broader LangChain story.** Today the first-class adapters are LangGraph and ADK. The plan is to expand support so a wider set of LangChain agents work with the same config and AG-UI surface.
+
+## Later
+
+Direction we're investing in. Not a commitment, not a timeline. Open issues if any of this is load-bearing for your team.
+
+- **Native A/B test harness.** First-class support for shadow traffic and per-segment routing across agent versions.
+- **Marketplace for agents.** A discoverable index of community-published agents that drop into the scaffold.
+
+## How this list is maintained
+
+This page is updated when a phase ships or when scope changes. The source of truth for what's in code is the per-package `CLAUDE.md` files in the repo (`libs/idun_agent_engine/CLAUDE.md`, `libs/idun_agent_standalone/CLAUDE.md`, `libs/idun_agent_schema/CLAUDE.md`). If this page disagrees with the code, the code wins; file an issue.

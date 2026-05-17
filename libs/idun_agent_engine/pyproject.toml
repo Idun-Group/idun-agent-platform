@@ -1,8 +1,8 @@
 [project]
 name = "idun-agent-engine"
-version = "0.5.4"
+version = "0.6.0"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
-authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
+authors = [{ name = "Idun Group", email = "h.geoffrey@idun-group.com" }]
 requires-python = ">=3.12,<3.13"
 readme = "README.md"
 license = "GPL-3.0-only"
@@ -39,6 +39,9 @@ dependencies = [
     "click>=8.2.0,<9.0.0",
     "platformdirs>=4.0.0,<5.0.0",
     "PyYAML>=6.0.0,<7.0.0",
+    "cachetools>=5.0.0,<7.0.0",
+    "httpx-sse>=0.4.0,<1.0.0",
+    "botbuilder-integration-aiohttp>=4.17.0,<5.0.0",
     # Agent frameworks and orchestration
     "deepagents>=0.2.8,<1.0.0",
     "langgraph>=1.0.0,<2.0.0",
@@ -47,30 +50,47 @@ dependencies = [
     "langgraph-checkpoint-postgres>=3.0.0,<4.0.0",
     "google-adk>=1.19.0,<2.0.0",
     "langchain>=1.0.0,<2.0.0",
-    "langchain-core>=1.0.0,<2.0.0",
+    # Cap below 1.4 — openinference-instrumentation-langchain declares
+    # ``langchain_core >= 0.1.0`` in its package metadata, and pip's
+    # ``--pre`` flag (used on TestPyPI installs) propagates to ALL
+    # packages, so the resolver picks up 1.4.0aN alphas which the
+    # instrumentor's pre-release-rejecting constraint refuses,
+    # silently disabling the entire trace pipeline. Bump this cap once
+    # langchain-core 1.4.0 final ships.
+    "langchain-core>=1.0.0,<1.4",
     "langchain-google-vertexai>=2.0.27,<4.0.0",
     # AG-UI and interactive interfaces
     "ag-ui-protocol==0.1.13",
     "ag-ui-langgraph==0.0.25",
     "ag-ui-adk>=0.3.4,<0.6.0",
     "copilotkit==0.1.78",
-    "streamlit>=1.47.1,<2.0.0",
-    "textual>=7.3.0,<8.0.0",
-    # Guardrails and security
-    "guardrails-ai==0.9.2",
-    "openinference-instrumentation-guardrails>=0.1.0,<2.0.0",
+    # Security
+    # guardrails-ai + openinference-instrumentation-guardrails moved to the
+    # ``guardrails`` optional extra below. The PyPI ``guardrails-ai`` project
+    # was quarantined for a security incident, which made the engine wheel
+    # uninstallable from PyPI for every consumer — including those who never
+    # configure guardrails. Keeping it optional decouples the engine's
+    # install path from upstream quarantine status. Install with
+    # ``pip install 'idun-agent-engine[guardrails]'`` to opt in.
+    "openinference-instrumentation>=0.1.0,<2.0.0",
     "PyJWT[crypto]>=2.9.0,<3.0.0",
+    "cryptography>=46.0.3,<48.0.0",
     # Observability and telemetry
     "langsmith>=0.3.0,<1.0.0",
     "langfuse>=2.60.8,<4.0.0",
-    "langfuse-haystack>=2.3.0",
     "arize-phoenix-otel>=0.2.0,<1.0.0",
-    # Pin <12: 12.x currently depends on placeholder jmespath==99.99.99 and fails in Docker
     "arize-phoenix>=11.22.0,<14.0.0",
+    # Pin jmespath directly: arize-phoenix's transitive resolution can pull
+    # jmespath==99.99.99 (a typosquat placeholder that phones home and breaks
+    # in sandboxed builds). Forcing a real version keeps CI installs reproducible.
+    "jmespath>=1.0,<2.0",
     "openinference-instrumentation-langchain>=0.1.13,<2.0.0",
     "openinference-instrumentation-vertexai>=0.1.0,<2.0.0",
     "openinference-instrumentation-google-adk>=0.1.0,<2.0.0",
+"openinference-instrumentation-google-genai>=0.1.0,<2.0.0",
     "openinference-instrumentation-mcp>=1.0.0,<2.0.0",
+    "opentelemetry-api>=1.30,<2.0",
+    "opentelemetry-sdk>=1.30,<2.0",
     "opentelemetry-exporter-gcp-trace>=1.6.0,<2.0.0",
     "opentelemetry-exporter-otlp-proto-http>=1.22.0,<2.0.0",
     "google-cloud-logging>=3.10.0,<4.0.0",
@@ -85,25 +105,40 @@ dependencies = [
     "langchain-mcp-adapters>=0.2.0,<0.3.0",
     "tavily-python>=0.7.9,<0.8.0",
     # Internal package and external delivery integrations
-    "idun-agent-schema>=0.5.0,<1.0.0",
+    "idun-agent-schema>=0.6.0,<0.7.0",
     "slack-sdk>=3.33.0,<4.0.0",
+    "alembic>=1.13,<2",
+    "asyncpg>=0.29,<1",
+    "bcrypt>=4.0,<5",
+    "itsdangerous>=2.2,<3",
+    "pydantic-settings>=2.0,<3",
+    "apscheduler>=3.10,<4",
+    "rfc8785>=0.1,<1",
+    "sentencepiece>=0.2.1,<1",
 ]
 
+[project.optional-dependencies]
+# Opt-in guardrails support. Kept out of the default install so the engine
+# wheel does not depend on a single upstream package's availability on PyPI.
+# Install with: pip install 'idun-agent-engine[guardrails]'
+guardrails = [
+    "guardrails-ai==0.9.2",
+    "openinference-instrumentation-guardrails>=0.1.0,<2.0.0",
+]
 
 [project.scripts]
-idun = "idun_platform_cli.main:cli"
+idun = "idun_agent_standalone.cli:main"
 
 
 [project.urls]
-Homepage = "https://github.com/geoffreyharrazi/idun-agent-platform"
-Repository = "https://github.com/geoffreyharrazi/idun-agent-platform"
-Documentation = "https://github.com/geoffreyharrazi/idun-agent-platform/tree/main/libs/idun_agent_engine"
-Issues = "https://github.com/geoffreyharrazi/idun-agent-platform/issues"
+Homepage = "https://github.com/Idun-Group/idun-agent-platform"
+Repository = "https://github.com/Idun-Group/idun-agent-platform"
+Documentation = "https://github.com/Idun-Group/idun-agent-platform/tree/main/libs/idun_agent_engine"
+Issues = "https://github.com/Idun-Group/idun-agent-platform/issues"
 
 [dependency-groups]
 dev = [
     "ruff>=0.6.5,<0.13",
-    "black>=24.8.0,<27",
     "pre-commit>=3.8.0,<5",
     "mypy>=1.10.0,<2",
     "pytest>=8.3.3,<9",
@@ -118,36 +153,23 @@ dev = [
 include = [
     "src/idun_agent_engine",
     "src/idun_agent_engine/py.typed",
-    "src/idun_platform_cli",
 ]
 
 [tool.hatch.build.targets.wheel]
 include = [
   "src/idun_agent_engine",
   "src/idun_agent_engine/py.typed",
-  "src/idun_platform_cli",
 ]
 
 [tool.hatch.build.targets.wheel.sources]
 "src/idun_agent_engine" = "idun_agent_engine"
-"src/idun_platform_cli" = "idun_platform_cli"
+
+[tool.hatch.build.targets.wheel.force-include]
+"../idun_agent_standalone/src/idun_agent_standalone" = "idun_agent_standalone"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.black]
-line-length = 88
-target-version = ["py312", "py313"]
-include = "\\.pyi?$"
-exclude = '''
-(
-  /build/|
-  /dist/|
-  /.venv/|
-  /.git/
-)
-'''
 
 [tool.ruff]
 target-version = "py312"
@@ -171,7 +193,7 @@ select = [
     "SIM", # flake8-simplify
 ]
 extend-ignore = [
-    "E501",  # line length handled by black
+    "E501",  # line length handled by ruff format
     # Keep linting actionable without behavior changes across the codebase.
     "E722",   # bare except
     "B904",   # raise from within except
@@ -208,6 +230,16 @@ pythonpath = ["src", "tests"]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
+    # Third-party noise we can't fix at our level:
+    # - google-adk / ag-ui-adk emit "[EXPERIMENTAL]" UserWarnings for stable APIs we depend on
+    "ignore:\\[EXPERIMENTAL\\]:UserWarning",
+    # - pydantic UnsupportedFieldAttributeWarning fires from downstream models
+    #   (ag-ui / copilotkit) using Field(alias=...) on Annotated type aliases / union members
+    "ignore::pydantic.warnings.UnsupportedFieldAttributeWarning",
+    # - langgraph emits LangChainPendingDeprecationWarning at import time about
+    #   `allowed_objects`; the import-time site bypasses the generic
+    #   PendingDeprecationWarning filter above
+    "ignore::langchain_core._api.deprecation.LangChainPendingDeprecationWarning",
 ]
 markers = [
     "unit: Unit tests (fast, no external dependencies)",
@@ -227,7 +259,6 @@ omit = [
     "*/templates/*",
     "*/_version.py",
     "*/idun_agent_engine_ui/*",
-    "*/idun_platform_cli/*",
     "*/mcp/*",  # CHANGED: MCP has Pydantic compatibility issues with coverage
 ]
 

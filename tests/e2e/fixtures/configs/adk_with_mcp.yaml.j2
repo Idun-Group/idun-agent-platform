@@ -1,0 +1,20 @@
+server:
+  api:
+    port: {{ port | default(8000) }}
+
+agent:
+  type: "ADK"
+  config:
+    name: "e2e-adk-mcp"
+    app_name: "e2e_adk_mcp"
+    agent: "{{ agent_module_path }}:root_agent"
+    session_service:
+      type: "in_memory"
+    memory_service:
+      type: "in_memory"
+
+mcp_servers:
+  - name: "time"
+    transport: "stdio"
+    command: "{{ mcp_command }}"
+    args: {{ mcp_args | tojson }}

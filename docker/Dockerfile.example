@@ -1,0 +1,54 @@
+# Build a deployable image around your agent code.
+# Multi-stage: deps install in `builder`; final image runs unprivileged.
+
+# ---- builder ----
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+# Install the engine + bundled standalone runtime into a clean prefix.
+# (The engine wheel force-includes the standalone source via Hatch.)
+RUN pip install --no-cache-dir --prefix=/install idun-agent-engine
+
+# Add any extra Python deps your agent needs:
+# RUN pip install --no-cache-dir --prefix=/install langchain-openai langchain-google-genai
+
+# ---- runtime ----
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    IDUN_HOST=0.0.0.0 \
+    IDUN_PORT=8000 \
+    IDUN_CONFIG_PATH=/app/agent/config.yaml
+
+# Create an unprivileged user. UID/GID 1001 is conventional for Cloud Run, GKE, and most managed hosts.
+RUN groupadd --system --gid 1001 idun \
+ && useradd --system --uid 1001 --gid idun --create-home --home-dir /home/idun idun
+
+WORKDIR /app
+
+# Pull installed packages from the builder stage.
+COPY --from=builder /install /usr/local
+
+# Copy your agent code and config (must be readable by uid 1001).
+COPY --chown=idun:idun agent /app/agent
+
+USER idun:idun
+
+EXPOSE 8000
+
+# REQUIRED at deploy time (with IDUN_HOST=0.0.0.0 set above, startup will fail
+# fast without one of these — the bind-all + no-auth combination is rejected
+# by the standalone settings validator):
+#   IDUN_ADMIN_AUTH_MODE=password            (secure option for production)
+#   IDUN_ALLOW_OPEN_ADMIN=1                  (or opt in to open admin on
+#                                             trusted networks only)
+# Required when using password mode:
+#   IDUN_ADMIN_PASSWORD_HASH=<hash>          (use: idun hash-password)
+#   IDUN_SESSION_SECRET=<32-byte-hex>        (use: openssl rand -hex 32)
+# Optional overrides:
+#   DATABASE_URL=postgresql+asyncpg://<DB_USER>:<DB_PASSWORD>@<HOST>:5432/idun
+#   OPENAI_API_KEY=<your-key>                 (whatever your agent needs)
+
+CMD ["idun", "serve"]

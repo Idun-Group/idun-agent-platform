@@ -1,6 +1,25 @@
-# CLAUDE.md — Idun Platform Documentation
+# CLAUDE.md — Idun Engine Documentation
 
 This file governs all documentation work in `/docs`.
+
+## Local preview
+
+The Mintlify CLI requires Node.js **24** or older. Node 25+ is not supported. The required version is pinned in `docs/.nvmrc`.
+
+```bash
+cd docs
+nvm use                                 # picks up .nvmrc if you have nvm/fnm/asdf/volta
+npx mintlify@latest dev                 # serves at http://localhost:3000 with hot reload
+```
+
+If you don't have a Node version manager and your system Node is too new, install Node 24 via Homebrew and run mintlify with the explicit binary path:
+
+```bash
+brew install node@24
+/opt/homebrew/opt/node@24/bin/npx mintlify@latest dev
+```
+
+`docs.idun-group.com` is rebuilt automatically on every merge to `main`. Per-PR preview deployments are not currently published by the Mintlify GitHub app (the `Mintlify Deployment` check exits as `SKIPPED`). Always run a local preview before merging non-trivial docs PRs.
 
 ## Working relationship
 
@@ -11,13 +30,13 @@ You are writing public-facing technical documentation for an open-source AI agen
 When facts conflict, trust in this order:
 
 1. **Code** — schema enums, route definitions, config models, test fixtures
-2. **Service-level CLAUDE.md files** — `libs/idun_agent_engine/CLAUDE.md`, `libs/idun_agent_schema/CLAUDE.md`, `services/idun_agent_manager/CLAUDE.md`, `services/idun_agent_web/CLAUDE.md`
+2. **Service-level CLAUDE.md files** — `libs/idun_agent_schema/CLAUDE.md`, `libs/idun_agent_engine/CLAUDE.md`, `libs/idun_agent_standalone/CLAUDE.md`, `services/idun_agent_standalone_ui/CLAUDE.md`
 3. **Root CLAUDE.md** — `/CLAUDE.md`
 4. **README.md** — repo root and service READMEs
 5. **Existing MkDocs pages** — `/docs/` (reference only, may be stale)
 6. **Landing page** — `landing-page-idun-platform` repo (marketing, may overstate)
 
-Never invent capabilities. If you cannot verify a feature exists in code, do not document it. Mark unverified claims with `<!-- VERIFY: description -->` comments.
+Never invent capabilities. If you cannot verify a feature exists in code, do not document it. Mark unverified claims with a comment: use `{/* VERIFY: description */}` in `.mdx` files and `<!-- VERIFY: description -->` in plain `.md` files. The HTML-comment form does not parse inline in MDX (Mintlify rejects it as an unclosed tag).
 
 ## Writing standards
 
@@ -62,42 +81,50 @@ Optional but encouraged:
 - Internal planning documents, implementation plans, review notes
 - "Coming soon" placeholders for unbuilt features
 - Marketing language or unverified capability claims
-- Pricing information (lives on idunplatform.com)
+- Pricing information (lives on idun-group.com)
 - Security vulnerabilities or exploit details
 - API keys, secrets, or credentials (even example ones that look real)
 - Content at the `/mcp` path (reserved by Mintlify for hosted MCP)
 
 ## Verification rules
 
+**Accuracy first, prose second.** When reviewing or editing a doc, flag references to deprecated routes, removed env vars, or old config field names before any stylistic edits. A doc must compile against the current codebase before its prose is worth polishing. **Why:** stale technical claims poison every downstream consumer (developers, AI retrieval, support); a clean sentence around a wrong route is worse than rough prose around a correct one.
+
 Before publishing any factual claim:
 
 1. **Framework support** — verify adapter exists in `libs/idun_agent_engine/src/idun_agent_engine/agent/`
 2. **Config options** — verify field exists in `libs/idun_agent_schema/src/idun_agent_schema/engine/`
-3. **API endpoints** — verify route exists in `services/idun_agent_manager/src/app/api/v1/routers/`
+3. **API endpoints** — engine routes in `libs/idun_agent_engine/src/idun_agent_engine/server/routers/`; standalone admin routes in `libs/idun_agent_standalone/src/idun_agent_standalone/api/v1/routers/`
 4. **Guardrail types** — verify enum value in schema `guardrails.py`
-5. **Environment variables** — verify in manager `Settings` class or engine config resolution
+5. **Environment variables** — verify in `libs/idun_agent_standalone/src/idun_agent_standalone/core/settings.py` for standalone, or engine config resolution for engine-only vars
 6. **Integration claims** — verify integration code exists, not just a schema entry
 
-## Style alignment with idunplatform.com
+## Style alignment with idun-group.com
 
-### Colors (from landing page CSS variables)
+Docs anchor on the **Engine product page** surface (paper / ink editorial), not the home-page Aurora. Light-mode only (`appearance.strict: true` in `docs.json`).
+
+### Colors (from idun-group.com `src/index.css` `@theme` paper tokens)
 | Token | Hex | Usage |
 |-------|-----|-------|
-| `idun-purple` | `#8C52FF` | Primary brand, accent, links |
-| `idun-green` | `#0ED4A5` | Success, auth features |
-| `idun-red` | `#FF2970` | Guardrails, alerts |
-| `idun-yellow` | `#FFDC68` | Memory, observability |
-| `idun-dark` | `#040210` | Dark backgrounds |
-| `idun-card` | `#121122` | Card surfaces |
+| `paper` | `#F4F1EA` | Page background |
+| `paper-2` | `#ECE7DC` | Card / code-block surface |
+| `paper-3` | `#E4DECF` | Deeper card / hover |
+| `paper-ink` | `#15131F` | Headings |
+| `paper-ink-2` | `#3D394A` | Body copy |
+| `paper-ink-3` | `#6E6878` | Muted text, meta |
+| `paper-line` | `rgba(21,19,31,0.10)` | Hairline dividers, borders |
+| `paper-accent` | `#3D2A8E` | Indigo accent — links, CTAs, focus ring |
+| `paper-accent-soft` | `#6E5BB0` | Hover / softer accent |
 
 ### Typography
-- Body: Figtree (weights 400-800)
-- Headings: Space Grotesk (weights 500-700)
+- Body & headings: Inter (weights 400 / 600)
+- Code: monospace (Mintlify default; Shiki `github-light` theme)
 
 ### Product name
-- Full: "Idun Agent Platform" or "Idun Platform"
+- Full: "Idun Engine"
 - Short: "Idun" (only after first full mention on a page)
-- Never: "IDUN", "idun", "Idun.ai", "Idun Group" (in docs context)
+- Repo / GitHub reference: "Idun Agent Platform" (only when explicitly pointing at the GitHub repo or its codebase)
+- Never: "IDUN", "idun", "Idun.ai", "Idun Platform" (legacy, dropped), "Idun Agent Platform" as a user-facing product name
 
 ### Positioning keywords to include naturally
 - "AI agent deployment platform"
@@ -137,7 +164,7 @@ mintlify-docs/
 │   ├── langsmith.mdx
 │   ├── gcp-trace.mdx
 │   └── gcp-logging.mdx
-├── tool-governance/
+├── mcp-servers/
 │   ├── overview.mdx
 │   └── docker-toolkit.mdx
 ├── auth/
@@ -149,8 +176,13 @@ mintlify-docs/
 ├── deployment/
 │   ├── overview.mdx
 │   └── gcp.mdx
-├── manager/
-│   └── overview.mdx
+├── standalone/
+│   ├── overview.mdx
+│   ├── quickstart.mdx
+│   ├── cli.mdx
+│   ├── docker-compose.mdx
+│   ├── cloud-run.mdx
+│   └── customizing-ui.mdx
 ├── cli/
 │   └── overview.mdx
 ├── api-reference/

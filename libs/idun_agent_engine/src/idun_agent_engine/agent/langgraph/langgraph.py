@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from ag_ui.core import BaseEvent
     from ag_ui.core.types import RunAgentInput
     from idun_agent_schema.engine.capabilities import AgentCapabilities
+    from idun_agent_schema.engine.graph import AgentGraph
 
 import aiosqlite
 from ag_ui.core import events as ag_events
@@ -25,6 +26,12 @@ from idun_agent_schema.engine.langgraph import (
     SqliteCheckpointConfig,
 )
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
+from idun_agent_schema.engine.sessions import (
+    HistoryCapabilities,
+    SessionDetail,
+    SessionMessage,
+    SessionSummary,
+)
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
@@ -58,11 +65,134 @@ def _extract_text_content(content: Any) -> str:
     return "".join(parts) if parts else str(content)
 
 
+def _lc_messages_to_session(messages: list[Any]) -> list[SessionMessage]:
+    """Map LangChain messages to text-only :class:`SessionMessage` rows.
+
+    Per the agent-sessions spec §5: ``HumanMessage`` becomes role
+    ``"user"``; ``AIMessage`` becomes role ``"assistant"``. ``ToolMessage``
+    is dropped along with any message whose stringified content is empty.
+    ``SystemMessage`` and other unexpected types are skipped — chat history
+    is meant to mirror the user-facing transcript, not the internal scaffolding.
+    """
+    from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+
+    out: list[SessionMessage] = []
+    for m in messages:
+        if isinstance(m, ToolMessage):
+            continue
+        # AIMessage.content can be a string OR a list of content blocks
+        # (Gemini, Claude, etc.). Coalesce to a string.
+        content = getattr(m, "content", "")
+        if isinstance(content, list):
+            text_parts = [
+                p.get("text")
+                for p in content
+                if isinstance(p, dict) and isinstance(p.get("text"), str)
+            ]
+            content = "".join(t for t in text_parts if t)
+        if not isinstance(content, str) or not content.strip():
+            continue
+        if isinstance(m, HumanMessage):
+            role: str = "user"
+        elif isinstance(m, AIMessage):
+            role = "assistant"
+        else:
+            # Skip SystemMessage, FunctionMessage, and unknown types.
+            continue
+        out.append(
+            SessionMessage(
+                id=str(getattr(m, "id", None) or f"msg-{len(out)}"),
+                role=role,  # type: ignore[arg-type]
+                content=content,
+                timestamp=None,  # LangChain messages don't carry timestamps
+            )
+        )
+    return out
+
+
+def _row_thread_id(row: Any) -> str | None:
+    """Pull ``thread_id`` from a checkpoint row regardless of row factory.
+
+    psycopg's ``AsyncPostgresSaver`` uses ``dict_row``; aiosqlite returns
+    tuples. Try column-name access first, fall back to integer index.
+    """
+    try:
+        return row["thread_id"]
+    except (KeyError, TypeError, IndexError):
+        pass
+    try:
+        return row[0]
+    except (KeyError, IndexError, TypeError):
+        return None
+
+
+async def _enumerate_thread_ids(saver: Any, *, limit: int = 200) -> list[str]:
+    """Recent thread ids from a LangGraph checkpointer.
+
+    ``BaseCheckpointSaver`` has no public list-threads primitive
+    (``alist`` returns checkpoint tuples, not distinct threads). Falls
+    back to a ``GROUP BY thread_id`` against the saver's own
+    ``checkpoints`` table for the savers we ship.
+    """
+    if isinstance(saver, InMemorySaver):
+        storage = getattr(saver, "storage", None)
+        if isinstance(storage, dict):
+            return list(storage.keys())[:limit]
+        return []
+
+    if isinstance(saver, AsyncSqliteSaver):
+        await saver.setup()
+        async with saver.lock, saver.conn.cursor() as cur:
+            await cur.execute(
+                "SELECT thread_id, MAX(checkpoint_id) AS latest "
+                "FROM checkpoints GROUP BY thread_id "
+                "ORDER BY latest DESC LIMIT ?",
+                (limit,),
+            )
+            rows = await cur.fetchall()
+            return [tid for r in rows if (tid := _row_thread_id(r))]
+
+    if isinstance(saver, AsyncPostgresSaver):
+        async with saver.lock, saver.conn.cursor() as cur:
+            await cur.execute(
+                "SELECT thread_id, MAX(checkpoint_id) AS latest "
+                "FROM checkpoints GROUP BY thread_id "
+                "ORDER BY latest DESC LIMIT %s",
+                (limit,),
+            )
+            rows = await cur.fetchall()
+            return [tid for r in rows if (tid := _row_thread_id(r))]
+
+    raise NotImplementedError(
+        f"thread enumeration not supported for {type(saver).__name__}"
+    )
+
+
+def _state_last_update_time(state: Any) -> float | None:
+    """Parse a ``StateSnapshot.created_at`` ISO-8601 string into epoch seconds.
+
+    LangGraph's ``StateSnapshot.created_at`` is documented as ISO 8601 but
+    the format varies between savers (Z-suffix vs. +00:00 vs. naive). Parse
+    defensively and fall back to ``None`` rather than raising — last-update
+    time is metadata, not a guarantee.
+    """
+    created_at = getattr(state, "created_at", None)
+    if not isinstance(created_at, str):
+        return None
+    try:
+        from datetime import datetime
+
+        return datetime.fromisoformat(created_at.replace("Z", "+00:00")).timestamp()
+    except (ValueError, TypeError):  # pragma: no cover - defensive
+        return None
+
+
 class LanggraphAgent(agent_base.BaseAgent):
     """LangGraph agent adapter implementing the BaseAgent protocol."""
 
     def __init__(self):
         """Initialize an unconfigured LanggraphAgent with default state."""
+        super().__init__()
         self._id = str(uuid.uuid4())
         self._agent_type = "LangGraph"
         self._input_schema: Any = None
@@ -677,7 +807,32 @@ class LanggraphAgent(agent_base.BaseAgent):
             input_fields = None
             output_fields = None
 
-        # Detect input mode
+        # Detect input mode.
+        #
+        # When the operator declares ``StateGraph(OverallState)`` without an
+        # explicit ``input_schema=``, LangGraph defaults the public input
+        # to OverallState. Common LangGraph patterns mix a ``messages``
+        # field with internal scalars (``intent``, ``draft``, etc.) — the
+        # scalars are runtime-only carry-state, not user-facing inputs,
+        # but the prior heuristic (>1 field ⇒ structured) flipped the
+        # whole pipeline into structured-mode and demanded JSON-encoded
+        # ``messages[].content`` for every chat. That trapped operators
+        # who hand-wrote a TypedDict for their state without realising
+        # an explicit input/output schema split was the right idiom.
+        #
+        # Detection: ``builder.input_schema is builder.state_schema``
+        # ⇒ implicit (no explicit input_schema= supplied). When implicit
+        # AND messages is one of the fields, treat as chat — a typed
+        # public input contract is opt-in via the explicit-schema
+        # idiom. The recommended pattern is documented at
+        # https://langchain-ai.github.io/langgraph/how-tos/input_output_schema/.
+        builder = getattr(graph, "builder", None)
+        explicit_input_schema = (
+            builder is not None
+            and getattr(builder, "input_schema", None)
+            is not getattr(builder, "state_schema", None)
+        )
+
         input_mode = "chat"
         input_json_schema = None
         if input_fields is not None:
@@ -685,6 +840,11 @@ class LanggraphAgent(agent_base.BaseAgent):
             only_messages = has_messages and len(input_fields) == 1
 
             if only_messages:
+                input_mode = "chat"
+            elif has_messages and not explicit_input_schema:
+                # Implicit OverallState that happens to have messages —
+                # treat as chat. Operators who want a strict structured
+                # input contract supply ``input_schema=`` explicitly.
                 input_mode = "chat"
             else:
                 input_mode = "structured"
@@ -715,9 +875,200 @@ class LanggraphAgent(agent_base.BaseAgent):
             ),
             input=InputDescriptor(mode=input_mode, schema_=input_json_schema),
             output=OutputDescriptor(mode=output_mode, schema_=output_json_schema),
+            history=self.history_capabilities(),
         )
         self._cached_capabilities = result
         return result
+
+    def get_graph_ir(self) -> AgentGraph:
+        """Return a framework-agnostic graph IR populated from the compiled graph."""
+        from idun_agent_schema.engine.agent_framework import AgentFramework
+        from idun_agent_schema.engine.graph import (
+            AgentGraph,
+            AgentGraphEdge,
+            AgentGraphMetadata,
+            AgentKind,
+            AgentNode,
+            EdgeKind,
+        )
+
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph graph introspection requires a CompiledStateGraph"
+            )
+
+        lg_graph = self._agent_instance.get_graph()
+        nodes: list[AgentNode] = []
+        edges: list[AgentGraphEdge] = []
+
+        # Skip `__end__` so it doesn't render as a "ghost" Custom agent card.
+        # Keep `__start__` — it marks the entry point (is_root=True).
+        # Edges into `__end__` are also dropped to avoid dangling references.
+        skip_nodes = {"__end__"}
+
+        for node_id in lg_graph.nodes:
+            if node_id in skip_nodes:
+                continue
+            is_root = node_id == "__start__"
+            nodes.append(
+                AgentNode(
+                    id=f"node:{node_id}",
+                    name=node_id,
+                    agent_kind=AgentKind.CUSTOM,
+                    is_root=is_root,
+                )
+            )
+
+        for lg_edge in lg_graph.edges:
+            if lg_edge.source in skip_nodes or lg_edge.target in skip_nodes:
+                continue
+            # Public attrs: source, target. `conditional` and `data` are documented;
+            # if a future LangGraph version renames them, fall back gracefully.
+            data = getattr(lg_edge, "data", None)
+            condition: str | None = None
+            try:
+                if getattr(lg_edge, "conditional", False) and data is not None:
+                    condition = str(data)
+            except Exception:
+                logger.debug(
+                    "Failed to inspect LangGraph edge condition", exc_info=True
+                )
+                condition = None
+            label = str(data) if data is not None and not condition else None
+            edges.append(
+                AgentGraphEdge(
+                    source=f"node:{lg_edge.source}",
+                    target=f"node:{lg_edge.target}",
+                    kind=EdgeKind.GRAPH_EDGE,
+                    condition=condition,
+                    label=label,
+                )
+            )
+
+        return AgentGraph(
+            metadata=AgentGraphMetadata(
+                framework=AgentFramework.LANGGRAPH,
+                agent_name=self.name,
+                root_id="node:__start__",
+            ),
+            nodes=nodes,
+            edges=edges,
+        )
+
+    def draw_mermaid(self) -> str:
+        """Delegate to LangGraph's native draw_mermaid for polish/parity."""
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph mermaid rendering requires a CompiledStateGraph"
+            )
+        return self._agent_instance.get_graph().draw_mermaid()
+
+    def draw_ascii(self) -> str:
+        """Render ASCII art.
+
+        Delegates to LangGraph's native grandalf-backed renderer when grandalf
+        is installed; falls back to the framework-agnostic IR renderer otherwise.
+        """
+        if not isinstance(self._agent_instance, CompiledStateGraph):
+            raise NotImplementedError(
+                "LangGraph ascii rendering requires a CompiledStateGraph"
+            )
+        try:
+            return self._agent_instance.get_graph().draw_ascii()
+        except ImportError:
+            logger.warning(
+                "grandalf not installed; using framework-agnostic ASCII renderer "
+                "for LangGraph agent"
+            )
+            from idun_agent_engine.server.graph.ascii import render_ascii
+
+            return render_ascii(self.get_graph_ir())
+
+    def history_capabilities(self) -> HistoryCapabilities:
+        """Declare LangGraph session-history support.
+
+        Listing and detail are both supported when a checkpointer is wired
+        (memory / sqlite / postgres). With no checkpointer there is no
+        durable thread state, so both flags collapse to ``False``.
+        """
+        has_memory = self._checkpointer is not None
+        return HistoryCapabilities(can_list=has_memory, can_get=has_memory)
+
+    async def list_sessions(
+        self, *, user_id: str | None = None
+    ) -> list[SessionSummary]:
+        """List threads via internal-API peek on the configured checkpointer.
+
+        ``user_id`` is accepted but ignored: LangGraph checkpointers have no
+        user-id concept, so summaries always report ``user_id=None``. Per
+        spec §5, listing is single-user; multi-tenant scoping is deferred
+        until LangGraph adds first-class thread metadata.
+
+        Returns an empty list if no checkpointer is wired or the saver type
+        does not expose enumeration (a warning is logged for the latter).
+        """
+        if not self._checkpointer:
+            return []
+
+        try:
+            thread_ids = await _enumerate_thread_ids(self._checkpointer)
+        except NotImplementedError as exc:
+            logger.warning("Cannot enumerate LangGraph threads: %s", exc)
+            return []
+
+        out: list[SessionSummary] = []
+        for tid in thread_ids:
+            detail = await self.get_session(tid)
+            if detail is None:
+                continue
+            first = next((m for m in detail.messages if m.role == "user"), None)
+            out.append(
+                SessionSummary(
+                    id=tid,
+                    last_update_time=detail.last_update_time,
+                    user_id=None,
+                    thread_id=tid,
+                    preview=(first.content[:120] if first else None),
+                )
+            )
+        return out
+
+    async def get_session(
+        self, session_id: str, *, user_id: str | None = None
+    ) -> SessionDetail | None:
+        """Reconstruct a single thread's text-only message transcript.
+
+        Uses the public ``aget_state`` API on the compiled graph. ``user_id``
+        is accepted for API symmetry but ignored (single-user scoping —
+        see :meth:`list_sessions`). Returns ``None`` when the agent is not
+        initialized, no checkpointer is wired, the thread has no state,
+        or ``aget_state`` raises (e.g. invalid thread id).
+        """
+        if not self._agent_instance or not self._checkpointer:
+            return None
+
+        config: dict[str, Any] = {"configurable": {"thread_id": session_id}}
+        try:
+            state = await self._agent_instance.aget_state(config)
+        except Exception as exc:  # noqa: BLE001 - upstream raises broad errors
+            logger.warning("aget_state failed for thread %s: %s", session_id, exc)
+            return None
+
+        if state is None:
+            return None
+
+        values = getattr(state, "values", None) or {}
+        msgs = values.get("messages") if isinstance(values, dict) else None
+        if not msgs:
+            return None
+
+        return SessionDetail(
+            id=session_id,
+            last_update_time=_state_last_update_time(state),
+            user_id=None,
+            thread_id=session_id,
+            messages=_lc_messages_to_session(msgs),
+        )
 
     @staticmethod
     def _unwrap_schema_fields(schema_cls: type | None) -> dict[str, Any] | None:

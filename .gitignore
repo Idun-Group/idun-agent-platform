@@ -3,6 +3,17 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Superpowers brainstorming artifacts
+.superpowers/
+
+# Coding-guidelines renderer runtime log
+.claude/guidelines/render.log
+
+# Standalone UI build output gets baked into the wheel by the Makefile
+# (`make build-standalone-ui`); the static/ directory is otherwise empty.
+libs/idun_agent_standalone/src/idun_agent_standalone/static/*
+!libs/idun_agent_standalone/src/idun_agent_standalone/static/.gitkeep
+
 
 
 .python-version
@@ -17,8 +28,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -102,6 +113,8 @@ ipython_config.py
 #   This is especially recommended for binary packages to ensure reproducibility, and is more
 #   commonly ignored for libraries.
 #uv.lock
+#   Example apps are user-runnable starters — let users regenerate their own lockfile.
+libs/idun_agent_engine/examples/**/uv.lock
 
 # poetry
 #   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
@@ -201,6 +214,13 @@ poetry.lock
 # Editor / tool artifacts
 .specstory/
 .cursor/rules/claude-mem-context.mdc
+
+# Local agent / tooling state (never commit)
+/.claude/settings.json
+/.claude/scheduled_tasks.lock
+/.claude/worktrees/
+/.claude/smoke-test/
+/.cursor/hooks.json
 
 # Remotion video project
 video/

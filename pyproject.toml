@@ -1,54 +1,62 @@
 [project]
-name = "idun-agent-platform"
-version = "0.1.0"
-description = "Monorepo for Idun Agent Platform"
-authors = [{ name = "Geoffrey HARRAZI", email = "geoffreyharrazi@gmail.com" }]
+name = "idun-engine"
+version = "0.6.0"
+description = "Idun Engine"
+authors = [{ name = "Idun Group", email = "h.geoffrey@idun-group.com" }]
 requires-python = ">=3.12,<3.13"
 readme = "README.md"
 license = "GPL-3.0-only"
 dependencies = [
-    "cryptography>=46.0.3",
-    "idun-agent-engine>=0.5.4,<0.6.0",
-    "idun-agent-manager>=0.5.4,<0.6.0",
-    "idun-agent-schema>=0.5.4,<0.6.0",
-    "posthog>=7.7.0",
-    "setuptools>=80.9.0,<83.0.0",
-    "spacy-curated-transformers>=2.1.2",
-    "tokenizers>=0.19",
-    "transformers>=4.40,<5.0",
+    "idun-agent-engine>=0.6.0,<0.7.0",
+    "idun-agent-schema>=0.6.0,<0.7.0",
+    "idun-agent-standalone",
 ]
 
 [dependency-groups]
 dev = [
     "ruff>=0.6.5,<0.7",
-    "black>=24.8.0,<27",
     "pre-commit>=3.8.0,<4",
     "mypy>=1.10.0,<2",
     "pytest>=8.3.3,<9",
     "pytest-cov>=5.0.0,<6",
     "types-PyYAML>=6.0.12.20240808,<7",
     "pyright>=1.1.404,<2",
-    "mkdocs>=1.6.1,<2",
-    "mkdocs-material>=9.5.39,<10",
-    "mkdocstrings[python]>=0.26.2,<0.27",
-    "mkdocs-gen-files>=0.5.0,<0.6",
-    "mkdocs-autorefs>=1.2.0,<2",
-    "mkdocs-include-markdown-plugin>=7.0.0,<8",
-    "mkdocs-redirects>=1.2.1,<2",
-    "mkdocs-section-index>=0.3.9,<0.4",
-    "mkdocs-git-revision-date-localized-plugin>=1.2.6,<2",
-    "torch>=2.10.0",
     "pytest-asyncio>=1.3.0",
     "typer>=0.15.0",
+    "langchain-openai>=0.3.0",
 ]
 
 [tool.uv]
 package = false
 
+# Declare the three Idun libs as a uv workspace so `uv build --package
+# idun-agent-standalone` works from the repo root and resolves the
+# inter-lib editable installs by name.
+[tool.uv.workspace]
+members = [
+    "libs/idun_agent_engine",
+    "libs/idun_agent_schema",
+    "libs/idun_agent_standalone",
+]
+
 [tool.uv.sources]
-idun-agent-engine = { path = "libs/idun_agent_engine", editable = true }
-idun-agent-manager = { path = "services/idun_agent_manager", editable = true }
-idun-agent-schema = { path = "libs/idun_agent_schema", editable = true }
+idun-agent-engine = { workspace = true }
+idun-agent-schema = { workspace = true }
+idun-agent-standalone = { workspace = true }
+# Temporary workaround: the PyPI ``guardrails-ai`` project was quarantined for
+# a security incident, so the published 0.9.2 wheel is no longer resolvable.
+# Point uv at the upstream git commit so ``uv lock`` / ``uv sync`` succeed for
+# the optional ``[guardrails]`` extra of idun-agent-engine. Source overrides
+# apply only to local resolution — published engine wheels still reference
+# ``guardrails-ai==0.9.2`` on PyPI, so end-users are unaffected once upstream
+# restores the project. Remove this entry when that happens.
+#
+# ``rev`` is the peeled commit object of the annotated ``v0.9.2`` tag, pinned
+# rather than the tag name itself — tags can be moved or rewritten upstream,
+# commit SHAs cannot, so this keeps resolution reproducible and reduces
+# supply-chain risk. To refresh: ``git ls-remote --tags
+# https://github.com/guardrails-ai/guardrails | grep 'v0.9.2\^{}'``.
+guardrails-ai = { git = "https://github.com/guardrails-ai/guardrails", rev = "ee6999d84d3becdb3dbf5862ae7b893130ddacb8" }
 
 [build-system]
 requires = ["hatchling"]

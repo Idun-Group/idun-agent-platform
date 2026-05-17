@@ -327,3 +327,42 @@ def create_structured_io_graph() -> StateGraph:
 
 # Instances for test loading
 structured_io_graph = create_structured_io_graph()
+
+
+# -----------------------------------------------------------------------------
+# Implicit-state-with-messages Graph (regression for the structured-mode trap)
+# -----------------------------------------------------------------------------
+#
+# Mimics the common LangGraph pattern where an operator declares one
+# OverallState TypedDict with messages + scalar internal fields and
+# does NOT supply an explicit input_schema. The prior heuristic flipped
+# this into structured-mode and demanded JSON-encoded
+# ``messages[].content`` for every chat. The fix in
+# ``langgraph.py:discover_capabilities`` treats messages as the
+# canonical chat input when the input schema is implicit.
+
+
+from langchain_core.messages import BaseMessage  # noqa: E402
+
+
+class ImplicitMessagesState(TypedDict, total=False):
+    messages: list[BaseMessage]
+    intent: str
+    draft: str
+    response: str
+
+
+def implicit_messages_node(state: ImplicitMessagesState) -> dict[str, Any]:
+    return {"draft": "ok"}
+
+
+def create_implicit_messages_graph() -> StateGraph:
+    """Operator-style graph: OverallState with messages + scalars, no schemas."""
+    builder = StateGraph(ImplicitMessagesState)
+    builder.add_node("draft", implicit_messages_node)
+    builder.set_entry_point("draft")
+    builder.add_edge("draft", END)
+    return builder
+
+
+implicit_messages_graph = create_implicit_messages_graph()

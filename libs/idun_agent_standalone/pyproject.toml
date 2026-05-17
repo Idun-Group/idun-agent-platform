@@ -1,0 +1,68 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "idun-agent-standalone"
+version = "0.6.0"
+description = "Single-process, single-tenant Idun agent with embedded UI, admin panel, and traces viewer."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+authors = [{ name = "Idun Group", email = "h.geoffrey@idun-group.com" }]
+license = { text = "GPL-3.0-only" }
+dependencies = [
+    "idun-agent-engine>=0.6.0,<0.7.0",
+    "idun-agent-schema>=0.6.0,<0.7.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy[asyncio]>=2.0",
+    "alembic>=1.13",
+    "aiosqlite>=0.20",
+    "asyncpg>=0.29",
+    "bcrypt>=4.0",
+    "itsdangerous>=2.2",
+    "pydantic>=2.11",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+    "click>=8.1",
+    "httpx>=0.27",
+    "pyyaml>=6.0",
+    "apscheduler>=3.10",
+    "rfc8785>=0.1",
+    "sentencepiece>=0.2.1",
+    "python-dateutil>=2.9",
+]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/idun_agent_standalone"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src/idun_agent_standalone"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/idun_agent_standalone" = "idun_agent_standalone"
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/idun_agent_standalone/alembic.ini" = "idun_agent_standalone/alembic.ini"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = [
+    "src",
+    "tests",
+    "../idun_agent_engine/src",
+    "../idun_agent_schema/src",
+]
+addopts = "-ra -q --strict-markers --import-mode=importlib"
+filterwarnings = [
+    # FastAPI 0.115 builds TypeAdapter(Annotated[T, FieldInfo]) per body field
+    # in fastapi/_compat.py:112; Pydantic 2.12 then warns about alias info on
+    # the FieldInfo even though pydantic itself flags this as a known FastAPI
+    # interaction (see the HACK note in pydantic/_internal/_generate_schema.py).
+    # Drop the noise until FastAPI ships a fix.
+    "ignore::pydantic.warnings.UnsupportedFieldAttributeWarning",
+]
+markers = [
+    "requires_postgres: Test requires PostgreSQL (skipped unless PYTEST_POSTGRES_URL is set)",
+]

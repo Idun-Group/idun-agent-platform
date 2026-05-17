@@ -131,9 +131,7 @@ class DetectPIIConfig(GuardrailConfig):
     api_key: str = ""
     reject_message: str = "PII detected"
     guard_url: str = "hub://guardrails/detect_pii"
-    pii_entities: list[str] = Field(
-        description="List of PII entity types to detect"
-    )
+    pii_entities: list[str] = Field(description="List of PII entity types to detect")
     on_fail: str = Field(default="exception")
 
     @model_validator(mode="before")
@@ -221,9 +219,14 @@ class RestrictToTopicConfig(BaseModel):
         GuardrailConfigId.RESTRICT_TO_TOPIC
     )
     api_key: str = ""
-    guard_url: str = "hub://guardrails/restrict_to_topic"
+    guard_url: str = "hub://tryolabs/restricttotopic"
     reject_message: str = "Off-topic content detected"
-    topics: list[str] = Field(description="List of allowed topics")
+    valid_topics: list[str] = Field(
+        default_factory=list, description="Topics the agent is allowed to discuss"
+    )
+    invalid_topics: list[str] = Field(
+        default_factory=list, description="Topics the agent must refuse"
+    )
 
 
 class ToxicLanguageConfig(BaseModel):

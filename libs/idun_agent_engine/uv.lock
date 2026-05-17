@@ -1498,47 +1498,6 @@ wheels = [
 ]
 
 [[package]]
-name = "haystack-ai"
-version = "2.23.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "docstring-parser" },
-    { name = "filetype" },
-    { name = "haystack-experimental" },
-    { name = "jinja2" },
-    { name = "jsonschema" },
-    { name = "lazy-imports" },
-    { name = "more-itertools" },
-    { name = "networkx" },
-    { name = "numpy" },
-    { name = "openai" },
-    { name = "posthog" },
-    { name = "pydantic" },
-    { name = "python-dateutil" },
-    { name = "pyyaml" },
-    { name = "requests" },
-    { name = "tenacity" },
-    { name = "tqdm" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/e5/bcfd28c1343ddacda60c6c1639899d65ed15996c3fcd43e85222d0e18e24/haystack_ai-2.23.0.tar.gz", hash = "sha256:d19fac84b84ee8c228bb067df2d565db3f758d0d38217909678faa238d614050", size = 448567, upload-time = "2026-01-27T09:14:20.389Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/a9/94ae3e375a101df0ec2a0833dff8f42e1b61ccc4cd4337c5fdd1740646d0/haystack_ai-2.23.0-py3-none-any.whl", hash = "sha256:de09dfbe66624360bd0efddb776c50b5b20b49455bf57ce575579145765aa0bc", size = 658590, upload-time = "2026-01-27T09:14:18.717Z" },
-]
-
-[[package]]
-name = "haystack-experimental"
-version = "0.19.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "haystack-ai" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/71/a3/02eb86716f4856072feb852555f2d23855bb20c993264dcf4e83dfe87a8a/haystack_experimental-0.19.0.tar.gz", hash = "sha256:194f9074f9184a20d2f4efa7b5082dd33118bc886f87937d13e33616cd549067", size = 45328, upload-time = "2026-02-05T08:31:33.862Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/c4/6719e1b03b72ab31729b556a47fe3df1ab7fa233b1d01182f0c5ddadfda6/haystack_experimental-0.19.0-py3-none-any.whl", hash = "sha256:ebe1691a4b8d06f934bad792ff95fb4b6858a2ae08f08519e9cf35b7b439b4bd", size = 63150, upload-time = "2026-02-05T08:31:34.683Z" },
-]
-
-[[package]]
 name = "hf-xet"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1666,7 +1625,6 @@ dependencies = [
     { name = "langchain-google-vertexai" },
     { name = "langchain-mcp-adapters" },
     { name = "langfuse" },
-    { name = "langfuse-haystack" },
     { name = "langgraph" },
     { name = "langgraph-checkpoint-postgres" },
     { name = "langgraph-checkpoint-sqlite" },
@@ -1731,7 +1689,6 @@ requires-dist = [
     { name = "langchain-google-vertexai", specifier = ">=2.0.27,<4.0.0" },
     { name = "langchain-mcp-adapters", specifier = ">=0.2.0,<0.3.0" },
     { name = "langfuse", specifier = ">=2.60.8,<4.0.0" },
-    { name = "langfuse-haystack", specifier = ">=2.3.0" },
     { name = "langgraph", specifier = ">=1.0.0,<2.0.0" },
     { name = "langgraph-checkpoint-postgres", specifier = ">=3.0.0,<4.0.0" },
     { name = "langgraph-checkpoint-sqlite", specifier = ">=3.0.0,<4.0.0" },
@@ -2089,19 +2046,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/24/7a/ddd8df7f2c5d8c2112a8b20fa88b2513917e2c25d2ef87034c0927f87596/langfuse-3.14.1.tar.gz", hash = "sha256:404a6104cd29353d7829aa417ec46565b04917e5599afdda96c5b0865f4bc991", size = 234530, upload-time = "2026-02-09T15:37:45.994Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/80/b9/e8ac3072469737358975da66ec4218dc1cee0051555dd4665b3e34a28420/langfuse-3.14.1-py3-none-any.whl", hash = "sha256:17bed605dbfc9947cbd1738a715f6d27c1b80b6da9f2946586171958fa5820d0", size = 420336, upload-time = "2026-02-09T15:37:44.381Z" },
-]
-
-[[package]]
-name = "langfuse-haystack"
-version = "4.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "haystack-ai" },
-    { name = "langfuse" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/82/d2/b18de8453ca617423a3d3ca200b6e1dcafa1c0f2d8aa0f58eb6ca22be713/langfuse_haystack-4.0.1.tar.gz", hash = "sha256:396dacfa21549c3afdd5cd40439dca1262d227cedb45c399a6c184452489aaf2", size = 29671, upload-time = "2026-01-27T10:04:16.452Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3a/d0/4381c6eb6cb3e16196a6e9bbc11bb11809061a04490e85ed917740f5efa9/langfuse_haystack-4.0.1-py3-none-any.whl", hash = "sha256:e061a30370abb1aa51fee5cc1f6ab09b3fd6ef0604ec1c45cae25c55f08383ee", size = 17086, upload-time = "2026-01-27T10:04:17.66Z" },
 ]
 
 [[package]]

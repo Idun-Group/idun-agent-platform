@@ -1,0 +1,59 @@
+---
+title: "Glossary"
+description: "Definitions of the Idun packages and where each one fits."
+keywords: ["glossary", "engine", "standalone", "install path"]
+---
+
+Idun Agent Platform ships as a small set of packages with a clear relationship. This page defines each one and explains which install path you actually want to follow.
+
+## Packages
+
+### Idun Agent Engine
+
+Package: `idun-agent-engine`. Console script: `idun`.
+
+The Python SDK and FastAPI runtime that wraps a LangGraph or Google ADK agent into a production endpoint. You point it at a YAML config and a Python module, and it serves your agent over the AG-UI streaming protocol with optional guardrails, observability providers, MCP tool registries, and prompt loading.
+
+The wheel bundles the standalone admin/chat/traces app and the `idun-agent-schema` runtime, so a single `pip install idun-agent-engine` is everything you need on a fresh machine. Engine-only mode (no DB, no UI, no admin REST) is available through `idun agent serve --source file --path config.yaml` if you want a thin runtime layer for your own platform.
+
+### Idun Agent Standalone
+
+Source: `libs/idun_agent_standalone` inside the engine wheel.
+
+The single-process, single-tenant product that wraps the engine with an embedded chat UI, an admin REST surface, traces capture, and a local DB. One binary you can deploy on a laptop, VM, or Cloud Run.
+
+What it adds on top of the engine:
+
+- A bundled Next.js UI at `/` (chat), `/admin/` (config editing), and `/admin/traces/` (recent run events).
+- Admin REST endpoints under `/admin/api/v1/*` for editing agent, guardrails, MCP servers, prompts, observability, integrations, and theme.
+- A SQLite-backed database by default (Postgres optional) holding admin state and AG-UI trace events.
+- Password authentication for the admin panel (`none` for laptops, `password` for containers), and per-agent OIDC SSO on the `/agent/*` runtime routes with email/domain allowlists. See [Authentication](/auth/overview) and [SSO](/auth/sso).
+- A reload orchestrator that rebuilds the engine on every admin write and swaps it atomically.
+
+Use this when you ship one agent end-to-end and want chat, admin, and traces in one process.
+
+### Idun Agent Schema
+
+Package: `idun-agent-schema`.
+
+The Pydantic models that define the config structure consumed by the engine and standalone. Schema changes start here and propagate. Installed automatically as a transitive dependency of `idun-agent-engine`; you rarely import it directly.
+
+## Install path
+
+One command on any host with Python 3.12+:
+
+```bash
+pip install idun-agent-engine
+mkdir my-agent && cd my-agent
+idun init
+```
+
+`idun init` runs DB migrations and opens your browser at `http://localhost:8000/`. The onboarding wizard scaffolds `agent.py`, `config.yaml`, and `.env.example` and seeds the local DB. After that, the DB is the source of truth and admin edits persist across restarts. Visit `/` for the chat UI, `/admin/` to edit config, `/admin/traces/` to inspect AG-UI events.
+
+If you have your own admin stack and only want the runtime layer, skip the standalone surface and use engine-only mode:
+
+```bash
+idun agent serve --source file --path config.yaml
+```
+
+No DB, no UI, no admin REST. You bring your own deployment story.

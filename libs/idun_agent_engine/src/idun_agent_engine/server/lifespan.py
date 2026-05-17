@@ -2,10 +2,30 @@
 
 Initializes the agent at startup and cleans up resources on shutdown.
 """
+
 import inspect
 import logging
-from collections.abc import Sequence
+import warnings
+from collections.abc import Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
+
+# ag_ui.core.types declares pydantic field aliases on type-aliased
+# union members; pydantic v2 flags this with
+# UnsupportedFieldAttributeWarning, ~30 lines per boot. The aliases
+# still work at runtime — filter the noise so the boot log isn't
+# dominated by upstream-library complaints. Track upstream and remove
+# this filter once ag_ui migrates to ``Annotated[..., Field(...)]``.
+try:
+    from pydantic import UnsupportedFieldAttributeWarning
+
+    warnings.filterwarnings(
+        "ignore",
+        category=UnsupportedFieldAttributeWarning,
+        module=r"ag_ui\.core\..*",
+    )
+except ImportError:
+    pass
 
 from fastapi import FastAPI
 from idun_agent_schema.engine.guardrails import Guardrails
@@ -14,21 +34,78 @@ from idun_agent_engine.mcp.registry import MCPClientRegistry, set_active_registr
 
 from ..core.config_builder import ConfigBuilder
 from ..guardrails.base import BaseGuardrail
+from ..observability.otel_lifecycle import shutdown_otel
 from ..telemetry import get_telemetry, sanitize_telemetry_config
 
 logger = logging.getLogger(__name__)
 
 
-def _parse_guardrails(guardrails_obj: Guardrails) -> Sequence[BaseGuardrail]:
-    """Adds the position of the guardrails (input/output) and returns the lift of updated guardrails."""
+PostConfigureCallback = Callable[[FastAPI], Awaitable[None]]
+
+
+@dataclass(frozen=True)
+class FailedGuardrail:
+    """A guardrail that failed to initialize.
+
+    Surfaced via ``app.state.failed_guardrails`` — same pattern the
+    engine already uses for ``failed_mcp_servers``. Embedders (e.g.
+    the standalone reload pipeline) inspect this list to detect
+    silent install failures and surface them as a non-success reload
+    outcome, instead of letting the request flow through with the
+    guardrail inactive.
+    """
+
+    config_id: str
+    position: str
+    error: str
+
+
+def _parse_guardrails(
+    guardrails_obj: Guardrails,
+) -> tuple[Sequence[BaseGuardrail], list[FailedGuardrail]]:
+    """Build guard instances; collect rather than swallow failures.
+
+    Returns ``(guards, failures)``. The boot path keeps the existing
+    "one failure does not drop the rest" behavior — it logs and
+    continues — but reload-time embedders use the ``failures`` list
+    to surface a clear signal back to the admin caller (e.g. when a
+    Hub install raises ``HttpError``, the install side-effects fail,
+    or a transitive dep like a spaCy model is missing). Without this
+    surface, the engine previously logged the failure and let
+    ``configure_app`` complete normally — admins saw ``reload OK``
+    and only noticed the silent inactivity when production traffic
+    bypassed the guardrail.
+    """
     from ..guardrails.guardrails_hub.guardrails_hub import GuardrailsHubGuard as GHGuard
 
     if not guardrails_obj:
-        return []
+        return [], []
 
-    return [GHGuard(guard, position="input") for guard in guardrails_obj.input] + [
-        GHGuard(guard, position="output") for guard in guardrails_obj.output
-    ]
+    guards: list[BaseGuardrail] = []
+    failures: list[FailedGuardrail] = []
+    for position, configs in (
+        ("input", guardrails_obj.input),
+        ("output", guardrails_obj.output),
+    ):
+        for guard in configs:
+            config_id = str(getattr(guard, "config_id", "<unknown>"))
+            try:
+                guards.append(GHGuard(guard, position=position))
+                logger.info("Guardrail '%s' (%s) initialized", config_id, position)
+            except (Exception, SystemExit) as exc:
+                logger.exception(
+                    "Guardrail '%s' (%s) init failed; skipping",
+                    config_id,
+                    position,
+                )
+                failures.append(
+                    FailedGuardrail(
+                        config_id=config_id,
+                        position=position,
+                        error=str(exc),
+                    )
+                )
+    return guards, failures
 
 
 async def cleanup_agent(app: FastAPI):
@@ -42,27 +119,103 @@ async def cleanup_agent(app: FastAPI):
             if inspect.isawaitable(result):
                 await result
 
+    integrations = getattr(app.state, "integrations", [])
+    if integrations:
+        logger.info("Shutting down %d integration(s)", len(integrations))
+        for integration in integrations:
+            try:
+                await integration.shutdown()
+                logger.info("Integration %s shut down", type(integration).__name__)
+            except Exception:
+                logger.exception("integration shutdown failed during reload")
+        app.state.integrations = []
+
+    tracked = getattr(app.state, "integration_routes", [])
+    if tracked:
+        logger.info(
+            "cleanup_agent: removing %d integration route(s) paths=%s",
+            len(tracked),
+            [getattr(r, "path", "<unknown>") for r in tracked],
+        )
+        removed = 0
+        for route in tracked:
+            try:
+                app.router.routes.remove(route)
+                removed += 1
+                logger.debug(
+                    "cleanup_agent: removed integration route path=%s",
+                    getattr(route, "path", "<unknown>"),
+                )
+            except ValueError:
+                logger.warning(
+                    "cleanup_agent: tracked integration route already absent path=%s",
+                    getattr(route, "path", "<unknown>"),
+                )
+        logger.info(
+            "cleanup_agent: integration route removal complete removed=%d remaining_routes=%d",
+            removed,
+            len(app.router.routes),
+        )
+    app.state.integration_routes = []
+
+    # Drain OTel resources installed by observability handlers (and the
+    # standalone runtime's post_configure_callbacks once it lands). Keeps
+    # reload N+1 from logging "Overriding of current TracerProvider is
+    # not allowed" and silently dropping the new processor.
+    shutdown_otel()
+
 
 async def configure_app(app: FastAPI, engine_config):
-    """Initialize the agent, MCP registry, guardrails, and app state with the given engine config."""
+    """Initialize the agent, MCP registry, guardrails, and app state with the given engine config.
+
+    After all setup is done — including reload via ``POST /reload`` — every
+    callback registered in ``app.state.post_configure_callbacks`` is awaited.
+    Embedders (e.g. ``idun_agent_standalone``) use this hook to re-attach
+    cross-cutting concerns (run-event observers, telemetry instrumentation)
+    that would otherwise be lost when ``configure_app`` rebuilds the agent
+    from scratch.
+    """
+    # Preserve any callbacks the embedder registered before the engine
+    # lifespan ran. Reload only mutates ``app.state.agent`` etc., so the
+    # callback list naturally survives across reloads.
+    if not hasattr(app.state, "post_configure_callbacks"):
+        app.state.post_configure_callbacks = []
+
+    # Per-guard init failures are caught and collected inside
+    # _parse_guardrails (returns the failure list). Anything that escapes
+    # _parse_guardrails is a parser bug, not an expected install error,
+    # and must propagate so the reload pipeline can roll back the DB
+    # write — silently swallowing it would re-introduce the very
+    # silent-passthrough behavior this surface was added to fix.
     guardrails_obj = engine_config.guardrails
-    try:
-        guardrails = _parse_guardrails(guardrails_obj) if guardrails_obj else []
-        logger.debug(f"Guardrails: {guardrails}")
-    except Exception as e:
-        logger.exception(f"Failed to parse guardrails: {e}, continuing without them")
-        guardrails = []
+    guardrails, failed_guardrails = (
+        _parse_guardrails(guardrails_obj) if guardrails_obj else ([], [])
+    )
+    logger.debug(f"Guardrails: {guardrails}")
+    # Mirror the failed_mcp_servers pattern — surface install failures
+    # so embedders (e.g. the standalone reload pipeline) can roll back
+    # the DB write instead of letting the request flow through with
+    # the guardrail silently inactive.
+    app.state.failed_guardrails = failed_guardrails
 
     # Use ConfigBuilder's centralized agent initialization, passing the registry
     try:
         mcp_registry = MCPClientRegistry(engine_config.mcp_servers or [])
     except Exception as e:
-        logger.exception(f"⚠️ Failed to initialize MCP registry: {e}, continuing without MCP servers")
+        logger.exception(
+            f"⚠️ Failed to initialize MCP registry: {e}, continuing without MCP servers"
+        )
         mcp_registry = MCPClientRegistry()
     set_active_registry(mcp_registry)
     app.state.mcp_registry = mcp_registry
+    # Surface per-server failures so embedders (e.g. the standalone
+    # admin UI) can render a "failed" badge instead of guessing from
+    # logs. Replaced on every reload so stale failures don't linger.
+    app.state.failed_mcp_servers = mcp_registry.failed
     try:
-        agent_instance = await ConfigBuilder.initialize_agent_from_config(engine_config, mcp_registry)
+        agent_instance = await ConfigBuilder.initialize_agent_from_config(
+            engine_config, mcp_registry
+        )
     except Exception as e:
         raise ValueError(
             f"Error retrieving agent instance from ConfigBuilder: {e}"
@@ -82,7 +235,9 @@ async def configure_app(app: FastAPI, engine_config):
                     f"🔧 MCP Server {s.name}: [{s.transport.upper()}] {s.url or s.command}"
                 )
         except Exception as e:
-            logger.exception(f"Failed to assign mcp servers to agent: {e}, continuing without them")
+            logger.exception(
+                f"Failed to assign mcp servers to agent: {e}, continuing without them"
+            )
             mcp_servers = []
 
     # SSO / OIDC setup
@@ -136,6 +291,18 @@ async def configure_app(app: FastAPI, engine_config):
     else:
         app.state.integrations = []
 
+    # Run embedder-supplied post-configure callbacks. We deliberately log
+    # and continue on failure so a misbehaving callback can't take the
+    # whole reload down with it (the agent itself is already live by now).
+    callbacks: list[PostConfigureCallback] = list(
+        getattr(app.state, "post_configure_callbacks", [])
+    )
+    for cb in callbacks:
+        try:
+            await cb(app)
+        except Exception:
+            logger.exception("post_configure_callback %r raised; continuing", cb)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -147,10 +314,20 @@ async def lifespan(app: FastAPI):
 
     # Load config and initialize agent on startup
     logger.info("🚀 Server starting up...")
-    if not app.state.engine_config:
-        raise ValueError("Error: No Engine configuration found.")
-
-    await configure_app(app, app.state.engine_config)
+    if app.state.engine_config is not None:
+        await configure_app(app, app.state.engine_config)
+    else:
+        # Unconfigured boot: agent state stays empty until an embedder
+        # calls ``configure_app`` explicitly (typically via the standalone
+        # reload pipeline once a wizard materializes the agent). Set the
+        # markers downstream readers expect so ``getattr(...)`` short
+        # -circuits cleanly.
+        app.state.agent = None
+        if not hasattr(app.state, "post_configure_callbacks"):
+            app.state.post_configure_callbacks = []
+        logger.info(
+            "⏸️  Engine started unconfigured — /agent/* will 503 until configure_app runs"
+        )
 
     try:
         telemetry = get_telemetry()

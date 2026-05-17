@@ -1,0 +1,44 @@
+# Version control + workflows
+.git
+.gitignore
+.github
+
+# Python / venv
+.venv
+venv
+**/.venv
+**/venv
+__pycache__
+*.pyc
+**/__pycache__
+.pytest_cache
+**/.pytest_cache
+.mypy_cache
+**/.mypy_cache
+.ruff_cache
+**/.ruff_cache
+*.egg-info
+**/*.egg-info
+
+# Node
+**/node_modules
+**/.next
+**/out
+
+# IDE
+.vscode
+.idea
+.DS_Store
+
+# Repo-only artifacts
+.claude
+.superpowers
+docs
+
+# Tests + dev artifacts
+**/tests
+*.egg-info
+
+# OS / build outputs
+Thumbs.db
+dist

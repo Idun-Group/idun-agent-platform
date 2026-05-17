@@ -7,6 +7,7 @@ import sys
 from typing import TYPE_CHECKING, Any, cast
 
 from idun_agent_schema.engine.mcp_server import MCPServer
+from langchain_core.tools import StructuredTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import Connection
 
@@ -87,6 +88,61 @@ def _sanitize_schema(schema: Any) -> None:
             _sanitize_schema(item)
 
 
+def _serialization_safe_shim(mcp_tool: Any) -> StructuredTool:
+    """Wrap an MCP-resolved LangChain tool so AG-UI can serialize it.
+
+    Failure this fixes: ``langchain-mcp-adapters`` exposes each MCP tool
+    as a ``StructuredTool`` whose coroutine accepts a ``runtime`` kwarg
+    LangGraph injects with the live ``Runtime`` object. Inside that
+    coroutine the tool builds an ``MCPToolCallRequest`` dataclass that
+    captures the runtime. The AG-UI LangGraph adapter's
+    ``make_json_safe`` then recursively ``dataclasses.asdict()``s every
+    emitted event payload, which deep-copies the request — and
+    transitively the runtime, which holds ``_GatheringFuture`` /
+    ``TaskStepMethWrapper`` instances that are not picklable. Result:
+    every LG MCP run aborts with ``cannot pickle '_GatheringFuture'``
+    immediately after ``TOOL_CALL_END``.
+
+    The shim's coroutine takes only ``**kwargs`` (no ``runtime``
+    parameter). LangGraph's ToolNode doesn't pass ``runtime`` into a
+    coroutine that doesn't declare it, so the runtime never lands in
+    a closure or dataclass that AG-UI's recursion will visit. The
+    shim forwards via ``await underlying.ainvoke(kwargs)`` — the
+    underlying tool keeps its full request/runtime machinery, but it
+    is held in a frame the AG-UI adapter never serializes.
+
+    The wrapper returns plain ``str`` (or a flattened text join for
+    list-of-content-block returns) instead of the underlying tool's
+    ``content_and_artifact`` tuple. The artifact is dropped by design
+    — agents calling MCP tools through AG-UI receive the visible text
+    content, which is the format the LangGraph chat model already
+    consumes via ``ToolNode``. Restoring ``MCPToolArtifact`` would
+    re-introduce the serialization surface this shim is here to
+    remove.
+    """
+
+    async def _forward(**kwargs: Any) -> str:
+        result = await mcp_tool.ainvoke(kwargs)
+        if isinstance(result, str):
+            return result
+        if isinstance(result, list):
+            parts: list[str] = []
+            for item in result:
+                if isinstance(item, dict) and item.get("type") == "text":
+                    parts.append(str(item.get("text", "")))
+                else:
+                    parts.append(str(item))
+            return "\n".join(parts)
+        return str(result)
+
+    return StructuredTool(
+        name=mcp_tool.name,
+        description=mcp_tool.description or "",
+        args_schema=mcp_tool.args_schema,
+        coroutine=_forward,
+    )
+
+
 _active_registry: MCPClientRegistry | None = None
 
 
@@ -107,11 +163,20 @@ def get_active_registry() -> MCPClientRegistry | None:
 
 
 class MCPClientRegistry:
-    """Wraps `MultiServerMCPClient` with convenience helpers."""
+    """Wraps `MultiServerMCPClient` with convenience helpers.
+
+    Per-server failure isolation (D6): if one server fails to convert to
+    a connection dict, the surviving servers continue to load. The
+    registry exposes a ``failed`` list so embedders can surface per-server
+    failure status (e.g. a red badge in the standalone admin UI).
+    """
 
     def __init__(self, configs: list[MCPServer] | None = None) -> None:
         self._configs = configs or []
         self._client: MultiServerMCPClient | None = None
+        # ``failed`` carries one entry per server whose init was skipped,
+        # in the same order as ``configs``. Embedders join on ``name``.
+        self._failed: list[dict[str, str]] = []
 
         if self._configs:
             connections: dict[str, Connection] = {}
@@ -120,20 +185,55 @@ class MCPClientRegistry:
                     connections[config.name] = cast(
                         Connection, config.as_connection_dict()
                     )
-                except Exception:
-                    logger.exception(
-                        "⚠️ Failed to build connection for MCP server '%s', skipping.",
+                except Exception as exc:
+                    logger.warning(
+                        "⚠️ MCP server '%s' (%s) failed to initialize: %s — "
+                        "skipping; surviving servers continue to load.",
                         config.name,
+                        config.transport,
+                        exc,
+                    )
+                    self._failed.append(
+                        {
+                            "name": config.name,
+                            "kind": str(config.transport),
+                            "reason": str(exc) or repr(exc),
+                        }
                     )
 
             if connections:
                 try:
                     self._client = MultiServerMCPClient(connections)
-                except Exception:
-                    logger.exception(
-                        "⚠️ Failed to create MultiServerMCPClient, "
-                        "continuing without MCP servers."
+                except Exception as exc:
+                    logger.warning(
+                        "⚠️ Failed to create MultiServerMCPClient (%s): %s — "
+                        "marking every remaining server as failed and "
+                        "continuing without MCP support.",
+                        type(exc).__name__,
+                        exc,
                     )
+                    # Surface every server still in ``connections`` as a
+                    # failure so the UI doesn't claim they are running.
+                    for config in self._configs:
+                        if config.name in connections and not any(
+                            f["name"] == config.name for f in self._failed
+                        ):
+                            self._failed.append(
+                                {
+                                    "name": config.name,
+                                    "kind": str(config.transport),
+                                    "reason": f"client construction failed: {exc}",
+                                }
+                            )
+
+    @property
+    def failed(self) -> list[dict[str, str]]:
+        """Return per-server failure records (read-only snapshot).
+
+        Each entry is ``{"name": ..., "kind": <transport>, "reason": ...}``.
+        Empty when every configured server initialised successfully.
+        """
+        return list(self._failed)
 
     @property
     def enabled(self) -> bool:
@@ -178,6 +278,11 @@ class MCPClientRegistry:
 
         When loading from all servers, each server is tried individually
         so a single broken server does not prevent the others from loading.
+
+        Each tool is wrapped via ``_serialization_safe_shim`` so the
+        LangGraph runtime reference can't reach AG-UI's
+        ``make_json_safe`` recursive ``dataclasses.asdict``. See that
+        helper's docstring for the full failure mode.
         """
         if not self._client:
             raise RuntimeError("MCP client registry is not enabled.")
@@ -188,9 +293,7 @@ class MCPClientRegistry:
             tools = []
             for server_name in self._client.connections:
                 try:
-                    server_tools = await self._client.get_tools(
-                        server_name=server_name
-                    )
+                    server_tools = await self._client.get_tools(server_name=server_name)
                     tools.extend(server_tools)
                 except Exception:
                     logger.exception(
@@ -201,7 +304,7 @@ class MCPClientRegistry:
         for tool in tools:
             if hasattr(tool, "args_schema"):
                 _sanitize_schema(tool.args_schema)
-        return tools
+        return [_serialization_safe_shim(tool) for tool in tools]
 
     async def get_langchain_tools(self, name: str | None = None) -> list[Any]:
         """Alias for get_tools to make intent explicit when using LangChain/LangGraph agents."""

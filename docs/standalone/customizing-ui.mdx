@@ -1,0 +1,33 @@
+---
+title: Customizing the chat UI
+description: Theme, layout, and full UI replacement.
+keywords: ["chat UI", "theme", "customize", "Next.js", "branding", "IDUN_UI_DIR", "standalone UI"]
+---
+
+The standalone ships a Next.js UI bundled into the wheel. There are three levels of customization.
+
+## Level 1 — Theme
+
+Open `/admin/settings/`. Change the app name, greeting, layout (branded / minimal / inspector), color palette (light + dark), radius, font, and starter prompts. Save, and the change applies immediately to all clients.
+
+The theme is persisted in the `theme` table alongside the rest of the admin state.
+
+## Level 2 — Replace the chat UI entirely
+
+The static UI is mounted from a directory. Override it via `IDUN_UI_DIR`:
+
+```bash
+IDUN_UI_DIR=/path/to/your/built/ui idun serve
+```
+
+Your UI just needs to:
+
+- Be a static export (HTML + JS + CSS).
+- Call the standalone's REST endpoints — auth at `/admin/api/v1/auth/login`, agent run at `/agent/run`, etc.
+- Optionally read `/runtime-config.js` for theme + auth mode.
+
+The bundled UI lives in the [`services/idun_agent_standalone_ui`](https://github.com/Idun-Group/idun-agent-platform/tree/main/services/idun_agent_standalone_ui) directory; fork it.
+
+## Level 3 — Headless
+
+Mount no UI at all (point `IDUN_UI_DIR` at an empty directory or omit the bundled UI from your image). The admin REST surface and `/agent/run` remain available for your own frontend.

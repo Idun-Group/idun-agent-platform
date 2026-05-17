@@ -1,0 +1,23 @@
+version: 2
+
+# GitGuardian config. The platform repository contains a few
+# intentionally-public throwaway credentials in test/CI surfaces. Real
+# secrets do not live in version control.
+
+secret:
+  # Literal-scoped allowlist only — no path-scoped escape hatches. A
+  # path-level ``ignored-paths`` entry would silently swallow a real
+  # secret added later to the same file; a literal-match keeps the
+  # scanner active on every byte that isn't this exact throwaway DSN.
+  #
+  # The standalone CI workflow stands up a ``postgres:16`` service
+  # container in the GitHub Actions runner and passes its credentials
+  # through to the pytest job via ``STANDALONE_TEST_POSTGRES_URL``.
+  # The password is the literal value of the service container's
+  # ``POSTGRES_PASSWORD`` env, scoped to an ephemeral Docker network
+  # on the runner itself, and is never reachable from outside that VM.
+  # The same fixture appears in
+  # ``libs/idun_agent_standalone/tests/integration/db/test_trace_*``.
+  ignored-matches:
+    - name: "Postgres test credentials in CI service container"
+      match: "postgresql+asyncpg://idun:idun@localhost:5432/idun_test"

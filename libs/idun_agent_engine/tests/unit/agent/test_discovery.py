@@ -152,6 +152,49 @@ async def test_langgraph_structured_discovery_json_schema_shape():
 
 
 @pytest.mark.asyncio
+async def test_langgraph_implicit_messages_state_resolves_to_chat_mode():
+    """Implicit OverallState with messages + scalars must resolve to chat.
+
+    Regression for the structured-mode trap surfaced in the post-#609
+    real-world test: a LangGraph agent that declared a single OverallState
+    with ``messages`` + scalar internal carry-fields (``intent``,
+    ``draft``, …) and no explicit ``input_schema=`` was flipped into
+    structured mode and demanded JSON-encoded ``messages[].content`` for
+    every chat. The fix in ``discover_capabilities`` treats messages as
+    the canonical chat surface when the input schema is the same object
+    as the state schema (i.e. the operator did not opt into a typed
+    public input contract).
+    """
+    from idun_agent_engine.core.config_builder import ConfigBuilder
+
+    mock_graph_path = (
+        Path(__file__).parent.parent.parent / "fixtures" / "agents" / "mock_graph.py"
+    )
+
+    config = {
+        "agent": {
+            "type": "LANGGRAPH",
+            "config": {
+                "name": "implicit_messages_agent",
+                "graph_definition": f"{mock_graph_path}:implicit_messages_graph",
+            },
+        },
+    }
+
+    engine_config = ConfigBuilder.from_dict(config).build()
+    agent = await ConfigBuilder.initialize_agent_from_config(engine_config)
+
+    capabilities = agent.discover_capabilities()
+
+    assert capabilities.framework.value == "LANGGRAPH"
+    # Implicit state with messages → chat (NOT structured), even though
+    # the state has multiple fields.
+    assert capabilities.input.mode == "chat"
+    # No JSON schema is exposed in chat mode.
+    assert capabilities.input.schema_ is None
+
+
+@pytest.mark.asyncio
 async def test_discover_capabilities_falls_back_when_schema_introspection_raises(
     caplog,
 ):

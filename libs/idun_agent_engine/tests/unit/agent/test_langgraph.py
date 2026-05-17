@@ -68,7 +68,9 @@ async def test_langgraph_agent_accepts_compiled_graph():
     assert agent.agent_instance.checkpointer is not None
 
     test_message = "hello compiled"
-    response = await agent.invoke({"query": test_message, "session_id": "sess_compiled"})
+    response = await agent.invoke(
+        {"query": test_message, "session_id": "sess_compiled"}
+    )
     assert response is not None
 
 

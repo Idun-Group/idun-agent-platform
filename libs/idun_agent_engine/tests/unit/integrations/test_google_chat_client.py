@@ -45,9 +45,7 @@ class TestGoogleChatClient:
         client._http_client = AsyncMock()
         client._http_client.post = AsyncMock(return_value=mock_response)
 
-        result = await client.send_message(
-            space_name="spaces/AAAA", text="Hello!"
-        )
+        result = await client.send_message(space_name="spaces/AAAA", text="Hello!")
 
         client._http_client.post.assert_called_once()
         call_args = client._http_client.post.call_args
@@ -68,9 +66,7 @@ class TestGoogleChatClient:
         client._http_client.post = AsyncMock(return_value=mock_response)
 
         with pytest.raises(Exception, match="HTTP 403"):
-            await client.send_message(
-                space_name="spaces/AAAA", text="fail"
-            )
+            await client.send_message(space_name="spaces/AAAA", text="fail")
 
     @pytest.mark.asyncio
     async def test_close_closes_http_client(self):
