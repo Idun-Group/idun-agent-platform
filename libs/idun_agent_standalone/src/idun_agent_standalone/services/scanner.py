@@ -46,7 +46,7 @@ _MAX_FILE_BYTES = 1_000_000  # 1 MB
 _LANGGRAPH_IMPORT_RE = re.compile(
     r"(?m)^\s*("
     r"from\s+langgraph[\s.]|import\s+langgraph"
-    r"|from\s+deepagents[\s.]|import\s+deepagents"
+    r"|from\s+deepagents[\s.]"
     r")"
 )
 _ADK_IMPORT_RE = re.compile(r"(?m)^\s*(from\s+google\.adk|import\s+google\.adk)")
