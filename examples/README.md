@@ -40,3 +40,4 @@ curl -X POST http://localhost:8001/agent/run \
 | langgraph-structured | LangGraph | structured | structured | 8002 |
 | adk-chat | ADK | chat | text | 8003 |
 | adk-structured | ADK | structured | structured | 8004 |
+| adk-skills | ADK | chat | text | 8005 |

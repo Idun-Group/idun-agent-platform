@@ -20,6 +20,7 @@ from idun_agent_schema.engine.langgraph import (
 from idun_agent_schema.engine.mcp_server import MCPServer
 from idun_agent_schema.engine.observability_v2 import ObservabilityConfig
 from idun_agent_schema.engine.prompt import PromptConfig
+from idun_agent_schema.engine.skills import SkillConfig
 from idun_agent_schema.engine.sso import SSOConfig
 
 from idun_agent_engine.server.server_config import ServerAPIConfig
@@ -59,6 +60,7 @@ class ConfigBuilder:
         self._sso: SSOConfig | None = None
         self._integrations: list | None = None
         self._prompts: list[PromptConfig] | None = None
+        self._skills: list[SkillConfig] | None = None
 
     def with_api_port(self, port: int) -> "ConfigBuilder":
         """Set the API port for the server.
@@ -123,6 +125,7 @@ class ConfigBuilder:
             self._sso = engine_config.sso
             self._integrations = engine_config.integrations
             self._prompts = engine_config.prompts
+            self._skills = engine_config.skills
 
             return self
         except Exception as e:
@@ -223,6 +226,7 @@ class ConfigBuilder:
             sso=self._sso,
             integrations=self._integrations,
             prompts=self._prompts,
+            skills=self._skills,
         )
 
     def build_dict(self) -> dict[str, Any]:  # NOT USED
@@ -406,9 +410,22 @@ class ConfigBuilder:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
         # Initialize the agent with its configuration
+        init_kwargs: dict[str, Any] = {}
+        # Pass skills config to ADK agents (native SkillToolset support)
+        if engine_config.skills:
+            if agent_type == AgentFramework.ADK:
+                init_kwargs["skills_config"] = engine_config.skills
+            else:
+                logger.warning(
+                    "Skills are configured but agent type '%s' does not support "
+                    "native skills injection. Skills will be ignored. "
+                    "Only ADK agents currently support skills.",
+                    agent_type,
+                )
         await agent_instance.initialize(
             validated_config,
             observability_config,  # , mcp_registry=mcp_registry
+            **init_kwargs,
         )  # type: ignore[arg-type]
         return agent_instance
 
@@ -595,6 +612,7 @@ class ConfigBuilder:
         builder._sso = engine_config.sso
         builder._integrations = engine_config.integrations
         builder._prompts = engine_config.prompts
+        builder._skills = engine_config.skills
         return builder
 
     @classmethod
@@ -629,6 +647,7 @@ class ConfigBuilder:
         builder._sso = engine_config.sso
         builder._integrations = engine_config.integrations
         builder._prompts = engine_config.prompts
+        builder._skills = engine_config.skills
 
         return builder
 

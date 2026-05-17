@@ -42,4 +42,5 @@ from .sessions import (  # noqa: F401
     SessionMessage,
     SessionSummary,
 )
+from .skills import SkillConfig, SkillResourcesConfig  # noqa: F401
 from .sso import SSOConfig  # noqa: F401

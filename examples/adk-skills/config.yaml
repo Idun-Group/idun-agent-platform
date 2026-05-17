@@ -1,0 +1,65 @@
+server:
+  api:
+    port: 8005
+
+agent:
+  type: ADK
+  config:
+    name: "ADK Skills Agent"
+    app_name: "adk_skills"
+    agent: "./agent.py:root_agent"
+
+# Skills follow the Agent Skills specification (agentskills.io).
+# Each skill provides domain-specific expertise that the agent loads on demand.
+# The engine converts these into ADK's native SkillToolset automatically.
+skills:
+  - name: "customer-support"
+    description: "Handle customer support inquiries with escalation rules and resolution procedures"
+    version: "1.0.0"
+    instructions: |
+      You are a customer support specialist. Follow these procedures:
+
+      ## Intake
+      1. Greet the customer warmly and acknowledge their issue
+      2. Identify the issue category: billing, technical, or general inquiry
+
+      ## Resolution
+      - **Billing**: Check account status, offer refund or credit options
+      - **Technical**: Gather system info (OS, browser, error messages) before troubleshooting
+      - **General**: Answer directly from the knowledge base
+
+      ## Escalation
+      If the issue cannot be resolved after 2 attempts, escalate:
+      - Use the escalation matrix in references/escalation-policy.md
+      - Always inform the customer about the escalation timeline
+    resources:
+      references:
+        escalation-policy.md: |
+          ## Escalation Matrix
+          - **P1** (service down): Immediate escalation to on-call engineer
+          - **P2** (degraded service): Escalate after 15 minutes of troubleshooting
+          - **P3** (question/feature request): Resolve in-chat, no escalation needed
+
+          ## Contact Channels
+          - On-call engineer: Slack #incident-response
+          - Billing team: billing@example.com
+          - Product feedback: Jira FEEDBACK project
+
+  - name: "meeting-processor"
+    description: "Extract action items, classify meetings, and draft follow-up communications"
+    version: "1.0.0"
+    instructions: |
+      You are a meeting analysis expert. When processing meeting notes:
+
+      ## Analysis Steps
+      1. Identify all action items with owners and deadlines
+      2. Classify the meeting type (standup, planning, review, brainstorm)
+      3. Extract key decisions made during the meeting
+      4. Note any unresolved questions or parking lot items
+
+      ## Output Format
+      Structure your response as:
+      - **Summary**: 2-3 sentence overview
+      - **Action Items**: Bulleted list with [Owner] and [Deadline]
+      - **Decisions**: Numbered list of decisions made
+      - **Follow-ups**: Items that need further discussion

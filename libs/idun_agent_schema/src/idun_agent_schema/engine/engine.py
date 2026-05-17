@@ -10,6 +10,7 @@ from .mcp_server import MCPServer
 from .observability_v2 import ObservabilityConfig
 from .prompt import PromptConfig
 from .server import ServerConfig
+from .skills import SkillConfig
 from .sso import SSOConfig
 
 
@@ -29,3 +30,4 @@ class EngineConfig(BaseModel):
     sso: SSOConfig | None = None
     integrations: list[IntegrationConfig] | None = None
     prompts: list[PromptConfig] | None = None
+    skills: list[SkillConfig] | None = None
