@@ -6,11 +6,11 @@ All notable changes to `idun-agent-engine` are documented here. This project fol
 
 _No unreleased changes yet._
 
-## 0.6.0 — TBD
+## 0.6.0 — 2026-05-17
 
-First public release since `0.5.4`. This is a substantial release. The engine wheel now bundles the `idun-agent-standalone` admin/chat/traces app and the `idun` console script, so adopters can `pip install idun-agent-engine && idun setup && idun serve` without installing any other package. The release also removes the Haystack adapter, demotes `guardrails-ai` to an optional extra, and lands the trace pipeline that powers the admin `/traces/` viewer.
+The release where Idun Engine becomes **the third path between LangGraph Cloud and DIY**. The engine wheel now bundles the `idun-agent-standalone` admin/chat/traces app and the `idun` console script, so adopters can `pip install idun-agent-engine && idun setup && idun serve` without installing any other package. The release also removes the Haystack adapter, demotes `guardrails-ai` to an optional extra, lands the trace pipeline that powers the admin `/traces/` viewer, and rebrands the public surface from "Idun Platform" to "Idun Engine".
 
-See the README's "Bundled install" section for what is in the wheel and how `idun-agent-engine`, `idun-agent-standalone`, and `idun-agent-schema` relate.
+See the README's "Bundled install" section for what is in the wheel and how `idun-agent-engine`, `idun-agent-standalone`, and `idun-agent-schema` relate. Full launch context: [The third path](https://idun-group.com/blog/2026-05-17-third-path-engine-v0.6).
 
 ### Added
 

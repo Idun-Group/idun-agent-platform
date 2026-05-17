@@ -6,9 +6,9 @@ All notable changes to `idun-agent-standalone` are documented here. This package
 
 _No unreleased changes yet._
 
-## 0.6.0 — TBD
+## 0.6.0 — 2026-05-17
 
-First wide release of the standalone admin/chat/traces app. Previously circulated as a `0.1.0` dev snapshot; this release is the version published as part of `idun-agent-engine 0.6.0` and is the first one adopters will install via `pip install idun-agent-engine && idun setup && idun serve`.
+First wide release of the standalone admin/chat/traces app, the bundled UI behind the **Idun Engine v0.6.0** launch. Previously circulated as a `0.1.0` dev snapshot; this release is the version published as part of `idun-agent-engine 0.6.0` and is the first one adopters will install via `pip install idun-agent-engine && idun setup && idun serve`. Full launch context: [The third path](https://idun-group.com/blog/2026-05-17-third-path-engine-v0.6).
 
 ### Added
 

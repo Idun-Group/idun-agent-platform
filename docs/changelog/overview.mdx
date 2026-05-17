@@ -6,9 +6,18 @@ keywords: ["changelog", "release notes", "Idun Agent Platform", "versions"]
 
 Track the latest changes, improvements, and bug fixes. The canonical per-package changelogs live in the repo: [`idun-agent-engine`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/CHANGELOG.md), [`idun-agent-standalone`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_standalone/CHANGELOG.md).
 
-## v0.6.0, TBD
+## v0.6.0 — 2026-05-17
 
-First public release since `0.5.4`. The engine wheel now bundles the `idun-agent-standalone` admin/chat/traces app and the `idun` console script, so adopters can `pip install idun-agent-engine && idun setup && idun serve` without installing any other package. Trace store + viewer land, Haystack is removed, and `guardrails-ai` becomes an optional extra.
+The release where Idun Engine becomes **the third path between LangGraph Cloud and DIY**. One `pip install` ships your LangGraph or Google ADK agent as a production-ready FastAPI service with a bundled Next.js chat / admin / traces UI, 15+ guardrails, multi-provider observability via OpenTelemetry, MCP tool governance, 5 memory backends, and OIDC. Self-hosted, open source, no vendor lock-in.
+
+[Read the launch post →](https://idun-group.com/blog/2026-05-17-third-path-engine-v0.6)
+
+### Highlights
+
+- **One wheel, three services collapsed.** `pip install idun-agent-engine` bundles the Next.js admin / chat / traces UI and the `idun` CLI. The separate `idun-agent-manager` (FastAPI) and `idun-agent-web` (React) services are gone — ~151,000 lines removed in one cut so the install path is `pip` + `idun setup` + `idun serve`, nothing else.
+- **Standards composed, not invented.** AG-UI streaming (CopilotKit-compatible), OpenTelemetry tracing across 5 providers, MCP tool servers (Linux Foundation governance since 2025), OIDC auth (Google + Microsoft). Pick Idun and your investment moves with you.
+- **Traces v1 lands.** Trace store (asyncpg COPY), REST endpoints, list + detail UI with span tree and waterfall views. ADK spans projected to OpenInference attributes so they flow through the same pipeline as LangGraph spans.
+- **Brand + docs rebrand.** "Idun Platform" → **Idun Engine** across the public surface. Docs moved to [docs.idun-group.com](https://docs.idun-group.com) with a paper/ink editorial design that matches the website.
 
 ### Added
 
@@ -23,6 +32,14 @@ First public release since `0.5.4`. The engine wheel now bundles the `idun-agent
 - Standalone seeder persists all top-level YAML config blocks (agent, guardrails, mcp, prompts, integrations, observability) on first boot.
 - Admin link surfaced on chat layouts; new Developer sidebar group links to `/docs` and `/redoc`.
 - PostHog tracking + masked session replay (opt-in) in the chat UI.
+- LangGraph auto-detection scanner: detects agents built via known factories and `CompiledStateGraph` annotations, so the `graph_definition` config can be inferred rather than hand-written.
+- `/admin` activity dashboard: traces-driven KPIs across 24h / 7d / 30d, requests-per-minute sparkline, p50 / p95 latency dual-line chart, top-errors table.
+- `get_langchain_tools_sync()` for module-load callers: makes MCP tools available in synchronous import-time contexts (e.g. `create_deep_agent` factories) that can't `await`.
+- Microsoft OIDC alongside Google for SSO. Multi-provider auth, multi-tenant support.
+- Google Chat integration joins WhatsApp, Discord, Slack, and Microsoft Teams.
+- SSE / HTTP transport for ADK MCP toolsets, alongside the existing stdio.
+- Real-LLM end-to-end test suite (`pytest-e2e`): LangGraph + ADK adapter coverage with real LLM calls in CI, plus Playwright specs for chat and admin reload flows.
+- Coding-guidelines drift advisory CI: rules-as-YAML pipeline, headless-Claude review check.
 
 ### Changed
 
@@ -32,6 +49,11 @@ First public release since `0.5.4`. The engine wheel now bundles the `idun-agent
 - **Secure-by-default host binding.** `idun serve` no longer binds `0.0.0.0` by default; bind-all requires explicit opt-in.
 - **Standalone "admin-only mode" fails loud** instead of logging a single WARNING and serving 503s silently.
 - **Catch-all 404 for `/admin/api/v1/<unmapped>`** returns JSON 404 instead of falling through to the chat UI HTML.
+- **Rebrand: "Idun Platform" → "Idun Engine"** across `docs.json`, OG metadata, navbar, search prompt, and the docs naming guidelines. The GitHub repo name (`idun-agent-platform`) is unchanged.
+- **Docs moved from MkDocs to Mintlify** at `docs.idun-group.com`. New paper / ink editorial design matches the website's Engine product page.
+- **`ObservabilityConfig` schema restructured.** The discriminated union now stamps a `provider` literal onto each inner provider config; legacy YAML keeps working because validators auto-sync the parent and inner fields.
+- **`AdkAgentConfig.app_name` now optional.** When omitted, it auto-derives from `name` (lowercase + non-alphanumeric → underscore). Non-breaking; explicit values still win.
+- **BREAKING: `RestrictToTopicConfig.topics`** is split into `valid_topics` and `invalid_topics`. v0.5.x configs using `topics:` will fail validation; rename the key in your YAML.
 
 ### Deprecated
 
@@ -39,7 +61,11 @@ First public release since `0.5.4`. The engine wheel now bundles the `idun-agent
 
 ### Removed
 
-- Haystack agent adapter, `HaystackAgentConfig` schema, `langfuse-haystack` runtime dependency, and all related tests, docs, and UI surfaces. Migrate Haystack agents to LangGraph or ADK before upgrading.
+- **`services/idun_agent_manager/`** + **`services/idun_agent_web/`** — the FastAPI manager service and React admin UI. ~90,219 lines across 367 files. Replaced by the bundled Next.js admin / chat / traces UI at `services/idun_agent_standalone_ui/`, served by the engine wheel.
+- **TUI (`idun init` Textual UI) and the Streamlit demo.** 4,093 lines across 26 files. Replaced by the setup wizard inside the bundled Next.js admin at `/admin`.
+- **MkDocs site (`old-docs/`, `mkdocs.yml`).** 11,638 lines across 160 files. Replaced by Mintlify at `docs.idun-group.com`.
+- **Haystack agent adapter, `HaystackAgentConfig` schema, `langfuse-haystack` runtime dependency, and all related tests, docs, and UI surfaces.** Migrate Haystack agents to LangGraph or ADK before upgrading.
+- Total: ~151,820 lines deleted in one commit (`9a54145d`, "finalize standalone migration"); 712 file deletions; net reduction of 150,883 lines.
 
 ### Fixed
 
@@ -57,13 +83,26 @@ First public release since `0.5.4`. The engine wheel now bundles the `idun-agent
 - Next.js and aiohttp CVE patches; `pinact` pre-commit hook.
 - `guardrails-ai` moved out of the default install footprint.
 
+### Standards composed
+
+Idun Engine composes open standards rather than inventing new protocols. Your investment in any of these moves with you if you ever leave:
+
+- **LangGraph** and **Google ADK** — agent frameworks
+- **AG-UI** — streaming protocol, compatible with any CopilotKit client
+- **OpenTelemetry** — tracing, exported to Langfuse, Phoenix, LangSmith, or GCP Trace
+- **MCP** — tool servers, under Linux Foundation governance since 2025
+- **OIDC** — auth (Google, Microsoft, any compliant provider)
+- **FastAPI**, **Pydantic** — HTTP layer and config models
+
 ### Upgrading from 0.5.x
 
 1. Uninstall any separate `idun-agent-standalone` wheel, since it is now bundled in the engine wheel.
 2. Install with `pip install idun-agent-engine[guardrails]==0.6.0` if you use Guardrails-AI; otherwise plain `pip install idun-agent-engine==0.6.0`.
 3. Migrate Haystack agent configs to LangGraph or ADK.
-4. Switch smoke checks from `curl /health` to `POST /agent/run` (the deprecated `/agent/invoke` still works but will be removed in 0.7).
-5. Run `idun setup` after upgrade so the new standalone admin DB migrations apply.
+4. **Update `RestrictToTopicConfig` YAML**: rename `topics:` to either `valid_topics:` or `invalid_topics:` (or both). The old key is no longer accepted by the schema.
+5. Switch smoke checks from `curl /health` to `POST /agent/run` (the deprecated `/agent/invoke` still works but will be removed in 0.7).
+6. Run `idun setup` after upgrade so the new standalone admin DB migrations apply.
+7. If you wrote scripts against `docs.idunplatform.com`, point them at `docs.idun-group.com` (the old domain redirects until further notice).
 
 ## v0.5.1, March 2026
 
