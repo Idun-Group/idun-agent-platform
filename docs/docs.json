@@ -129,6 +129,7 @@
               "guides/connect-your-agent",
               "guides/langgraph-production-deployment",
               "guides/idun-assistant-copilot",
+              "guides/deepagents-with-idun",
               "guides/programmatic-chat"
             ]
           },
