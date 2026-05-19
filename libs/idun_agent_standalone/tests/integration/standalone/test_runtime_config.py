@@ -53,7 +53,14 @@ async def test_runtime_config_body_shape(standalone):
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/runtime-config.js")
     config = _parse_runtime_config(response.text)
-    assert set(config) == {"theme", "authMode", "layout", "telemetry"}
+    assert set(config) == {
+        "theme",
+        "authMode",
+        "layout",
+        "agentReady",
+        "bootReason",
+        "telemetry",
+    }
     assert config["authMode"] == "none"
 
 
