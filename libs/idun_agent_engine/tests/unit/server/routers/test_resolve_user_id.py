@@ -126,3 +126,37 @@ def test_uuid_fallbacks_are_distinct_across_requests():
     req1 = _request_with_headers({})
     req2 = _request_with_headers({})
     assert _resolve_user_id(None, req1) != _resolve_user_id(None, req2)
+
+
+# --- header validation (security) -----------------------------------------
+
+
+def test_header_value_at_max_length_is_accepted():
+    """The cap is generous (256 chars) to fit emails, UUIDs, and opaque
+    SSO subs without rejecting realistic identities."""
+    value = "a" * 256
+    req = _request_with_headers({"X-Idun-User-Id": value})
+    assert _resolve_user_id(None, req) == value
+
+
+def test_header_value_exceeding_max_length_falls_back_to_uuid():
+    """Caller cannot inflate the user_id past the cap. Oversized values
+    fall through silently so misbehaving clients still get a usable
+    (anonymous) identity."""
+    oversized = "a" * 257
+    req = _request_with_headers({"X-Idun-User-Id": oversized})
+    result = _resolve_user_id(None, req)
+    assert _UUID_HEX.fullmatch(result), f"expected uuid hex, got {result!r}"
+    assert result != oversized
+
+
+def test_header_value_with_control_chars_falls_back_to_uuid():
+    """Control characters (newlines, nulls, etc.) could break log
+    parsing, DB queries that scope by user_id, or HTTP header
+    serialization downstream. Reject by falling through to uuid."""
+    for bad in ("alice\nbob", "alice\x00bob", "alice\tbob", "alice\x7fbob"):
+        req = _request_with_headers({"X-Idun-User-Id": bad})
+        result = _resolve_user_id(None, req)
+        assert _UUID_HEX.fullmatch(result), (
+            f"control-char value {bad!r} should have fallen through, got {result!r}"
+        )

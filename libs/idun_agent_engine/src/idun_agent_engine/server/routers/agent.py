@@ -33,6 +33,17 @@ from idun_agent_engine.server.dependencies import (
 logger = logging.getLogger(__name__)
 agent_router = APIRouter(tags=["Runtime"])
 
+# Generous cap; fits emails, UUIDs, opaque SSO subs without rejecting
+# realistic identities. Oversized or control-char values fall through to
+# the uuid4 fallback in _resolve_user_id.
+_MAX_HEADER_USER_ID_LEN = 256
+
+
+def _is_valid_header_user_id(value: str) -> bool:
+    if not value or len(value) > _MAX_HEADER_USER_ID_LEN:
+        return False
+    return not any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in value)
+
 
 def _extract_text_values(data: Any) -> list[str]:
     """Extract all non-empty string values from structured input."""
@@ -113,7 +124,7 @@ def _resolve_user_id(user: dict | None, request: Request) -> str:
         if claim:
             return claim
     header = request.headers.get("x-idun-user-id", "").strip()
-    if header:
+    if _is_valid_header_user_id(header):
         return header
     return uuid.uuid4().hex
 
