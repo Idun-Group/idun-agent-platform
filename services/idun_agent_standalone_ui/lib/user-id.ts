@@ -15,12 +15,19 @@ import { useEffect, useState } from "react";
 
 import { getCurrentAuthUser } from "@/lib/auth";
 
-let cached: string | null = null;
+// Cache the in-flight promise (not the resolved value) so concurrent
+// callers all await the same resolution. Caching the value created a
+// race on cold page load where each caller minted its own uuid before
+// `cached` was assigned.
+let cached: Promise<string> | null = null;
 
-export async function getUserId(): Promise<string> {
-  if (cached !== null) return cached;
-  const user = await getCurrentAuthUser().catch(() => null);
-  cached = user?.email ?? crypto.randomUUID();
+export function getUserId(): Promise<string> {
+  if (cached === null) {
+    cached = (async () => {
+      const user = await getCurrentAuthUser().catch(() => null);
+      return user?.email ?? crypto.randomUUID();
+    })();
+  }
   return cached;
 }
 
