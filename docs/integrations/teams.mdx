@@ -30,7 +30,9 @@ Connect your Idun agent to Microsoft Teams so users can interact with it through
         | `app_password` | Client secret from the Azure AD app registration |
         | `app_tenant_id` | Azure AD tenant ID that owns the app registration |
 
-        ![Add Microsoft Teams integration](/images/ui/admin-integrations-teams.png)
+        <Frame>
+          ![Add Microsoft Teams integration](/images/ui/admin-integrations-teams.png)
+        </Frame>
       </Step>
 
       <Step title="Save">
@@ -105,3 +107,17 @@ Connect your Idun agent to Microsoft Teams so users can interact with it through
 5. The engine sends the agent's reply back through the Bot Framework adapter
 
 **Session tracking**: the Teams user identifier is used as the session ID, so conversation context is maintained per user across messages.
+
+## Next steps
+
+<Card title="Slack" icon="hash" horizontal href="/integrations/slack">
+  Connect your agent to Slack DMs and channels.
+</Card>
+
+<Card title="Discord" icon="message-circle" horizontal href="/integrations/discord">
+  Reach the same agent through Discord slash commands.
+</Card>
+
+<Card title="Production hardening" icon="shield-halved" horizontal href="/deployment/hardening">
+  Secure the engine before exposing webhooks to the public internet.
+</Card>

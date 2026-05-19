@@ -1,0 +1,23 @@
+---
+title: "Enterprise SSO"
+description: "Wire Okta, Microsoft Entra ID, or any SAML / OIDC provider into every agent under one control plane."
+keywords: ["SSO", "SAML", "Okta", "Entra ID", "Azure AD", "OIDC", "enterprise auth"]
+---
+
+Per-agent OIDC SSO (see [Authentication > SSO](/auth/sso)) is enough for a single standalone. Enterprise extends it across a fleet: one identity provider, one allowlist policy, applied to every agent the control plane manages.
+
+## Capabilities
+
+- **One IdP, many agents**: configure Okta, Microsoft Entra ID, or any compliant SAML / OIDC provider once in the control plane; every registered standalone enforces it.
+- **Group-based allowlists**: scope agent access to IdP groups (not just emails or domains) so onboarding and offboarding flow through your existing identity workflow.
+- **Just-in-time provisioning**: first sign-in creates the user record automatically; revocation in the IdP cascades to all agents on the next token refresh.
+
+## Next steps
+
+<Card title="RBAC" icon="users" horizontal href="/enterprise/rbac">
+  Once users authenticate, control what they can do.
+</Card>
+
+<Card title="Audit logs" icon="scroll-text" horizontal href="/enterprise/audit-logs">
+  Track who signed in and what they changed.
+</Card>

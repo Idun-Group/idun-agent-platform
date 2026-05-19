@@ -1,0 +1,71 @@
+---
+title: "Introduction"
+description: "Everything Idun Engine ships: agent runtime, chat UI, admin, traces, guardrails, memory, MCP, integrations, and auth, in one self-hosted process."
+keywords: ["introduction", "overview", "what is Idun Engine", "Idun"]
+boost: 2
+---
+
+Idun Engine is the open-source production wrapper for LangGraph and Google ADK agents. `pip install idun-agent-engine`, point it at your agent, and get a self-hosted FastAPI service with chat UI, admin panel, traces viewer, guardrails, memory, and MCP server support, all on your infrastructure.
+
+## What you get
+
+<CardGroup cols={2}>
+  <Card title="Production-ready API" icon="server">
+    Streaming HTTP service with AG-UI protocol compatibility. Drop it behind any CopilotKit or AG-UI client.
+  </Card>
+  <Card title="Framework adapters" icon="layers">
+    LangGraph and Google ADK, served with AG-UI streaming.
+  </Card>
+  <Card title="Dashboard" icon="layout-dashboard">
+    Activity, traces, p50 / p95 latency, error counts, and recent runs at `/admin/`.
+  </Card>
+  <Card title="Guardrails" icon="shield">
+    15+ built-in guards powered by Guardrails AI.
+  </Card>
+  <Card title="Observability" icon="chart-line">
+    Langfuse, Phoenix, LangSmith, or GCP, plus a local trace store with a waterfall viewer at `/admin/traces/`.
+  </Card>
+  <Card title="Memory" icon="database">
+    In-memory, SQLite, or PostgreSQL checkpointers.
+  </Card>
+  <Card title="MCP tools" icon="wrench">
+    stdio, SSE, streamable HTTP, or WebSocket with auto-discovery.
+  </Card>
+  <Card title="Prompts" icon="file-text">
+    Versioned templates with Jinja2 variables.
+  </Card>
+  <Card title="Integrations" icon="plug">
+    Slack, Discord, Microsoft Teams, Google Chat, and WhatsApp.
+  </Card>
+  <Card title="Auth" icon="lock">
+    OIDC SSO on `/agent/*` routes; `none` / `password` for the admin panel.
+  </Card>
+</CardGroup>
+
+## Community
+
+<CardGroup cols={3}>
+  <Card title="Discord" icon="message-circle" href="https://discord.gg/KCZ6nW2jQe">
+    Questions and help.
+  </Card>
+  <Card title="GitHub Discussions" icon="github" href="https://github.com/Idun-Group/idun-agent-platform/discussions">
+    Proposals and ideas.
+  </Card>
+  <Card title="GitHub Issues" icon="circle-alert" href="https://github.com/Idun-Group/idun-agent-platform/issues">
+    Bugs and feature requests.
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<Card title="Quickstart" icon="rocket" horizontal href="/quickstart">
+  Deploy your first agent in under 30 minutes.
+</Card>
+
+<Card title="Architecture" icon="layers" horizontal href="/architecture">
+  How the engine and standalone fit together.
+</Card>
+
+<Card title="Frameworks" icon="bolt" horizontal href="/frameworks/overview">
+  LangGraph and Google ADK adapters.
+</Card>

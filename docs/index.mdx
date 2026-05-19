@@ -1,65 +1,52 @@
 ---
-title: "Idun Agent Platform"
+title: "Idun Engine"
 description: "Productionize LangGraph and Google ADK agents on your own infrastructure with chat UI, traces, guardrails, memory, and MCP, in one pip install."
+mode: "frame"
 keywords: ["AI agent deployment", "self-hosted", "open source", "LangGraph", "ADK", "guardrails", "observability", "MCP", "idun-agent-engine"]
+boost: 3
 ---
 
-Idun Agent Platform is the open-source production wrapper for LangGraph and Google ADK agents. `pip install idun-agent-engine`, point it at your agent, and get a self-hosted FastAPI service with chat UI, admin panel, traces viewer, guardrails, memory, and MCP server support, all on your infrastructure.
+<div className="relative">
+  <div className="relative z-10 px-4 py-12 lg:py-16 lg:pb-12 max-w-4xl mx-auto">
+    <div className="flex justify-center mb-6">
+      <img src="/logo/light.svg" className="block dark:hidden h-14 w-auto" alt="Idun Engine" />
+      <img src="/logo/dark.svg" className="hidden dark:block h-14 w-auto" alt="Idun Engine" />
+    </div>
 
-## Get started
+    <h1 className="block text-5xl font-medium text-center text-gray-900 dark:text-zinc-50 tracking-tight">
+      Idun Engine
+    </h1>
 
-<Columns cols={2}>
-  <Card title="Quickstart" icon="bolt" href="/quickstart">
-    Deploy your first agent in under 30 minutes
-  </Card>
-  <Card title="Architecture" icon="diagram-project" href="/architecture">
-    How the engine and standalone fit together
-  </Card>
-  <Card title="Frameworks" icon="layer-group" href="/frameworks/overview">
-    LangGraph and Google ADK adapters
-  </Card>
-  <Card title="Guardrails" icon="shield-halved" href="/guardrails/overview">
-    15+ built-in safety guards
-  </Card>
-  <Card title="Observability" icon="chart-line" href="/observability/overview">
-    Langfuse, Phoenix, LangSmith, GCP Trace
-  </Card>
-  <Card title="Memory" icon="database" href="/memory/overview">
-    Persistent conversation state
-  </Card>
-  <Card title="MCP Servers" icon="screwdriver-wrench" href="/mcp-servers/overview">
-    Connect MCP servers and discover tools
-  </Card>
-  <Card title="Prompts" icon="file-lines" href="/prompts">
-    Versioned templates with Jinja2 variables
-  </Card>
-  <Card title="Integrations" icon="plug" href="/integrations/slack">
-    Slack, Discord, Teams, Google Chat, WhatsApp
-  </Card>
-  <Card title="Auth" icon="lock" href="/auth/overview">
-    OIDC SSO for agent routes; password auth for admin
-  </Card>
-  <Card title="Deployment" icon="server" href="/standalone/cloud-run">
-    Cloud Run, Docker, or any container host
-  </Card>
-  <Card title="Guides" icon="book-open" href="/guides/overview">
-    Step-by-step tutorials for common workflows
-  </Card>
-</Columns>
+    <div className="max-w-2xl mx-auto px-4 mt-6 text-lg text-center text-gray-500 dark:text-zinc-500 leading-relaxed">
+      Idun Engine is the open-source production wrapper for LangGraph and Google ADK agents. Point it at your agent, and get a self-hosted FastAPI service with chat UI, admin panel, traces viewer, guardrails, memory, and MCP server support, all on your infrastructure.
+    </div>
 
-## What you get
+    <div className="max-w-2xl mx-auto mt-10 rounded-xl overflow-hidden border border-black/5 shadow-sm bg-black">
+      <video
+        controls
+        playsInline
+        preload="metadata"
+        className="w-full h-auto block"
+      >
+        <source src="/videos/idun-showcase.mp4" type="video/mp4" />
+      </video>
+    </div>
 
-- **Framework adapters** for LangGraph and Google ADK, served with AG-UI streaming.
-- **Guardrails** with 15+ built-in guards powered by Guardrails AI.
-- **Observability** through Langfuse, Phoenix, LangSmith, or GCP, plus a local trace store with a waterfall viewer at `/admin/traces/`.
-- **Memory** with in-memory, SQLite, or PostgreSQL checkpointers.
-- **MCP tools** over stdio, SSE, streamable HTTP, or WebSocket with auto-discovery.
-- **Prompts** with versioning and Jinja2 variables.
-- **Integrations** for Slack, Discord, Microsoft Teams, Google Chat, and WhatsApp.
-- **Auth**: OIDC SSO on `/agent/*` routes; `none` / `password` for the admin panel.
-
-## Community
-
-- Questions and help: [Discord](https://discord.gg/KCZ6nW2jQe)
-- Proposals and ideas: [GitHub Discussions](https://github.com/Idun-Group/idun-agent-platform/discussions)
-- Bugs and feature requests: [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues)
+    <div className="mt-16 lg:mt-20">
+      <CardGroup cols={2}>
+        <Card title="Quickstart" icon="rocket" href="/quickstart">
+          Deploy your first agent in under 30 minutes
+        </Card>
+        <Card title="Architecture" icon="layers" href="/architecture">
+          How the engine and standalone fit together
+        </Card>
+        <Card title="Frameworks" icon="bolt" href="/frameworks/overview">
+          LangGraph and Google ADK adapters
+        </Card>
+        <Card title="Guides" icon="book-open" href="/guides/overview">
+          Step-by-step tutorials for common workflows
+        </Card>
+      </CardGroup>
+    </div>
+  </div>
+</div>

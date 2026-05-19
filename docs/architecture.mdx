@@ -2,6 +2,7 @@
 title: "Architecture"
 description: "How idun-agent-engine and idun-agent-standalone connect to turn LangGraph or ADK agent code into a production FastAPI service."
 keywords: ["architecture", "engine", "standalone", "schema", "config flow", "system design", "LangGraph", "ADK"]
+boost: 2
 ---
 
 ## System overview
@@ -68,3 +69,17 @@ flowchart LR
 ```
 
 YAML is the seed shape; the database is the runtime source of truth. After first boot, mutations flow through the admin REST and trigger a validated reload of the engine instance. Init failures roll back to the previous config, so the running agent never crashes mid-flight on a bad edit.
+
+## Next steps
+
+<Card title="Pick a framework" icon="layers" horizontal href="/frameworks/overview">
+  LangGraph or Google ADK
+</Card>
+
+<Card title="Idun Agent Standalone" icon="server" horizontal href="/standalone/overview">
+  The single-process app that bundles the engine, UI, admin, and traces
+</Card>
+
+<Card title="Quickstart" icon="rocket" horizontal href="/quickstart">
+  Deploy your first agent in under 30 minutes
+</Card>

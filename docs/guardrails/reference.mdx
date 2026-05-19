@@ -1,10 +1,10 @@
 ---
 title: "Guardrails reference"
-description: "Reference for all 15 guardrail types available in Idun Agent Platform, including configuration fields and usage positions."
+description: "Reference for all 15 guardrail types available in Idun Engine, including configuration fields and usage positions."
 keywords: ["guardrails", "safety", "PII", "jailbreak", "prompt injection", "toxic language", "content filter", "Model Armor"]
 ---
 
-Idun Agent Platform supports 15 guardrail types that validate agent inputs, outputs, or both. Each guardrail has a `config_id`, a reject message returned when the guard triggers, and type-specific configuration fields.
+Idun Engine supports 15 guardrail types that validate agent inputs, outputs, or both. Each guardrail has a `config_id`, a reject message returned when the guard triggers, and type-specific configuration fields.
 
 ## Guardrail positions
 
@@ -318,3 +318,17 @@ Supported models:
 | Code scanner | `code_scanner` | Input/Output | `allowed_languages` |
 | Model Armor | `model_armor` | Input/Output | `project_id`, `location`, `template_id` |
 | Custom LLM | `custom_llm` | Input/Output | `model`, `prompt` |
+
+## Next steps
+
+<Card title="Guardrails overview" icon="shield" horizontal href="/guardrails/overview">
+  How guardrails fit into the agent request lifecycle.
+</Card>
+
+<Card title="Observability" icon="activity" horizontal href="/observability/overview">
+  Trace guardrail decisions alongside agent runs.
+</Card>
+
+<Card title="Troubleshooting" icon="life-buoy" horizontal href="/troubleshooting">
+  Diagnose configuration and provider errors.
+</Card>

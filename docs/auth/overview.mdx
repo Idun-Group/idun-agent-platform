@@ -2,6 +2,7 @@
 title: "Authentication"
 description: "Admin-panel auth modes (`none` / `password`) and the environment variables that drive them."
 keywords: ["authentication", "auth", "password", "session", "admin auth", "IDUN_ADMIN_AUTH_MODE", "bcrypt"]
+boost: 2
 ---
 
 The standalone has two distinct authentication surfaces. This page covers the admin panel; for agent-route SSO, see [SSO](/auth/sso).
@@ -59,6 +60,14 @@ idun serve
 
 ## What's next
 
-- [SSO](/auth/sso) — per-agent OIDC for `/agent/*` runtime routes, with `allowed_domains` / `allowed_emails` allowlists.
-- [Production hardening](/deployment/hardening) — env-var checklist for `password` mode + reverse-proxy / TLS notes.
-- [Troubleshooting](/troubleshooting) — what `agent_not_ready` and reload-pipeline errors mean.
+<Card title="SSO" icon="lock" horizontal href="/auth/sso">
+  Per-agent OIDC for `/agent/*` runtime routes, with `allowed_domains` / `allowed_emails` allowlists.
+</Card>
+
+<Card title="Production hardening" icon="shield" horizontal href="/deployment/hardening">
+  Env-var checklist for `password` mode + reverse-proxy / TLS notes.
+</Card>
+
+<Card title="Troubleshooting" icon="wrench" horizontal href="/troubleshooting">
+  What `agent_not_ready` and reload-pipeline errors mean.
+</Card>

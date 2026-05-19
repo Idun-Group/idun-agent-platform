@@ -6,7 +6,9 @@ keywords: ["Arize Phoenix", "observability", "tracing", "evaluation", "AI monito
 
 Set up Arize Phoenix to trace agent execution and view performance data in your Phoenix dashboard.
 
-Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Agent Platform.
+<Tip>
+  Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Engine.
+</Tip>
 
 ## Set up Phoenix observability
 
@@ -30,10 +32,11 @@ Before starting, complete the [quickstart guide](/quickstart) to have an agent r
     - **Collector endpoint**: URL of the Phoenix collector (e.g., `https://collector.phoenix.com` or your self-hosted URL)
     - **Project name**: The project in Phoenix to bucket these traces under
 
-    ![Observability admin page with Phoenix selected](/images/ui/admin-observability-phoenix.png)
+    <Frame>
+      ![Observability admin page with Phoenix selected](/images/ui/admin-observability-phoenix.png)
+    </Frame>
 
     Save the form. The reload pipeline re-instantiates the engine with the new observability config; the next agent run starts streaming spans to Phoenix.
-    {/* VERIFY: confirm reload pipeline re-instantiates engine and streams spans to Phoenix. */}
   </Step>
 </Steps>
 
@@ -70,8 +73,24 @@ You will see traces showing agent execution flows, tool usage, and latency data.
   ADK does not currently support simultaneous tracing with multiple providers.
 </Warning>
 
-### Observability not working?
+<AccordionGroup>
+  <Accordion title="Observability not working?">
+    1. **Check collector endpoint**: Verify the URL is correct and accessible from the agent environment
+    2. **Verify project name**: Confirm it matches the project name in Phoenix exactly
+    3. **Check network**: Confirm your agent environment can reach the Phoenix collector
+  </Accordion>
+</AccordionGroup>
 
-1. **Check collector endpoint**: Verify the URL is correct and accessible from the agent environment
-2. **Verify project name**: Confirm it matches the project name in Phoenix exactly
-3. **Check network**: Confirm your agent environment can reach the Phoenix collector
+## Next steps
+
+<Card title="Local trace store" icon="database" horizontal href="/observability/traces">
+  See the same agent runs in the bundled admin UI without extra config.
+</Card>
+
+<Card title="Observability overview" icon="chart-line" horizontal href="/observability/overview">
+  Compare built-in providers and their configuration shapes.
+</Card>
+
+<Card title="Custom handler" icon="puzzle" horizontal href="/observability/custom-handler">
+  Wire a different OTel-compatible backend through Pattern B.
+</Card>

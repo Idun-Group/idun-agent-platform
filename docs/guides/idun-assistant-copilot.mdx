@@ -1,7 +1,7 @@
 ---
 title: "Build and run the idun-assistant copilot"
 sidebarTitle: "Building a copilot (idun-assistant)"
-description: "Wire a LangGraph agent into Idun Agent Platform end to end: MCP tools, system prompt, SQLite memory, Langfuse observability, and Google OIDC SSO, then run a multi-tool task in chat."
+description: "Wire a LangGraph agent into Idun Engine end to end: MCP tools, system prompt, SQLite memory, Langfuse observability, and Google OIDC SSO, then run a multi-tool task in chat."
 keywords: ["copilot", "LangGraph", "MCP", "idun-assistant", "Atlassian", "GitHub", "Google Workspace", "Langfuse"]
 ---
 
@@ -89,11 +89,14 @@ idun init
 
 `idun init` migrates the DB, opens your browser at `http://localhost:8000/`, and serves the standalone. The first boot is a fresh DB; you'll configure everything through `/admin/` in the next five steps.
 
-## 1. Register the MCP tools
+<Steps>
+  <Step title="Register the MCP tools">
 
 Open `/admin/mcp/`. Add four MCP servers. The agent will discover every tool they advertise on the next reload.
 
-![/admin/mcp/ with four MCP servers configured](/images/guides/idun-assistant/admin-mcp.png)
+<Frame>
+  ![/admin/mcp/ with four MCP servers configured](/images/guides/idun-assistant/admin-mcp.png)
+</Frame>
 
 | Server | Transport | What it gives the agent |
 |---|---|---|
@@ -104,13 +107,18 @@ Open `/admin/mcp/`. Add four MCP servers. The agent will discover every tool the
 
 Click the wrench icon next to a saved server to probe it and list the tools it advertises. Atlassian alone gives the agent 72 tools spanning Confluence and Jira:
 
-![Tool discovery probe for the atlassian MCP server](/images/guides/idun-assistant/admin-mcp-tools.png)
+<Frame>
+  ![Tool discovery probe for the atlassian MCP server](/images/guides/idun-assistant/admin-mcp-tools.png)
+</Frame>
 
-## 2. Write the system prompt
+  </Step>
+  <Step title="Write the system prompt">
 
 Open `/admin/prompts/` and create a new prompt. Name it `system_prompt`. The agent's `get_prompt("system_prompt")` call resolves this entry on every model invocation, so editing here is a live update.
 
-![/admin/prompts/ with the system_prompt drafted](/images/guides/idun-assistant/admin-prompts.png)
+<Frame>
+  ![/admin/prompts/ with the system_prompt drafted](/images/guides/idun-assistant/admin-prompts.png)
+</Frame>
 
 Body:
 
@@ -141,11 +149,14 @@ Behavioral rules:
 
 Tag it `latest`. Save. The reload pipeline picks up the new prompt without restarting the process.
 
-## 3. Configure memory (SQLite)
+  </Step>
+  <Step title="Configure memory (SQLite)">
 
 The default scaffold uses in-memory checkpointing, which loses every conversation when the process restarts. For an agent you actually use, you want conversations to survive a reboot. Open `/admin/memory/` and pick SQLite.
 
-![/admin/memory/ with SQLite selected](/images/guides/idun-assistant/admin-memory.png)
+<Frame>
+  ![/admin/memory/ with SQLite selected](/images/guides/idun-assistant/admin-memory.png)
+</Frame>
 
 Field:
 - **db_url**: `sqlite:///./conversations.db` (a file next to the running process).
@@ -154,11 +165,14 @@ Save. The reload pipeline rebuilds the LangGraph checkpointer against SQLite. Ev
 
 For production with multiple replicas, swap to `postgresql://...` in the same form. The agent code does not change.
 
-## 4. Wire up Langfuse observability
+  </Step>
+  <Step title="Wire up Langfuse observability">
 
 Open `/admin/observability/` and click Langfuse.
 
-![/admin/observability/ with Langfuse configured](/images/guides/idun-assistant/admin-langfuse.png)
+<Frame>
+  ![/admin/observability/ with Langfuse configured](/images/guides/idun-assistant/admin-langfuse.png)
+</Frame>
 
 Fields:
 - **Host**: `https://cloud.langfuse.com` (or your self-hosted URL)
@@ -168,11 +182,14 @@ Fields:
 
 Save. The engine fans every span out to Langfuse alongside the local trace store at `/admin/traces/`. Same data, two surfaces.
 
-## 5. Lock down `/agent/*` with SSO (internal use only)
+  </Step>
+  <Step title="Lock down `/agent/*` with SSO (internal use only)">
 
 idun-assistant is an internal tool. Anyone with an `@idun-group.com` Google account should be able to use it; no one else. Open `/admin/sso/` and configure Google OIDC with a domain allowlist.
 
-![/admin/sso/ with Google OIDC and an idun-group.com allowlist](/images/guides/idun-assistant/admin-sso.png)
+<Frame>
+  ![/admin/sso/ with Google OIDC and an idun-group.com allowlist](/images/guides/idun-assistant/admin-sso.png)
+</Frame>
 
 Fields:
 - **Provider**: Google
@@ -183,13 +200,18 @@ Fields:
 
 Save. From now on, every request to `/agent/run` (and the deprecated invoke/stream shims) requires a valid Google JWT whose `email` claim ends in `@idun-group.com`. The chat UI at `/` runs the OAuth handshake automatically and forwards the access token. See [SSO](/auth/sso) for the full validation flow and how to add specific outside emails to `allowed_emails`.
 
+  </Step>
+</Steps>
+
 ## Run the demo
 
 Open `http://localhost:8000/`. Sign in with your Google account (the OAuth screen appears once and the cookie sticks for 24h). Send:
 
 > Can you fetch the latest GitHub issues, make a summary in a Google Doc, and mail that to me?
 
-![Chat UI showing the multi-tool exchange](/images/guides/idun-assistant/chat-demo.png)
+<Frame>
+  ![Chat UI showing the multi-tool exchange](/images/guides/idun-assistant/chat-demo.png)
+</Frame>
 
 The bot streams partial output as the ReAct loop runs. Inline action cards show each call the model emits, the arguments it picks, and the result the tool returns. You also get a collapsed **Reasoning** card at the top with the agent's step-by-step plan. By the end of the chain, the agent has:
 
@@ -199,26 +221,48 @@ The bot streams partial output as the ReAct loop runs. Inline action cards show 
 
 And in your inbox:
 
-![Gmail showing the summary email with the Google Doc attached](/images/guides/idun-assistant/email-result.png)
+<Frame>
+  ![Gmail showing the summary email with the Google Doc attached](/images/guides/idun-assistant/email-result.png)
+</Frame>
 
 Back in the admin panel, `/admin/` now reflects the run. Request count, p50/p95 latency, error rate, and total cost all roll up from the same `standalone_trace` rows the trace viewer reads.
 
-![Admin dashboard with activity from the agent run](/images/ui/admin-dashboard.png)
+<Frame>
+  ![Admin dashboard with activity from the agent run](/images/ui/admin-dashboard.png)
+</Frame>
 
 For deeper debugging open `/admin/traces/` and click the run. You get the full span tree (every LLM call and every tool invocation) plus the exact JSON in/out of each tool in the right rail. Useful when the agent picks the wrong tool or passes weird arguments.
 
-![Trace detail for an idun-assistant run](/images/guides/idun-assistant/trace-detail.png)
+<Frame>
+  ![Trace detail for an idun-assistant run](/images/guides/idun-assistant/trace-detail.png)
+</Frame>
 
 Toggle to the **Waterfall** view to see where the time actually went. The critical path is highlighted, so you can spot the slow tool call at a glance.
 
-![Trace waterfall for the same idun-assistant run](/images/guides/idun-assistant/trace-waterfall.png)
+<Frame>
+  ![Trace waterfall for the same idun-assistant run](/images/guides/idun-assistant/trace-waterfall.png)
+</Frame>
 
 See [Local trace store](/observability/traces) for the trace UI reference.
 
 ## What's next
 
-- [MCP Servers](/mcp-servers/overview) — the full transport reference and how to register your own MCP server.
-- [Prompts](/prompts) — versioning, `get_prompt()` resolution, and the admin REST API.
-- [Memory](/memory/overview) — when to swap SQLite for Postgres.
-- [Local trace store](/observability/traces) — the bundled span-tree viewer at `/admin/traces/`.
-- [SSO](/auth/sso) — provider presets, allowed_domains + allowed_emails, and how validation works.
+<Card title="MCP Servers" icon="plug" horizontal href="/mcp-servers/overview">
+  the full transport reference and how to register your own MCP server.
+</Card>
+
+<Card title="Prompts" icon="file-text" horizontal href="/prompts">
+  versioning, `get_prompt()` resolution, and the admin REST API.
+</Card>
+
+<Card title="Memory" icon="database" horizontal href="/memory/overview">
+  when to swap SQLite for Postgres.
+</Card>
+
+<Card title="Local trace store" icon="activity" horizontal href="/observability/traces">
+  the bundled span-tree viewer at `/admin/traces/`.
+</Card>
+
+<Card title="SSO" icon="lock" horizontal href="/auth/sso">
+  provider presets, allowed_domains + allowed_emails, and how validation works.
+</Card>

@@ -1,0 +1,61 @@
+---
+title: "Enterprise"
+description: "Run hundreds of agents on your own infrastructure with SSO, RBAC, audit logs, governance, and full data sovereignty."
+keywords: ["enterprise", "shadow AI", "governance", "data sovereignty", "on-prem", "SSO", "RBAC", "audit logs"]
+---
+
+Your teams are already building agents. Some on ChatGPT plus, some on Claude desktop, some on hand-rolled scripts. Idun Engine Enterprise pulls all of it into one governed, observable, on-prem control plane, then gives you the SSO, RBAC, audit, and policy machinery your security team is going to ask for anyway.
+
+## Why Enterprise
+
+<CardGroup cols={2}>
+  <Card title="Stop shadow AI" icon="eye-off">
+    Bring the agents your teams already built on ChatGPT, Claude, and consumer tools into one governed surface, before the audit asks where the data went.
+  </Card>
+  <Card title="Data sovereignty" icon="globe-lock">
+    On-prem, your VPC, or air-gapped. Your data never leaves your perimeter. No third-party LLM tenant, no shared inference logs.
+  </Card>
+  <Card title="Audit-ready" icon="badge-check">
+    Every admin action is captured with actor, timestamp, and diff. Append-only logs, configurable retention up to seven years, SIEM export.
+  </Card>
+  <Card title="No vendor lock-in" icon="git-fork">
+    Open standards under the hood: LangGraph, ADK, OpenTelemetry, MCP, OIDC. Swap providers any time. Your code stays yours.
+  </Card>
+</CardGroup>
+
+## Governance, end to end
+
+<CardGroup cols={2}>
+  <Card title="Multi-agent management" icon="layers" href="/enterprise/multi-agent">
+    Register, monitor, and update every standalone agent from a single control plane. Drift detection across the fleet.
+  </Card>
+  <Card title="Enterprise SSO" icon="lock" href="/enterprise/sso">
+    Okta, Microsoft Entra ID, Ping, SAML, and OIDC providers wired into every agent. Group-based allowlists with JIT provisioning.
+  </Card>
+  <Card title="Role-based access" icon="users" href="/enterprise/rbac">
+    Granular permissions across agents, configs, secrets, and the admin surface. Roles can be sourced from IdP groups.
+  </Card>
+  <Card title="Audit logs" icon="scroll-text" href="/enterprise/audit-logs">
+    Tamper-evident, append-only record of every admin write. Streams to your SIEM. Retention up to seven years.
+  </Card>
+  <Card title="Centralized policy" icon="shield-check">
+    Push org-wide guardrails, secret rotation policies, model allowlists, and approval workflows from one place to every agent.
+  </Card>
+  <Card title="On-prem deploy" icon="server">
+    Kubernetes, VMs, or air-gapped clusters. Your infrastructure, your rules. Helm charts and signed images.
+  </Card>
+</CardGroup>
+
+## Built on the same open core
+
+The Enterprise control plane wraps the same `idun-agent-engine` your developers already use. Same YAML, same APIs, same components. No fork, no migration. If you ever leave, your agents keep running.
+
+## Who this is for
+
+Teams running more than three agents in production. Teams with a CISO who has asked about agent governance. Teams whose data cannot leave the perimeter, or who need an audit trail for every administrative change.
+
+## Talk to us
+
+<Card title="Book a demo" icon="message-circle" horizontal href="https://calendar.app.google/RSzm7EM5VZY8xVnN9">
+  30 minutes. We walk through your governance requirements and show what the control plane looks like with your existing standalones plugged in.
+</Card>

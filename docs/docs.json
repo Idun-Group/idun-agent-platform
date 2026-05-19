@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "maple",
+  "theme": "luma",
   "name": "Idun Engine",
   "colors": {
     "primary": "#3D2A8E",
@@ -12,7 +12,7 @@
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg",
-    "href": "https://idun-group.com"
+    "href": "/"
   },
   "fonts": {
     "body": {
@@ -43,6 +43,9 @@
       }
     }
   },
+  "icons": {
+    "library": "lucide"
+  },
   "search": {
     "prompt": "Search Idun Engine docs..."
   },
@@ -62,14 +65,22 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get started",
             "icon": "rocket",
-            "pages": ["index", "quickstart", "templates", "architecture"]
+            "boost": 2,
+            "pages": ["introduction", "quickstart", "architecture", "templates"]
           },
           {
-            "group": "Concepts",
-            "icon": "compass",
-            "pages": ["glossary", "roadmap"]
+            "group": "Guides",
+            "icon": "book-open",
+            "pages": [
+              "guides/overview",
+              "guides/connect-your-agent",
+              "guides/langgraph-production-deployment",
+              "guides/idun-assistant-copilot",
+              "guides/deepagents-with-idun",
+              "guides/programmatic-chat"
+            ]
           },
           {
             "group": "Standalone",
@@ -78,19 +89,18 @@
               "standalone/overview",
               "standalone/quickstart",
               "standalone/cli",
-              "standalone/cloud-run",
               "standalone/customizing-ui"
             ]
           },
           {
-            "group": "Agent frameworks",
-            "icon": "layer-group",
-            "pages": ["frameworks/overview", "frameworks/langgraph", "frameworks/adk", "frameworks/custom-adapter"]
-          },
-          {
-            "group": "Guardrails",
-            "icon": "shield-halved",
-            "pages": ["guardrails/overview", "guardrails/reference"]
+            "group": "Frameworks",
+            "icon": "layers",
+            "pages": [
+              "frameworks/overview",
+              "frameworks/langgraph",
+              "frameworks/adk",
+              "frameworks/custom-adapter"
+            ]
           },
           {
             "group": "Memory",
@@ -98,19 +108,33 @@
             "pages": ["memory/overview", "memory/langgraph", "memory/adk"]
           },
           {
+            "group": "Guardrails",
+            "icon": "shield",
+            "pages": ["guardrails/overview", "guardrails/reference"]
+          },
+          {
+            "group": "Tools",
+            "icon": "wrench",
+            "pages": [
+              "mcp-servers/overview",
+              "mcp-servers/docker-toolkit",
+              "prompts"
+            ]
+          },
+          {
             "group": "Observability",
             "icon": "chart-line",
-            "pages": ["observability/overview", "observability/traces", "observability/langfuse", "observability/arize-phoenix", "observability/langsmith", "observability/gcp-trace", "observability/gcp-logging", "observability/custom-handler", "observability/telemetry-events"]
-          },
-          {
-            "group": "MCP Servers",
-            "icon": "screwdriver-wrench",
-            "pages": ["mcp-servers/overview", "mcp-servers/docker-toolkit"]
-          },
-          {
-            "group": "Prompts",
-            "icon": "file-lines",
-            "pages": ["prompts"]
+            "pages": [
+              "observability/overview",
+              "observability/traces",
+              "observability/telemetry-events",
+              "observability/langfuse",
+              "observability/arize-phoenix",
+              "observability/langsmith",
+              "observability/gcp-trace",
+              "observability/gcp-logging",
+              "observability/custom-handler"
+            ]
           },
           {
             "group": "Authentication",
@@ -119,6 +143,7 @@
           },
           {
             "group": "Integrations",
+            "icon": "plug",
             "pages": [
               "integrations/discord",
               "integrations/google-chat",
@@ -128,24 +153,34 @@
             ]
           },
           {
-            "group": "Deployment",
-            "icon": "server",
-            "pages": ["deployment/overview", "deployment/hardening"]
-          },
-          {
-            "group": "Guides",
+            "group": "Deploy",
+            "icon": "boxes",
             "pages": [
-              "guides/connect-your-agent",
-              "guides/langgraph-production-deployment",
-              "guides/idun-assistant-copilot",
-              "guides/deepagents-with-idun",
-              "guides/programmatic-chat"
+              "deployment/overview",
+              "deployment/hardening",
+              "standalone/cloud-run"
             ]
           },
           {
-            "group": "Advanced",
-            "icon": "gear",
-            "pages": ["configuration", "cli/overview", "troubleshooting", "faq"]
+            "group": "Reference",
+            "icon": "file-json",
+            "pages": ["configuration", "cli/overview", "glossary", "roadmap"]
+          },
+          {
+            "group": "Enterprise",
+            "icon": "building-2",
+            "pages": [
+              "enterprise/overview",
+              "enterprise/multi-agent",
+              "enterprise/sso",
+              "enterprise/rbac",
+              "enterprise/audit-logs"
+            ]
+          },
+          {
+            "group": "Help",
+            "icon": "circle-help",
+            "pages": ["faq", "troubleshooting"]
           }
         ]
       },
@@ -153,9 +188,35 @@
         "tab": "Guides",
         "groups": [
           {
-            "group": "Guides",
+            "group": "Overview",
+            "icon": "book-open",
+            "pages": ["guides/overview"]
+          },
+          {
+            "group": "Tutorials",
+            "icon": "compass",
             "pages": [
-              "guides/overview"
+              "guides/connect-your-agent",
+              "guides/langgraph-production-deployment",
+              "guides/idun-assistant-copilot",
+              "guides/deepagents-with-idun",
+              "guides/programmatic-chat"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Enterprise",
+        "groups": [
+          {
+            "group": "Enterprise",
+            "icon": "building-2",
+            "pages": [
+              "enterprise/overview",
+              "enterprise/multi-agent",
+              "enterprise/sso",
+              "enterprise/rbac",
+              "enterprise/audit-logs"
             ]
           }
         ]
@@ -165,35 +226,37 @@
         "groups": [
           {
             "group": "Changelog",
-            "pages": [
-              "changelog/overview"
-            ]
+            "icon": "calendar",
+            "boost": 0.5,
+            "pages": ["changelog/overview"]
           }
         ]
       }
     ],
     "global": {
-      "anchors": [
-        {
-          "anchor": "Talk to us",
-          "href": "https://calendar.app.google/RSzm7EM5VZY8xVnN9",
-          "icon": "comments"
-        },
-        {
-          "anchor": "Discord",
-          "href": "https://discord.gg/KCZ6nW2jQe",
-          "icon": "discord"
-        },
-        {
-          "anchor": "GitHub",
-          "href": "https://github.com/Idun-Group/idun-agent-platform",
-          "icon": "github"
-        }
-      ]
+      "anchors": []
     }
   },
   "navbar": {
-    "links": []
+    "primary": {
+      "type": "button",
+      "label": "Get started",
+      "href": "/quickstart"
+    },
+    "links": [
+      {
+        "label": "Discord",
+        "href": "https://discord.gg/KCZ6nW2jQe"
+      },
+      {
+        "label": "GitHub",
+        "href": "https://github.com/Idun-Group/idun-agent-platform"
+      },
+      {
+        "label": "Talk to us",
+        "href": "https://calendar.app.google/RSzm7EM5VZY8xVnN9"
+      }
+    ]
   },
   "contextual": {
     "options": [

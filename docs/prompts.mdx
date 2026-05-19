@@ -2,6 +2,7 @@
 title: "Prompts"
 description: "Version, store, and render prompt templates with Jinja2 variables. Edit them from the admin panel or seed from YAML."
 keywords: ["prompts", "prompt management", "versioning", "Jinja2", "templates", "prompt engineering"]
+boost: 2
 ---
 
 Prompt management lets you version, store, and render prompt templates without hardcoding them in agent code. Define them in `config.yaml` (the seed shape) or edit them through the standalone admin panel at `/admin/prompts/`. Prompts support Jinja2 variables (`{{ variable }}`) for dynamic content at runtime.
@@ -23,12 +24,12 @@ Prompt management lets you version, store, and render prompt templates without h
       <Step title="Open the prompts admin page">
         Navigate to `/admin/prompts/` in the running standalone. The Prompt library lists every version with its variables, version number, and a row of actions.
 
-        ![Prompts admin page](/images/ui/admin-prompts.png)
+        <Frame><img alt="Prompts admin page" src="/images/ui/admin-prompts.png" /></Frame>
       </Step>
       <Step title="Create a new prompt">
         Click **New prompt**. Give it a unique `Name` (prompt ID), write the `Body` using `{{ name }}` syntax for variables, optionally add tags. The right panel surfaces detected variables as you type.
 
-        ![New prompt drawer](/images/ui/admin-prompts-new.png)
+        <Frame><img alt="New prompt drawer" src="/images/ui/admin-prompts-new.png" /></Frame>
       </Step>
       <Step title="Save">
         Save. The reload pipeline re-instantiates the engine with the new prompt available to `get_prompt()`. Subsequent saves with the same name allocate the next version automatically.
