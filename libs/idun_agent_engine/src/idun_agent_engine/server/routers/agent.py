@@ -2,6 +2,8 @@
 
 import logging
 import time
+import uuid
+from contextlib import contextmanager
 from typing import Annotated, Any
 
 from ag_ui.core.types import RunAgentInput
@@ -78,16 +80,42 @@ async def capabilities(
     return caps
 
 
-def _resolve_user_id(user: dict | None) -> str | None:
-    """Map a verified SSO claims dict to a user identifier for scoping.
+@contextmanager
+def _bind_user_id(user_id: str):
+    """Bind ``current_user_id`` for the duration of a route's adapter call.
 
-    Prefers ``email`` (matches ADK's per-user session model), falls back
-    to ``sub``. Returns ``None`` when SSO is off — the route relies on the
-    adapter's own scoping rules in that case.
+    Adapters that scope by user (LangGraph in Step 2, ADK today) can
+    read this ContextVar without depending on the route to thread the id
+    through as a kwarg on every method.
     """
-    if not user:
-        return None
-    return user.get("email") or user.get("sub")
+    token = current_user_id.set(user_id)
+    try:
+        yield
+    finally:
+        current_user_id.reset(token)
+
+
+def _resolve_user_id(user: dict | None, request: Request) -> str:
+    """Resolve the user id for chat scoping.
+
+    Priority:
+      1. SSO claim (``email``, then ``sub``) when the verified user dict
+         carries a non-empty value.
+      2. ``X-Idun-User-Id`` request header when claims are absent.
+      3. Fresh ``uuid.uuid4().hex`` minted per request as a safety net
+         so callers never see ``None``.
+
+    The header is trusted only when claims are absent. With SSO
+    configured the JWT claim wins; the header is ignored even if sent.
+    """
+    if user:
+        claim = user.get("email") or user.get("sub")
+        if claim:
+            return claim
+    header = request.headers.get("x-idun-user-id", "").strip()
+    if header:
+        return header
+    return uuid.uuid4().hex
 
 
 @agent_router.get("/sessions", response_model=list[SessionSummary])
@@ -112,8 +140,9 @@ async def list_sessions(
                 "agent_type": agent.agent_type,
             },
         )
-    user_id = _resolve_user_id(user)
-    return await agent.list_sessions(user_id=user_id)
+    user_id = _resolve_user_id(user, request)
+    with _bind_user_id(user_id):
+        return await agent.list_sessions(user_id=user_id)
 
 
 @agent_router.get("/sessions/{session_id}", response_model=SessionDetail)
@@ -139,8 +168,9 @@ async def get_session(
                 "agent_type": agent.agent_type,
             },
         )
-    user_id = _resolve_user_id(user)
-    detail = await agent.get_session(session_id, user_id=user_id)
+    user_id = _resolve_user_id(user, request)
+    with _bind_user_id(user_id):
+        detail = await agent.get_session(session_id, user_id=user_id)
     if detail is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return detail
@@ -159,7 +189,7 @@ async def run(
     """
     last_msg = input_data.messages[-1] if input_data.messages else None
     last_content = str(last_msg.content)[:120] if last_msg else "<empty>"
-    resolved_user_id = _resolve_user_id(user) or current_user_id.get()
+    resolved_user_id = _resolve_user_id(user, request)
     logger.info(
         f"Run — thread_id={input_data.thread_id}, "
         f"user_id={resolved_user_id}, message={last_content}"

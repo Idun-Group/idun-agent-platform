@@ -131,7 +131,10 @@ def test_event_generator_wraps_agent_run_with_using_user(
 
     # `_resolve_user_id` is a plain function called inside the route
     # body — patch the module attribute so it returns "alice".
-    monkeypatch.setattr(agent_module, "_resolve_user_id", lambda _user: "alice")
+    # Signature is ``(user, request)`` since the header fallback was added.
+    monkeypatch.setattr(
+        agent_module, "_resolve_user_id", lambda _user, _request: "alice"
+    )
 
     with TestClient(app) as client:
         # AG-UI RunAgentInput shape — minimal valid payload. The agent
@@ -159,9 +162,14 @@ def test_event_generator_wraps_agent_run_with_using_user(
     assert "alice" in user_attrs
 
 
-def test_event_generator_default_user_does_not_crash(monkeypatch, in_memory_tracer):
-    """The ContextVar default is the literal "standalone" — confirm the
-    wrap accepts it without error and stamps the default."""
+def test_event_generator_stamps_anonymous_uuid_fallback(monkeypatch, in_memory_tracer):
+    """When no SSO claim and no header are present, `_resolve_user_id`
+    mints a uuid hex string. The wrap must still stamp that value onto
+    emitted spans so anonymous traffic remains attributable.
+
+    Pin: the route no longer reads the ContextVar's default; every chat
+    request produces a non-empty `user.id` on its spans.
+    """
     from idun_agent_engine.server.routers import agent as agent_module
 
     exporter, provider = in_memory_tracer
@@ -179,9 +187,10 @@ def test_event_generator_default_user_does_not_crash(monkeypatch, in_memory_trac
     fake_agent = _FakeAgent()
     app = _build_test_app(fake_agent)
 
-    # No SSO user; _resolve_user_id returns None so the route falls
-    # back to current_user_id.get() which has the "standalone" default.
-    monkeypatch.setattr(agent_module, "_resolve_user_id", lambda _user: None)
+    minted_id = "deadbeef" * 4  # 32-char hex, stands in for uuid4().hex
+    monkeypatch.setattr(
+        agent_module, "_resolve_user_id", lambda _user, _request: minted_id
+    )
 
     with TestClient(app) as client:
         response = client.post(
@@ -201,5 +210,4 @@ def test_event_generator_default_user_does_not_crash(monkeypatch, in_memory_trac
 
     provider.force_flush()
     user_attrs = [s.attributes.get("user.id") for s in exporter.get_finished_spans()]
-    # Default ContextVar value is "standalone".
-    assert "standalone" in user_attrs
+    assert minted_id in user_attrs
