@@ -56,6 +56,8 @@ export type RuntimeConfig = {
   theme: ThemeConfig;
   authMode: "none" | "password" | "oidc";
   layout: "branded" | "minimal" | "inspector";
+  agentReady: boolean;
+  bootReason: string | null;
   telemetry: TelemetryConfig;
 };
 
@@ -130,6 +132,8 @@ export const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
   theme: DEFAULT_THEME,
   authMode: "none",
   layout: "branded",
+  agentReady: true,
+  bootReason: null,
   telemetry: {
     enabled: false, // dev / SSR default is OFF; the backend overrides at runtime
     host: "https://us.i.posthog.com",

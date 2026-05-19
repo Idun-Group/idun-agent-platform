@@ -10,6 +10,7 @@
  */
 
 import { authHeaders, clearManualToken, fetchSsoInfo } from "@/lib/auth";
+import { getUserId } from "@/lib/user-id";
 
 export class ApiError extends Error {
   constructor(
@@ -47,11 +48,17 @@ async function handleUnauthorized(path: string): Promise<void> {
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const bearer = await authHeaders();
+  // Chat surface carries an explicit per-visitor identity. Admin routes
+  // never need it — JWT/cookie auth covers identity there.
+  const userIdHeader: Record<string, string> = isAgentPath(path)
+    ? { "x-idun-user-id": await getUserId() }
+    : {};
   const res = await fetch(path, {
     credentials: "include",
     headers: {
       "content-type": "application/json",
       ...bearer,
+      ...userIdHeader,
       ...(init?.headers || {}),
     },
     ...init,

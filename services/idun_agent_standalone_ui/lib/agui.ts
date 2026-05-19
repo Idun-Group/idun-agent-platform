@@ -8,6 +8,7 @@
  */
 
 import { authHeaders } from "@/lib/auth";
+import { getUserId } from "@/lib/user-id";
 
 export type AGUIEvent = {
   type: string;
@@ -64,12 +65,14 @@ export type ToolCall = {
 
 export async function runAgent(opts: RunOptions): Promise<void> {
   const bearer = await authHeaders();
+  const userId = await getUserId();
   const res = await fetch("/agent/run", {
     method: "POST",
     credentials: "include",
     headers: {
       "content-type": "application/json",
       accept: "text/event-stream",
+      "x-idun-user-id": userId,
       ...bearer,
     },
     body: JSON.stringify({
