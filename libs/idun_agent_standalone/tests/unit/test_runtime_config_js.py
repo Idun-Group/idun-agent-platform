@@ -57,7 +57,7 @@ def test_agent_ready_true_when_agent_attached():
         body = client.get("/runtime-config.js").text
     config = _parse_config(body)
     assert config["agentReady"] is True
-    assert config["bootReason"] is None
+    assert config["bootFailed"] is False
 
 
 def test_agent_ready_false_when_no_agent_attached():
@@ -68,21 +68,34 @@ def test_agent_ready_false_when_no_agent_attached():
         body = client.get("/runtime-config.js").text
     config = _parse_config(body)
     assert config["agentReady"] is False
-    assert config["bootReason"] is None
+    assert config["bootFailed"] is False
 
 
-def test_boot_reason_surfaces_assembly_error():
-    """Broken deploy: agent rows exist but assembly failed. The SPA
-    must NOT redirect to /onboarding (the wizard can't fix this); it
-    should render chat so the eventual 503 reaches the user with a
-    diagnostic message. `bootReason` lets the SPA tell the cases apart.
-    """
+def test_boot_failed_true_on_assembly_error():
+    """Broken deploy: assembly failed. SPA must NOT redirect to
+    /onboarding (wizard can't help); render chat so the eventual 503
+    reaches the user. `bootFailed=true` is the signal."""
     app = _build_app(agent=None, boot_error="Agent assembly failed: bad YAML")
     with TestClient(app) as client:
         body = client.get("/runtime-config.js").text
     config = _parse_config(body)
     assert config["agentReady"] is False
-    assert config["bootReason"] == "Agent assembly failed: bad YAML"
+    assert config["bootFailed"] is True
+
+
+def test_boot_failed_does_not_leak_exception_details():
+    """Information-disclosure guard: the public endpoint must not echo
+    raw exception text (DB URIs, file paths, parse traces). The boolean
+    signal is sufficient for the SPA's routing decision."""
+    sensitive = (
+        "Agent assembly failed: postgresql://idun:hunter2@10.0.0.1:5432/prod"
+    )
+    app = _build_app(agent=None, boot_error=sensitive)
+    with TestClient(app) as client:
+        body = client.get("/runtime-config.js").text
+    assert sensitive not in body
+    assert "hunter2" not in body
+    assert "10.0.0.1" not in body
 
 
 def test_response_is_javascript_no_store():

@@ -51,7 +51,7 @@ describe("Home (chat root)", () => {
     window.__IDUN_CONFIG__ = {
       ...DEFAULT_RUNTIME_CONFIG,
       agentReady: false,
-      bootReason: null,
+      bootFailed: false,
     };
     render(<Home />);
     await waitFor(() =>
@@ -65,7 +65,7 @@ describe("Home (chat root)", () => {
     window.__IDUN_CONFIG__ = {
       ...DEFAULT_RUNTIME_CONFIG,
       agentReady: false,
-      bootReason: "Agent assembly failed: bad YAML",
+      bootFailed: true,
     };
     const { findByTestId } = render(<Home />);
     await findByTestId("branded-layout");

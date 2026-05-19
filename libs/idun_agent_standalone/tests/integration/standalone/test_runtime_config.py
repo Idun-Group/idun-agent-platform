@@ -58,7 +58,7 @@ async def test_runtime_config_body_shape(standalone):
         "authMode",
         "layout",
         "agentReady",
-        "bootReason",
+        "bootFailed",
         "telemetry",
     }
     assert config["authMode"] == "none"

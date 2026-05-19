@@ -53,7 +53,7 @@ function ChatHome() {
   useEffect(() => {
     if (signedIn !== true) return;
     const cfg = getRuntimeConfig();
-    if (!cfg.agentReady && !cfg.bootReason) {
+    if (!cfg.agentReady && !cfg.bootFailed) {
       router.replace("/onboarding");
       return;
     }
