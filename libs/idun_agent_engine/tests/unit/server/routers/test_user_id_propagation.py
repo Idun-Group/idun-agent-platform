@@ -162,6 +162,59 @@ def test_event_generator_wraps_agent_run_with_using_user(
     assert "alice" in user_attrs
 
 
+def test_event_generator_binds_current_user_id_contextvar(
+    monkeypatch, in_memory_tracer
+):
+    """The /run path must set current_user_id during agent.run so adapter
+    code reading the ContextVar (LangGraph stamping checkpoint metadata in
+    Step 2, ADK's user_id_extractor today) sees the route-resolved value
+    and not the "standalone" default."""
+    from idun_agent_engine.identity import current_user_id
+    from idun_agent_engine.server.routers import agent as agent_module
+
+    exporter, provider = in_memory_tracer
+    tracer = provider.get_tracer(__name__)
+
+    seen: dict[str, object] = {}
+
+    class _FakeAgent:
+        run_event_observers = AsyncMock()
+
+        async def run(self, _input) -> AsyncIterator[object]:
+            seen["ctxvar"] = current_user_id.get()
+            with tracer.start_as_current_span("FakeLLM.invoke") as span:
+                span.set_attribute("openinference.span.kind", "LLM")
+            if False:
+                yield None  # pragma: no cover
+
+    app = _build_test_app(_FakeAgent())
+    monkeypatch.setattr(
+        agent_module, "_resolve_user_id", lambda _user, _request: "alice"
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/agent/run",
+            json={
+                "thread_id": "t-1",
+                "run_id": "r-1",
+                "messages": [],
+                "tools": [],
+                "context": [],
+                "state": {},
+                "forwarded_props": {},
+            },
+            headers={"accept": "text/event-stream"},
+        )
+        _ = response.read()
+
+    assert seen["ctxvar"] == "alice"
+    # And after the stream completes, the route must restore the default
+    # so the test process's ContextVar doesn't leak the resolved id to
+    # subsequent code paths.
+    assert current_user_id.get() == "standalone"
+
+
 def test_event_generator_stamps_anonymous_uuid_fallback(monkeypatch, in_memory_tracer):
     """When no SSO claim and no header are present, `_resolve_user_id`
     mints a uuid hex string. The wrap must still stamp that value onto

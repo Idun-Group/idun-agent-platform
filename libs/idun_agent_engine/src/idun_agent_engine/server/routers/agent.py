@@ -216,15 +216,13 @@ async def run(
     encoder = EventEncoder(accept=accept_header or "")
 
     async def event_generator():
-        # Bind for the streaming task so adapter user_id_extractors and
-        # session-listing fallbacks see the same value.
-        token = current_user_id.set(resolved_user_id)
-        try:
-            # Project the resolved user into OTel context so
-            # LangChainInstrumentor stamps user.id on every span emitted
-            # while agent.run is running. See
-            # tasks/trace-feature-08-05-2026/15-user-session-propagation.md.
-            with using_user(resolved_user_id):
+        # _bind_user_id mirrors the binding used by /agent/sessions* so a
+        # future change to the helper picks up the streaming path too.
+        # using_user projects the resolved user into OTel context for
+        # LangChainInstrumentor span stamping (see
+        # tasks/trace-feature-08-05-2026/15-user-session-propagation.md).
+        with _bind_user_id(resolved_user_id), using_user(resolved_user_id):
+            try:
                 async for event in agent.run(input_data):
                     # Registry isolates per-observer exceptions, so dispatch cannot
                     # masquerade as an agent failure here. Route-synthesized
@@ -255,22 +253,19 @@ async def run(
                         except Exception:
                             yield 'event: error\ndata: {"error": "Event encoding failed"}\n\n'
                         break
-        except Exception as agent_error:
-            logger.error(f"Agent run error: {agent_error}", exc_info=True)
-            from ag_ui.core import EventType, RunErrorEvent
+            except Exception as agent_error:
+                logger.error(f"Agent run error: {agent_error}", exc_info=True)
+                from ag_ui.core import EventType, RunErrorEvent
 
-            error_event = RunErrorEvent(
-                type=EventType.RUN_ERROR,
-                message=f"Agent execution failed: {agent_error}",
-                code="FRAMEWORK_ERROR",
-            )
-            try:
-                yield encoder.encode(error_event)
-            except Exception:
-                yield 'event: error\ndata: {"error": "Agent execution failed"}\n\n'
-        finally:
-            current_user_id.reset(token)
-            logger.debug(f"Run — reset user_id token thread_id={input_data.thread_id}")
+                error_event = RunErrorEvent(
+                    type=EventType.RUN_ERROR,
+                    message=f"Agent execution failed: {agent_error}",
+                    code="FRAMEWORK_ERROR",
+                )
+                try:
+                    yield encoder.encode(error_event)
+                except Exception:
+                    yield 'event: error\ndata: {"error": "Agent execution failed"}\n\n'
 
     return StreamingResponse(event_generator(), media_type=encoder.get_content_type())
 
