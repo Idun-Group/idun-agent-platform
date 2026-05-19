@@ -153,7 +153,6 @@ export function InspectorLayout({ threadId }: { threadId: string }) {
           >
             <Menu className="h-4 w-4" />
           </button>
-          <strong className="text-sm font-medium">{appName}</strong>
           <div className="ml-auto">
             <HeaderActions
               threadId={threadId}
