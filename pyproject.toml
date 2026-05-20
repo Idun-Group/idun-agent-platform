@@ -1,6 +1,6 @@
 [project]
 name = "idun-engine"
-version = "0.6.0"
+version = "0.6.1"
 description = "Idun Engine"
 authors = [{ name = "Idun Group", email = "h.geoffrey@idun-group.com" }]
 requires-python = ">=3.12,<3.13"

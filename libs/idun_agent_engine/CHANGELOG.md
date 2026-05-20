@@ -6,6 +6,19 @@ All notable changes to `idun-agent-engine` are documented here. This project fol
 
 _No unreleased changes yet._
 
+## 0.6.1 — 2026-05-20
+
+Patch release. The engine now accepts a per-request `X-Idun-User-Id` header and binds it to a `current_user_id` ContextVar that adapter code (and the standalone trace writer) read at the start of every `/agent/*` invocation, so chat history and traces can be scoped per user when the standalone UI runs under password auth without a full OIDC ladder. Pairs with the standalone changes in `0.6.1` that open the chat shell under password mode.
+
+### Added
+
+- `_resolve_user_id` resolution order on `/agent/*`: SSO claim (`email` > `sub`) > `X-Idun-User-Id` header > fresh `uuid4().hex`. Always returns a non-empty string. The header is trusted only when SSO claims are absent (#671).
+- `_bind_user_id` context manager wraps adapter calls in `list_sessions` and `get_session` so the LangGraph adapter can read `current_user_id` to scope checkpoint metadata (#671).
+
+### Changed
+
+- `X-Idun-User-Id` is validated: capped at 256 chars; control bytes `0x00–0x1F` and `0x7F` are rejected; on rejection the resolver falls through to the `uuid4` fallback so the caller still gets a usable id (#671).
+
 ## 0.6.0 — 2026-05-17
 
 The release where Idun Engine becomes **the third path between LangGraph Cloud and DIY**. The engine wheel now bundles the `idun-agent-standalone` admin/chat/traces app and the `idun` console script, so adopters can `pip install idun-agent-engine && idun setup && idun serve` without installing any other package. The release also removes the Haystack adapter, demotes `guardrails-ai` to an optional extra, lands the trace pipeline that powers the admin `/traces/` viewer, and rebrands the public surface from "Idun Platform" to "Idun Engine".
