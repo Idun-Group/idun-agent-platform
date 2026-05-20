@@ -6,22 +6,40 @@ keywords: ["AI agent deployment", "self-hosted", "open source", "LangGraph", "AD
 boost: 3
 ---
 
+export const HeroCard = ({ icon, title, description, href }) => {
+  return (
+    <a
+      className="group block rounded-2xl border border-black/10 bg-white/50 hover:bg-white hover:border-black/20 hover:shadow-md dark:bg-zinc-900/30 dark:hover:bg-zinc-900/60 dark:border-white/10 dark:hover:border-white/20 transition-all duration-200 p-8 no-underline cursor-pointer min-h-[180px]"
+      href={href}
+    >
+      <div className="mb-6 inline-flex items-center justify-center w-12 h-12 rounded-xl" style={{ backgroundColor: 'rgba(61, 42, 142, 0.08)', color: '#3D2A8E' }}>
+        <Icon icon={icon} size={24} />
+      </div>
+      <h3 className="text-gray-900 dark:text-zinc-50 font-semibold text-xl m-0 leading-tight">
+        {title}
+      </h3>
+      <p className="mt-3 text-base text-gray-500 dark:text-zinc-400 leading-relaxed m-0">
+        {description}
+      </p>
+    </a>
+  );
+};
+
 <div className="relative">
-  <div className="relative z-10 px-4 py-12 lg:py-16 lg:pb-12 max-w-4xl mx-auto">
-    <div className="flex justify-center mb-6">
-      <img src="/logo/light.svg" className="block dark:hidden h-14 w-auto" alt="Idun Engine" />
-      <img src="/logo/dark.svg" className="hidden dark:block h-14 w-auto" alt="Idun Engine" />
+  <div className="relative z-10 px-4 py-10 lg:py-12 max-w-5xl mx-auto">
+    <div className="text-sm font-semibold uppercase" style={{ color: '#3D2A8E', letterSpacing: '0.08em' }}>
+      Documentation
     </div>
 
-    <h1 className="block text-5xl font-medium text-center text-gray-900 dark:text-zinc-50 tracking-tight">
+    <h1 className="block text-6xl font-bold text-gray-900 dark:text-zinc-50 tracking-tight mt-3">
       Idun Engine
     </h1>
 
-    <div className="max-w-2xl mx-auto px-4 mt-6 text-lg text-center text-gray-500 dark:text-zinc-500 leading-relaxed">
+    <div className="mt-4 text-base text-gray-500 dark:text-zinc-400 leading-relaxed max-w-3xl">
       Idun Engine is the open-source production wrapper for LangGraph and Google ADK agents. Point it at your agent, and get a self-hosted FastAPI service with chat UI, admin panel, traces viewer, guardrails, memory, and MCP server support, all on your infrastructure.
     </div>
 
-    <div className="max-w-2xl mx-auto mt-10 rounded-xl overflow-hidden border border-black/5 shadow-sm bg-black">
+    <div className="mt-10 rounded-xl overflow-hidden border border-black/5 shadow-sm bg-black">
       <video
         controls
         playsInline
@@ -32,21 +50,31 @@ boost: 3
       </video>
     </div>
 
-    <div className="mt-16 lg:mt-20">
-      <CardGroup cols={2}>
-        <Card title="Quickstart" icon="rocket" href="/quickstart">
-          Deploy your first agent in under 30 minutes
-        </Card>
-        <Card title="Architecture" icon="layers" href="/architecture">
-          How the engine and standalone fit together
-        </Card>
-        <Card title="Frameworks" icon="bolt" href="/frameworks/overview">
-          LangGraph and Google ADK adapters
-        </Card>
-        <Card title="Guides" icon="book-open" href="/guides/overview">
-          Step-by-step tutorials for common workflows
-        </Card>
-      </CardGroup>
+    <div className="mt-16 grid sm:grid-cols-2 gap-5">
+      <HeroCard
+        icon="rocket"
+        title="Quickstart"
+        description="Deploy your first agent in under 30 minutes"
+        href="/quickstart"
+      />
+      <HeroCard
+        icon="layers"
+        title="Architecture"
+        description="How the engine and standalone fit together"
+        href="/architecture"
+      />
+      <HeroCard
+        icon="zap"
+        title="Frameworks"
+        description="LangGraph and Google ADK adapters"
+        href="/frameworks/overview"
+      />
+      <HeroCard
+        icon="book-open"
+        title="Guides"
+        description="Step-by-step tutorials for common workflows"
+        href="/guides/overview"
+      />
     </div>
   </div>
 </div>

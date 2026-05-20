@@ -26,7 +26,7 @@
   },
   "appearance": {
     "default": "light",
-    "strict": true
+    "strict": false
   },
   "background": {
     "color": {
@@ -179,7 +179,7 @@
           },
           {
             "group": "Help",
-            "icon": "circle-help",
+            "icon": "life-buoy",
             "pages": ["faq", "troubleshooting"]
           }
         ]
