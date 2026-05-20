@@ -2,9 +2,10 @@
 title: "Guardrails"
 description: "Protect your agents with 15 built-in guardrails for PII detection, jailbreak prevention, toxic language filtering, topic restriction, and more."
 keywords: ["guardrails", "PII detection", "jailbreak prevention", "toxic language", "input validation", "output validation", "Guardrails AI"]
+boost: 2
 ---
 
-Guardrails scan agent inputs and outputs to enforce safety and policy boundaries. Idun Agent Platform provides 15 built-in guardrail types powered by [Guardrails AI](https://guardrailsai.com), applied at the input position, output position, or both.
+Guardrails scan agent inputs and outputs to enforce safety and policy boundaries. Idun Engine provides 15 built-in guardrail types powered by [Guardrails AI](https://guardrailsai.com), applied at the input position, output position, or both.
 
 ## How guardrails work
 
@@ -23,12 +24,12 @@ You can configure multiple guardrails at each position. All guardrails at a give
       <Step title="Open the guardrails admin page">
         Navigate to `/admin/guardrails/` in the running standalone. The catalog at the top groups guards by category; configured guards are listed below.
 
-        ![Guardrails admin page](/images/ui/admin-guardrails.png)
+        <Frame><img alt="Guardrails admin page" src="/images/ui/admin-guardrails.png" /></Frame>
       </Step>
       <Step title="Create a guardrail">
         Click the guard type you want (e.g., Ban List, Detect PII, Toxic Language). Fill in the configuration form, including the **Guardrails AI API key** field on the first guard you create. Get a key from [hub.guardrailsai.com](https://hub.guardrailsai.com). The key is persisted in the guardrail row and re-hydrated into the process environment on every boot, so you only enter it once.
 
-        ![Add a Ban List guardrail](/images/ui/admin-guardrails-add.png)
+        <Frame><img alt="Add a Ban List guardrail" src="/images/ui/admin-guardrails-add.png" /></Frame>
       </Step>
       <Step title="Save">
         Save the form. The reload pipeline validates the new config, re-instantiates the engine, and the guard is live. A bad save rolls back without disturbing the running agent.
@@ -169,6 +170,14 @@ When a guardrail blocks a request, the response includes the `guardrail` field i
 
 ## Next steps
 
-- [Guardrails reference](/guardrails/reference)
-- [Observability](/observability/overview) for monitoring guardrail activity in traces
-- [Deployment](/deployment/overview)
+<Card title="Guardrails reference" icon="file-text" horizontal href="/guardrails/reference">
+  All 15 guardrail types and their configuration fields.
+</Card>
+
+<Card title="Observability" icon="chart-line" horizontal href="/observability/overview">
+  Monitor guardrail activity in traces.
+</Card>
+
+<Card title="Deployment" icon="cloud" horizontal href="/deployment/overview">
+  Deploy your agent to Cloud Run, a VM, or your laptop.
+</Card>

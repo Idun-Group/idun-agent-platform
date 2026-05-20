@@ -2,11 +2,12 @@
 title: "Memory"
 description: "Enable agents to maintain state and context across conversations using checkpointing and session services."
 keywords: ["memory", "checkpointing", "state persistence", "sessions", "LangGraph", "ADK"]
+boost: 2
 ---
 
 Memory enables agents to maintain state and context across conversations. With memory configured, agents remember previous interactions and can resume conversations after failures or restarts.
 
-Idun Agent Platform supports multiple memory and checkpointing strategies depending on your agent framework.
+Idun Engine supports multiple memory and checkpointing strategies depending on your agent framework.
 
 ## Framework support
 
@@ -54,7 +55,7 @@ Checkpointing saves your agent's state during execution. Each interaction is ass
       <Step title="Open the memory admin page">
         Navigate to `/admin/memory/` in the running standalone. The catalog shows the supported backends: SQLite, PostgreSQL, In Memory, Vertex AI, and Database (ADK-only).
 
-        ![Memory admin page](/images/ui/admin-memory.png)
+        <Frame><img alt="Memory admin page" src="/images/ui/admin-memory.png" /></Frame>
       </Step>
       <Step title="Configure the backend">
         Click the backend you want and fill in the connection details. Save; the reload pipeline re-instantiates the engine with the new checkpointer or session service.
@@ -94,3 +95,13 @@ Checkpointing saves your agent's state during execution. Each interaction is ass
 - **Use PostgreSQL or Database for production**: Multi-process support, reliability, and crash recovery
 - **Configure thread isolation**: Each conversation should have a unique `session_id` to prevent state leakage
 - **Monitor storage usage**: Long-running conversations can accumulate significant state over time
+
+## Next steps
+
+<Card title="LangGraph memory" icon="layers" horizontal href="/memory/langgraph">
+  Checkpointing for conversation state persistence. Supports in-memory, SQLite, and PostgreSQL backends.
+</Card>
+
+<Card title="ADK memory" icon="database" horizontal href="/memory/adk">
+  Session services for conversation state and memory services for long-term knowledge storage.
+</Card>

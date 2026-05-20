@@ -1,8 +1,9 @@
 ---
 title: "How to deploy a LangGraph agent to production in 5 minutes"
 sidebarTitle: "LangGraph production deployment"
-description: "Step-by-step tutorial to take a LangGraph agent from a local script to a production API with streaming, guardrails, memory, and observability using Idun Agent Platform."
+description: "Step-by-step tutorial to take a LangGraph agent from a local script to a production API with streaming, guardrails, memory, and observability using Idun Engine."
 keywords: ["LangGraph deployment", "LangGraph production", "LangGraph production API", "deploy LangGraph agent", "LangGraph FastAPI", "LangGraph streaming", "AG-UI protocol", "AI agent deployment"]
+boost: 2
 ---
 
 You built a LangGraph agent that works in a notebook. Now you need it behind an API with authentication, conversation memory, guardrails, and tracing. This guide takes you from a working `StateGraph` to a production endpoint in under 5 minutes.
@@ -28,7 +29,7 @@ LangGraph gives you a graph-based runtime for building agents. It does not give 
 
 And one more: **no streaming protocol.** Modern chat UIs expect Server-Sent Events with structured events (text deltas, tool calls, thinking indicators). LangGraph emits raw `astream_events` that you need to map to a protocol your frontend understands.
 
-Idun Agent Platform fills all five gaps. Your `StateGraph` stays unchanged. Idun wraps it into a FastAPI service with AG-UI streaming, configurable memory, guardrails, and multi-provider observability, all configured through a single YAML file.
+Idun Engine fills all five gaps. Your `StateGraph` stays unchanged. Idun wraps it into a FastAPI service with AG-UI streaming, configurable memory, guardrails, and multi-provider observability, all configured through a single YAML file.
 
 <Note>
   This guide drives configuration from `config.yaml`. The standalone runtime exposes the same fields through the admin panel at `/admin/`, so any step that edits the YAML can also be done from a browser; the DB is the source of truth in steady state.
@@ -57,7 +58,8 @@ Idun Agent Platform fills all five gaps. Your `StateGraph` stays unchanged. Idun
 - A Gemini API key (or any LangChain-compatible LLM)
 - 5 minutes
 
-## Step 1: Write your LangGraph agent
+<Steps>
+  <Step title="Write your LangGraph agent">
 
 Create a project directory with an agent that has tool calling built in:
 
@@ -133,7 +135,8 @@ Two things matter here:
 1. The variable `workflow` is an **uncompiled** `StateGraph`. Do not call `.compile()`. Idun compiles it for you with the configured checkpointer and store.
 2. The state uses `MessagesState` (a `TypedDict` with a single `messages` field). Idun auto-detects this as a chat-mode agent. If your state has additional fields, Idun treats it as a structured-input agent and exposes the full JSON Schema through the capabilities endpoint.
 
-## Step 2: Set up Idun and run the agent
+  </Step>
+  <Step title="Set up Idun and run the agent">
 
 Install the engine wheel (it bundles the standalone admin/chat/traces app and the `idun` console script):
 
@@ -175,7 +178,8 @@ Starting Idun Agent Engine server on http://localhost:8000...
 
 Your agent is now live. Open `http://localhost:8000/docs` to see the full OpenAPI spec, `http://localhost:8000/` for the chat UI, and `http://localhost:8000/admin/` for the admin panel. To use a different port, export `IDUN_PORT` before running `idun serve`.
 
-## Step 3: Test the agent
+  </Step>
+  <Step title="Test the agent">
 
 The canonical endpoint is `POST /agent/run`, which implements the AG-UI streaming protocol used by CopilotKit, Vercel AI SDK, and other modern chat frontends.
 
@@ -207,7 +211,8 @@ curl http://localhost:8000/health
 
 Or open `/` in a browser and chat with the agent directly through the bundled chat UI.
 
-## Step 4: Add your first guardrail
+  </Step>
+  <Step title="Add your first guardrail">
 
 Guardrails validate input and output at the API boundary. They run before and after your agent, blocking requests that violate your policies. Idun uses [Guardrails AI](https://guardrailsai.com) validators, downloaded and run locally.
 
@@ -261,7 +266,8 @@ The request is blocked before it ever reaches your agent. The PII guardrail dete
 
 Idun supports 15 guardrail types: PII detection, ban lists, toxic language, jailbreak detection, prompt injection, NSFW filtering, bias detection, topic restriction, gibberish detection, competition checks, language validation, code scanning, RAG hallucination detection, Google Model Armor, and custom LLM-based validation.
 
-## Step 5: Add observability with Langfuse
+  </Step>
+  <Step title="Add observability with Langfuse">
 
 Add an `observability` section to your `config.yaml`:
 
@@ -278,7 +284,9 @@ observability:
 
 Restart the server. Every invocation now shows up in your Langfuse dashboard with full traces: LLM calls, token counts, latencies, tool executions.
 
-![Langfuse trace showing LangGraph agent with tool calls](/images/guides/19-langfuse-trace.png)
+<Frame>
+  ![Langfuse trace showing LangGraph agent with tool calls](/images/guides/19-langfuse-trace.png)
+</Frame>
 
 Idun supports five observability providers, and you can attach more than one to the same agent:
 
@@ -292,7 +300,8 @@ Idun supports five observability providers, and you can attach more than one to 
 
 The engine fans spans out to every enabled provider; each is lazy-loaded. Independently, the local trace store at `/admin/traces/` always captures every run alongside any external providers you configure; see [Local trace store](/observability/traces).
 
-## Step 6: Upgrade to PostgreSQL memory
+  </Step>
+  <Step title="Upgrade to PostgreSQL memory">
 
 In-memory checkpointing loses conversations when the server restarts. For production, switch to PostgreSQL:
 
@@ -317,9 +326,13 @@ For a simpler persistence option, use SQLite:
       db_url: "sqlite:///conversations.db"
 ```
 
-## Step 7: Connect a frontend
+  </Step>
+  <Step title="Connect a frontend">
 
 The `/agent/run` endpoint implements the AG-UI protocol, which is natively supported by CopilotKit and compatible with any SSE-consuming frontend. The standalone also ships its own chat UI at `/`, so you can demo and dogfood without writing one. Replace the bundled UI by pointing `IDUN_UI_DIR` at your own static export; see [Customizing the chat UI](/standalone/customizing-ui).
+
+  </Step>
+</Steps>
 
 ## Full config.yaml
 
@@ -354,7 +367,7 @@ observability:
 
 ## How Idun compares to alternatives
 
-| Capability | Manual FastAPI | LangServe (deprecated) | LangGraph Platform | Idun Agent Platform |
+| Capability | Manual FastAPI | LangServe (deprecated) | LangGraph Platform | Idun Engine |
 |---|---|---|---|---|
 | API serving | You build it | Provided | Provided (cloud) | Provided (self-hosted) |
 | AG-UI streaming | You build it | Not supported | Not supported | Built in |
@@ -366,15 +379,26 @@ observability:
 | Vendor lock-in | None | LangChain ecosystem | LangSmith account required | None (open source, GPL-3.0) |
 | Self-hosted | Yes | Yes | No (cloud only) | Yes |
 
-Idun Agent Platform is open source and self-hosted. Your agent code stays yours. The config file is the only coupling, and it is a plain YAML file you can generate from any tool.
+Idun Engine is open source and self-hosted. Your agent code stays yours. The config file is the only coupling, and it is a plain YAML file you can generate from any tool.
 
 ## Next steps
 
 You now have a production LangGraph agent with streaming, memory, guardrails, and observability. From here:
 
-- **Add MCP tool servers** to give your agent access to external tools via the Model Context Protocol. Add an `mcp_servers` section to your config, or use the admin panel at `/admin/mcp/`.
-- **Add SSO/OIDC protection** to require JWT authentication on all agent endpoints. Add an `sso` section with your OIDC issuer and client ID. See [SSO](/auth/sso).
-- **Connect messaging integrations** (WhatsApp, Discord, Slack, Google Chat) to expose your agent on external channels. Each is a config section with provider credentials, or a card at `/admin/integrations/`.
-- **Manage prompts** with versioning and Jinja2 variables through the admin panel at `/admin/prompts/` or in your YAML.
+<Card title="Add MCP tool servers" icon="plug" horizontal href="/mcp-servers/overview">
+  to give your agent access to external tools via the Model Context Protocol. Add an `mcp_servers` section to your config, or use the admin panel at `/admin/mcp/`.
+</Card>
+
+<Card title="Add SSO/OIDC protection" icon="lock" horizontal href="/auth/sso">
+  to require JWT authentication on all agent endpoints. Add an `sso` section with your OIDC issuer and client ID.
+</Card>
+
+<Card title="Connect messaging integrations" icon="message-square" horizontal href="/integrations/overview">
+  (WhatsApp, Discord, Slack, Google Chat) to expose your agent on external channels. Each is a config section with provider credentials, or a card at `/admin/integrations/`.
+</Card>
+
+<Card title="Manage prompts" icon="file-text" horizontal href="/prompts">
+  with versioning and Jinja2 variables through the admin panel at `/admin/prompts/` or in your YAML.
+</Card>
 
 The full configuration reference is at [/configuration](/configuration). The complete list of guardrail types is at [/guardrails/reference](/guardrails/reference).

@@ -1,0 +1,31 @@
+---
+title: "Audit logs"
+description: "Tamper-evident record of every admin write, who performed it, and when, across the agent fleet."
+keywords: ["audit", "audit logs", "compliance", "SOC2", "ISO 27001", "tamper-evident"]
+---
+
+The standalone records its own trace events. Enterprise adds a separate, append-only audit log of administrative actions across the fleet: who logged in, who edited which guardrail, who rotated which secret. The log is tamper-evident and exportable for compliance review.
+
+## What gets logged
+
+- **Authentication events**: sign-in, sign-out, failed attempts, IdP-side revocations.
+- **Configuration writes**: every agent, guardrail, MCP server, observability provider, integration, and prompt mutation, with diff and actor.
+- **Role and permission changes**: every grant, revoke, role definition edit.
+- **Secret access**: API keys read or rotated through the admin surface.
+- **Data export**: traces, logs, or analytics exported off the platform.
+
+## Capabilities
+
+- **Append-only storage** with cryptographic chaining so retroactive edits are detectable.
+- **Retention policies** per record type, defaulting to seven years on the audit stream.
+- **Export to SIEM**: stream to Splunk, Datadog, or any HTTP/Webhook consumer.
+
+## Next steps
+
+<Card title="Enterprise SSO" icon="lock" horizontal href="/enterprise/sso">
+  Authenticated identity is the actor field for every log entry.
+</Card>
+
+<Card title="Multi-agent management" icon="layers" horizontal href="/enterprise/multi-agent">
+  See where audit events come from across the fleet.
+</Card>

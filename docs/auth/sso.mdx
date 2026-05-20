@@ -4,7 +4,7 @@ description: "Per-agent OIDC SSO that validates a JWT on every `/agent/*` reques
 keywords: ["SSO", "OIDC", "JWT", "agent auth", "Google OAuth", "Microsoft Entra", "Okta"]
 ---
 
-Idun Agent Platform's agent runtime supports per-agent OIDC SSO. When enabled, every request to `/agent/*` requires a valid `Authorization: Bearer <jwt>` header. The canonical AG-UI entry point is `POST /agent/run`; deprecated shims (`/agent/invoke`, `/agent/stream`, `/agent/copilotkit/stream`) are gated by the same dependency. Tokens are validated against the issuer's JWKS endpoint discovered via `{issuer}/.well-known/openid-configuration`; nothing is stored or cached beyond the JWKS rotation window.
+Idun Engine's agent runtime supports per-agent OIDC SSO. When enabled, every request to `/agent/*` requires a valid `Authorization: Bearer <jwt>` header. The canonical AG-UI entry point is `POST /agent/run`; deprecated shims (`/agent/invoke`, `/agent/stream`, `/agent/copilotkit/stream`) are gated by the same dependency. Tokens are validated against the issuer's JWKS endpoint discovered via `{issuer}/.well-known/openid-configuration`; nothing is stored or cached beyond the JWKS rotation window.
 
 Health and metadata routes (`/health`, `/_engine/info`) stay open. SSO does not gate the admin panel; see [Authentication](/auth/overview) for that surface.
 
@@ -14,7 +14,9 @@ Health and metadata routes (`/health`, `/_engine/info`) stay open. SSO does not 
   <Tab title="Admin UI">
     Open the running standalone at `/admin/sso/`. Pick a provider preset (Google, Microsoft Entra ID, Okta, or Custom OIDC), paste the issuer URL, client ID, audience, and any domain or email allowlists, then save. The reload pipeline validates the config and re-instantiates the engine with the new SSO settings.
 
-    ![SSO admin page](/images/ui/admin-sso.png)
+    <Frame>
+      ![SSO admin page](/images/ui/admin-sso.png)
+    </Frame>
   </Tab>
   <Tab title="YAML">
     Add an `sso` block to your engine `config.yaml`:
@@ -83,12 +85,22 @@ Any OIDC-compliant provider works as long as it publishes a JWKS endpoint via `.
 
 With SSO enabled, the bundled chat UI prompts users to sign in with the configured provider before any conversation starts. The standalone runs the OAuth flow against your issuer and stores the resulting session locally.
 
-![Chat UI with SSO sign-in](/images/ui/chat-sso-login.png)
+<Frame>
+  ![Chat UI with SSO sign-in](/images/ui/chat-sso-login.png)
+</Frame>
 
 After successful sign-in, the chat connects to `/agent/run` with the token attached. If the user's email doesn't match `allowed_domains` / `allowed_emails`, the engine returns `401` and the chat shows the sign-in screen again. For programmatic clients, obtain the token through your provider's OAuth 2.0 + PKCE flow and call `/agent/run` with the resulting access token in `Authorization: Bearer <jwt>`.
 
 ## What's next
 
-- [Authentication](/auth/overview) — admin-panel auth (`none` / `password`) for `/admin/*`.
-- [Production hardening](/deployment/hardening) — env-var checklist + reverse-proxy / TLS notes.
-- [Troubleshooting](/troubleshooting) — what `agent_not_ready` and reload-pipeline errors mean.
+<Card title="Authentication" icon="lock" horizontal href="/auth/overview">
+  Admin-panel auth (`none` / `password`) for `/admin/*`.
+</Card>
+
+<Card title="Production hardening" icon="shield-check" horizontal href="/deployment/hardening">
+  Env-var checklist + reverse-proxy / TLS notes.
+</Card>
+
+<Card title="Troubleshooting" icon="life-buoy" horizontal href="/troubleshooting">
+  What `agent_not_ready` and reload-pipeline errors mean.
+</Card>

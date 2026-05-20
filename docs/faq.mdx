@@ -1,130 +1,133 @@
 ---
 title: "FAQ"
-description: "Frequently asked questions about Idun Agent Platform, covering frameworks, authentication, data storage, guardrails, and licensing."
+description: "Frequently asked questions about Idun Engine, covering frameworks, authentication, data storage, guardrails, and licensing."
 keywords: ["FAQ", "questions", "help", "troubleshooting", "frameworks", "auth", "guardrails", "open source"]
+boost: 2
 ---
 
-## What agent frameworks are supported?
+<AccordionGroup>
+  <Accordion title="What agent frameworks are supported?">
+    Idun Engine supports two agent frameworks:
 
-Idun Agent Platform supports two agent frameworks:
+    - **LangGraph** (primary): Full support for graph definitions, checkpointing, memory, and streaming
+    - **Google ADK** (Agent Development Kit): Support for agent definitions, session services, and memory services
 
-- **LangGraph** (primary): Full support for graph definitions, checkpointing, memory, and streaming
-- **Google ADK** (Agent Development Kit): Support for agent definitions, session services, and memory services
+    The framework is specified in the `agent.type` config field. Each framework has its own adapter in the engine that handles initialization, execution, and streaming. See [Frameworks](/frameworks/overview) for details.
+  </Accordion>
 
-The framework is specified in the `agent.type` config field. Each framework has its own adapter in the engine that handles initialization, execution, and streaming. See [Frameworks](/frameworks/overview) for details.
+  <Accordion title="How does authentication work?">
+    There are two distinct auth surfaces.
 
-## How does authentication work?
+    **Standalone admin panel.** Two modes via `IDUN_ADMIN_AUTH_MODE`:
 
-There are two distinct auth surfaces.
+    - `none`: open admin (laptop default).
+    - `password`: bcrypt password + signed session cookie with sliding renewal.
 
-**Standalone admin panel.** Two modes via `IDUN_ADMIN_AUTH_MODE`:
+    Use `idun hash-password` to generate the bcrypt hash, set it as `IDUN_ADMIN_PASSWORD_HASH` on first boot, and set `IDUN_SESSION_SECRET` (min 32 chars) when running in `password` mode.
 
-- `none`: open admin (laptop default).
-- `password`: bcrypt password + signed session cookie with sliding renewal.
+    **Agent runtime routes.** The engine can enforce OIDC JWT validation on `/agent/*` via a per-agent SSO config. Clients must present a valid bearer token; tokens are not stored. Some operational endpoints stay outside per-agent auth, so deploy inside a trusted network boundary and follow the [hardening guidance](/deployment/hardening).
 
-Use `idun hash-password` to generate the bcrypt hash, set it as `IDUN_ADMIN_PASSWORD_HASH` on first boot, and set `IDUN_SESSION_SECRET` (min 32 chars) when running in `password` mode.
+    See [Authentication](/auth/overview) for setup instructions.
+  </Accordion>
 
-**Agent runtime routes.** The engine can enforce OIDC JWT validation on `/agent/*` via a per-agent SSO config. Clients must present a valid bearer token; tokens are not stored. Some operational endpoints stay outside per-agent auth, so deploy inside a trusted network boundary and follow the [hardening guidance](/deployment/hardening).
+  <Accordion title="Does Idun require a database?">
+    The default path (standalone) uses a database. The engine-only mode does not.
 
-See [Authentication](/auth/overview) for setup instructions.
+    **Standalone (default).** The standalone holds admin state and AG-UI trace events in a database. SQLite by default (a file on disk). Postgres optional via `DATABASE_URL`. Without a DB the standalone has nowhere to persist admin edits, traces, or session cookies.
 
-## Does Idun require a database?
+    **Engine-only.** No database required. The engine reads its YAML config at boot and serves the agent. Conversation state is whatever you configure for the LangGraph checkpointer (in-memory, SQLite file, or Postgres) or the ADK session service. With `in_memory`, nothing is persisted.
+  </Accordion>
 
-The default path (standalone) uses a database. The engine-only mode does not.
+  <Accordion title="Where is data stored?">
+    - **Agent code**: Lives in your repository. The engine wraps your code at runtime; it does not copy or store it.
+    - **Standalone**: Admin state (agent config, prompts, guardrails, MCP servers, observability, integrations, theme) and trace events live in the local database (SQLite by default, Postgres optional).
+    - **Engine-only**: Configuration comes from a YAML file. Conversation state goes to whichever checkpointer or session service you configure.
+  </Accordion>
 
-**Standalone (default).** The standalone holds admin state and AG-UI trace events in a database. SQLite by default (a file on disk). Postgres optional via `DATABASE_URL`. Without a DB the standalone has nowhere to persist admin edits, traces, or session cookies.
+  <Accordion title="Can I run without the admin DB?">
+    Yes. The engine ships an engine-only mode that skips the admin REST surface and the local DB entirely:
 
-**Engine-only.** No database required. The engine reads its YAML config at boot and serves the agent. Conversation state is whatever you configure for the LangGraph checkpointer (in-memory, SQLite file, or Postgres) or the ADK session service. With `in_memory`, nothing is persisted.
+    ```bash
+    pip install idun-agent-engine
+    idun agent serve --source file --path config.yaml
+    ```
 
-## Where is data stored?
+    No DB, no chat UI, no admin REST. Good for CI/CD pipelines or when you have your own admin stack and only need the runtime layer. The full standalone product is what `idun serve` (or `idun init`) gives you, and it does require a DB.
+  </Accordion>
 
-- **Agent code**: Lives in your repository. The engine wraps your code at runtime; it does not copy or store it.
-- **Standalone**: Admin state (agent config, prompts, guardrails, MCP servers, observability, integrations, theme) and trace events live in the local database (SQLite by default, Postgres optional).
-- **Engine-only**: Configuration comes from a YAML file. Conversation state goes to whichever checkpointer or session service you configure.
+  <Accordion title="How do guardrails work?">
+    Guardrails validate agent inputs and outputs against configurable rules. You define guardrails as input guards, output guards, or both:
 
-## Can I run without the admin DB?
+    - **Input guardrails** check user messages before they reach the agent (e.g., jailbreak detection, PII detection)
+    - **Output guardrails** check agent responses before they are returned to the user (e.g., toxic language filtering, topic restriction)
 
-Yes. The engine ships an engine-only mode that skips the admin REST surface and the local DB entirely:
+    Each guardrail has a type, a reject message, and type-specific configuration (threshold, word list, topic list). The engine evaluates guardrails in order and returns the reject message if a guard triggers.
 
-```bash
-pip install idun-agent-engine
-idun agent serve --source file --path config.yaml
-```
+    The platform supports 15 guardrail types, including `BAN_LIST`, `DETECT_PII`, `TOXIC_LANGUAGE`, `DETECT_JAILBREAK`, `PROMPT_INJECTION`, `RESTRICT_TO_TOPIC`, `MODEL_ARMOR` (Google Cloud), and `CUSTOM_LLM`. See the [guardrails reference](/guardrails/reference) for the full list.
+  </Accordion>
 
-No DB, no chat UI, no admin REST. Good for CI/CD pipelines or when you have your own admin stack and only need the runtime layer. The full standalone product is what `idun serve` (or `idun init`) gives you, and it does require a DB.
+  <Accordion title="Engine-only vs standalone, what's the difference?">
+    | | Standalone (default) | Engine-only |
+    |---|---|---|
+    | **Role** | Single-process product: engine plus chat UI, admin REST, traces | Runtime SDK that wraps your agent code into a production API |
+    | **Run command** | `idun serve` (or `idun init` first time) | `idun agent serve --source file --path config.yaml` |
+    | **Requires** | Python 3.12+, your agent code, a local file for SQLite | Python 3.12+, your agent code |
+    | **Has a UI?** | Yes (chat, admin, traces, bundled) | No |
+    | **Has a DB?** | Yes (SQLite by default; Postgres optional) | No |
+    | **Config source** | DB-backed (seeded from YAML on first boot) | YAML file |
+    | **Auth** | Admin: `none` or `password`. Agent routes: per-agent OIDC | Per-agent OIDC for `/agent/*`; rest open |
 
-## How do guardrails work?
+    Both modes ship in the same `idun-agent-engine` wheel. Pick by which command you run. See the [glossary](/glossary) for the package layout.
+  </Accordion>
 
-Guardrails validate agent inputs and outputs against configurable rules. You define guardrails as input guards, output guards, or both:
+  <Accordion title="Is it free and open source?">
+    Yes. Idun Engine is open source and available on [GitHub](https://github.com/Idun-Group/idun-agent-platform) under the **GNU General Public License v3.0** (GPLv3). The engine SDK (`idun-agent-engine`) and schema library (`idun-agent-schema`) are published to PyPI.
+  </Accordion>
 
-- **Input guardrails** check user messages before they reach the agent (e.g., jailbreak detection, PII detection)
-- **Output guardrails** check agent responses before they are returned to the user (e.g., toxic language filtering, topic restriction)
+  <Accordion title="Does GPLv3 apply to my agent code?">
+    The short answer: **your agent code is generally treated as a separate work**, not a derivative of Idun. The longer answer depends on how the parts interact. This section is informational, not legal advice; review the [LICENSE](https://github.com/Idun-Group/idun-agent-platform/blob/main/LICENSE) and the [FSF's GPL FAQ](https://www.gnu.org/licenses/gpl-faq.html) before redistributing.
 
-Each guardrail has a type, a reject message, and type-specific configuration (threshold, word list, topic list). The engine evaluates guardrails in order and returns the reject message if a guard triggers.
+    <Tabs>
+      <Tab title="Your agent's graph_definition">
+        The engine loads your LangGraph or ADK agent from `agent.config.graph_definition` and runs it in the same Python process. The FSF considers in-process Python imports across a clean API boundary to be a closer relationship than mere aggregation, so a strictly conservative reading would treat your agent code as a derivative work subject to GPL.
 
-The platform supports 15 guardrail types, including `BAN_LIST`, `DETECT_PII`, `TOXIC_LANGUAGE`, `DETECT_JAILBREAK`, `PROMPT_INJECTION`, `RESTRICT_TO_TOPIC`, `MODEL_ARMOR` (Google Cloud), and `CUSTOM_LLM`. See the [guardrails reference](/guardrails/reference) for the full list.
+        In practice, most teams treat their agent code as a separate work because:
 
-## Engine-only vs standalone, what's the difference?
+        - The interaction is through a documented public extension point (`BaseAgent`, schema config fields), not internal engine APIs.
+        - Your agent code can be loaded into other runtimes without modification.
+        - You ship your agent as code that the user combines with the engine, not as a bundled binary.
 
-| | Standalone (default) | Engine-only |
-|---|---|---|
-| **Role** | Single-process product: engine plus chat UI, admin REST, traces | Runtime SDK that wraps your agent code into a production API |
-| **Run command** | `idun serve` (or `idun init` first time) | `idun agent serve --source file --path config.yaml` |
-| **Requires** | Python 3.12+, your agent code, a local file for SQLite | Python 3.12+, your agent code |
-| **Has a UI?** | Yes (chat, admin, traces, bundled) | No |
-| **Has a DB?** | Yes (SQLite by default; Postgres optional) | No |
-| **Config source** | DB-backed (seeded from YAML on first boot) | YAML file |
-| **Auth** | Admin: `none` or `password`. Agent routes: per-agent OIDC | Per-agent OIDC for `/agent/*`; rest open |
+        The boundary is not crystal-clear. If you plan to **redistribute** your agent code bundled with `idun-agent-engine` (a single wheel, container image, or installer) and your agent code is not GPL-compatible, get legal advice before shipping.
 
-Both modes ship in the same `idun-agent-engine` wheel. Pick by which command you run. See the [glossary](/glossary) for the package layout.
+        Running the engine privately (internally, on your own infrastructure, with your own users) imposes no GPL distribution obligations.
+      </Tab>
+      <Tab title="MCP servers and external tools">
+        MCP servers run as **separate processes** and communicate with the engine over stdio, SSE, streamable HTTP, or WebSocket. The FSF's [mere-aggregation guidance](https://www.gnu.org/licenses/gpl-faq.html#MereAggregation) explicitly treats inter-process communication as a non-derivative boundary.
 
-## Is it free and open source?
+        Your MCP servers, your tool implementations, and any external services the agent calls are not derivative works of Idun.
+      </Tab>
+      <Tab title="LLM-generated code">
+        Code generated by an LLM does not inherit a license from the LLM provider. The license applicable to LLM-generated code is whatever your provider's terms of service say (most major providers grant you rights to the output, subject to acceptable-use policies).
 
-Yes. Idun Agent Platform is open source and available on [GitHub](https://github.com/Idun-Group/idun-agent-platform) under the **GNU General Public License v3.0** (GPLv3). The engine SDK (`idun-agent-engine`) and schema library (`idun-agent-schema`) are published to PyPI.
+        If you paste LLM-generated code into your `graph_definition`, the GPL question is the same as for any other agent code (see the first tab). The LLM provenance does not change the analysis.
+      </Tab>
+    </Tabs>
 
-## Does GPLv3 apply to my agent code?
+    If you need a non-GPL license for commercial redistribution, contact us via [Discord](https://discord.gg/KCZ6nW2jQe) to discuss options.
+  </Accordion>
 
-The short answer: **your agent code is generally treated as a separate work**, not a derivative of Idun. The longer answer depends on how the parts interact. This section is informational, not legal advice; review the [LICENSE](https://github.com/Idun-Group/idun-agent-platform/blob/main/LICENSE) and the [FSF's GPL FAQ](https://www.gnu.org/licenses/gpl-faq.html) before redistributing.
+  <Accordion title="How do I report a bug or request a feature?">
+    - **Bugs and feature requests**: [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues)
+    - **Questions and discussions**: [Discord](https://discord.gg/KCZ6nW2jQe)
+  </Accordion>
 
-<Tabs>
-  <Tab title="Your agent's graph_definition">
-    The engine loads your LangGraph or ADK agent from `agent.config.graph_definition` and runs it in the same Python process. The FSF considers in-process Python imports across a clean API boundary to be a closer relationship than mere aggregation, so a strictly conservative reading would treat your agent code as a derivative work subject to GPL.
+  <Accordion title="How does observability work?">
+    The engine uses OpenTelemetry-based auto-instrumentation to capture traces, logs, and metrics from your agents. You configure an observability provider (Langfuse, Arize Phoenix, LangSmith, GCP Trace, or GCP Logging) and the engine instruments the agent runtime automatically.
 
-    In practice, most teams treat their agent code as a separate work because:
+    Observability configurations are saved at the workspace level and can be reused across multiple agents. See [Observability](/observability/overview) for provider setup.
+  </Accordion>
 
-    - The interaction is through a documented public extension point (`BaseAgent`, schema config fields), not internal engine APIs.
-    - Your agent code can be loaded into other runtimes without modification.
-    - You ship your agent as code that the user combines with the engine, not as a bundled binary.
-
-    The boundary is not crystal-clear. If you plan to **redistribute** your agent code bundled with `idun-agent-engine` (a single wheel, container image, or installer) and your agent code is not GPL-compatible, get legal advice before shipping.
-
-    Running the engine privately (internally, on your own infrastructure, with your own users) imposes no GPL distribution obligations.
-  </Tab>
-  <Tab title="MCP servers and external tools">
-    MCP servers run as **separate processes** and communicate with the engine over stdio, SSE, streamable HTTP, or WebSocket. The FSF's [mere-aggregation guidance](https://www.gnu.org/licenses/gpl-faq.html#MereAggregation) explicitly treats inter-process communication as a non-derivative boundary.
-
-    Your MCP servers, your tool implementations, and any external services the agent calls are not derivative works of Idun.
-  </Tab>
-  <Tab title="LLM-generated code">
-    Code generated by an LLM does not inherit a license from the LLM provider. The license applicable to LLM-generated code is whatever your provider's terms of service say (most major providers grant you rights to the output, subject to acceptable-use policies).
-
-    If you paste LLM-generated code into your `graph_definition`, the GPL question is the same as for any other agent code (see the first tab). The LLM provenance does not change the analysis.
-  </Tab>
-</Tabs>
-
-If you need a non-GPL license for commercial redistribution, contact us via [Discord](https://discord.gg/KCZ6nW2jQe) to discuss options.
-
-## How do I report a bug or request a feature?
-
-- **Bugs and feature requests**: [GitHub Issues](https://github.com/Idun-Group/idun-agent-platform/issues)
-- **Questions and discussions**: [Discord](https://discord.gg/KCZ6nW2jQe)
-
-## How does observability work?
-
-The engine uses OpenTelemetry-based auto-instrumentation to capture traces, logs, and metrics from your agents. You configure an observability provider (Langfuse, Arize Phoenix, LangSmith, GCP Trace, or GCP Logging) and the engine instruments the agent runtime automatically.
-
-Observability configurations are saved at the workspace level and can be reused across multiple agents. See [Observability](/observability/overview) for provider setup.
-
-## Can I use multiple MCP servers with one agent?
-
-Yes. You can attach any number of MCP servers to a single agent. The engine discovers tools from all attached MCP servers at startup and makes them available to the agent. Each server can use a different transport type (stdio, SSE, streamable HTTP, WebSocket). See [MCP Servers](/mcp-servers/overview) for details.
+  <Accordion title="Can I use multiple MCP servers with one agent?">
+    Yes. You can attach any number of MCP servers to a single agent. The engine discovers tools from all attached MCP servers at startup and makes them available to the agent. Each server can use a different transport type (stdio, SSE, streamable HTTP, WebSocket). See [MCP Servers](/mcp-servers/overview) for details.
+  </Accordion>
+</AccordionGroup>

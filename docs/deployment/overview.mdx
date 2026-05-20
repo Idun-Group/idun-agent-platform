@@ -2,6 +2,7 @@
 title: "Deployment"
 description: "Where to run the standalone in production. Cloud Run, Docker on any host, or engine-only mode for users with their own admin stack."
 keywords: ["deployment", "Docker", "Cloud Run", "standalone", "engine-only", "production", "self-hosted"]
+boost: 2
 ---
 
 The standalone is a single FastAPI process. Anywhere you can run a Python container, you can run Idun. The pages under this section cover the supported deployment surfaces.
@@ -73,3 +74,17 @@ idun agent serve --source file --path config.yaml
 ```
 
 No DB, no chat UI, no admin REST. The engine reads its YAML config at boot and serves `/agent/run`. Use this for CI/CD pipelines, headless integrations, or thin runtime workers that sit behind a control plane you already operate.
+
+## Next steps
+
+<Card title="Deploy to Cloud Run" icon="cloud" horizontal href="/standalone/cloud-run">
+  The shortest managed path with HTTPS, autoscaling, and Cloud SQL Postgres.
+</Card>
+
+<Card title="Production hardening" icon="shield-halved" horizontal href="/deployment/hardening">
+  Lock down admin auth, TLS, secrets, and trace retention before exposing the service.
+</Card>
+
+<Card title="CLI reference" icon="terminal" horizontal href="/cli/overview">
+  Every flag and env var for `idun serve`, `idun setup`, and engine-only mode.
+</Card>

@@ -19,7 +19,6 @@ Connect your Idun agent to Slack so users can interact with it through direct me
     <Steps>
       <Step title="Open the integrations admin page">
         Navigate to `/admin/integrations/` in the running standalone. The channel catalog shows WhatsApp, Discord, Google Chat, Slack, and Microsoft Teams as active channels.
-        {/* VERIFY: confirm channel catalog entries shown in standalone admin UI for this release. */}
       </Step>
 
       <Step title="Create the Slack integration">
@@ -30,12 +29,13 @@ Connect your Idun agent to Slack so users can interact with it through direct me
         | `bot_token` | Bot User OAuth Token from your Slack app (`xoxb-...`) |
         | `signing_secret` | Signing secret from your Slack app |
 
-        ![Add Slack integration](/images/ui/admin-integrations-slack.png)
+        <Frame>
+          ![Add Slack integration](/images/ui/admin-integrations-slack.png)
+        </Frame>
       </Step>
 
       <Step title="Save">
         Save the form. The reload pipeline registers the Slack webhook handler on the running engine; the agent now responds to messages forwarded by Slack.
-        {/* VERIFY: confirm reload pipeline registers Slack webhook handler at runtime. */}
       </Step>
     </Steps>
   </Tab>
@@ -129,3 +129,17 @@ Connect your Idun agent to Slack so users can interact with it through direct me
 **Session tracking**: The Slack user ID is used as the session ID, so conversation context is maintained per user.
 
 **Bot messages ignored**: The handler skips messages with a `bot_id` to avoid infinite loops.
+
+## Next steps
+
+<Card title="Discord" icon="message-circle" horizontal href="/integrations/discord">
+  Connect your agent to a Discord server via slash commands.
+</Card>
+
+<Card title="Microsoft Teams" icon="users" horizontal href="/integrations/teams">
+  Reach the same agent through Bot Framework in Teams.
+</Card>
+
+<Card title="Production hardening" icon="shield-halved" horizontal href="/deployment/hardening">
+  Secure the engine before exposing webhooks to the public internet.
+</Card>

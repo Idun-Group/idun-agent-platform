@@ -6,7 +6,9 @@ keywords: ["Google Cloud Trace", "GCP", "distributed tracing", "observability", 
 
 Set up Google Cloud Trace to capture distributed traces from your agents and analyze latency in the Google Cloud Console.
 
-Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Agent Platform.
+<Tip>
+  Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Engine.
+</Tip>
 
 ## Set up GCP Trace observability
 
@@ -26,7 +28,7 @@ Before starting, complete the [quickstart guide](/quickstart) to have an agent r
     </Tabs>
   </Step>
   <Step title="Create an observability configuration">
-    1. On the Idun Agent Platform main page, navigate to **Observability**
+    1. On the Idun Engine main page, navigate to **Observability**
     2. Click **Add configuration**
     3. Select **GCP Trace**
     4. Enter a **Configuration Name** (for example, "GCP Trace Prod")
@@ -69,8 +71,24 @@ You will see traces from your agent's execution. Use these to analyze latency an
 
 ## Troubleshooting
 
-### Traces not showing up?
+<AccordionGroup>
+  <Accordion title="Traces not showing up?">
+    1. **Check API**: Verify the Cloud Trace API is enabled in your project
+    2. **Check permissions**: Confirm the agent's service account has the `Cloud Trace Agent` role
+    3. **Wait for flush**: Traces are sent in batches. Wait a few seconds (based on your flush interval) after execution before checking the console
+  </Accordion>
+</AccordionGroup>
 
-1. **Check API**: Verify the Cloud Trace API is enabled in your project
-2. **Check permissions**: Confirm the agent's service account has the `Cloud Trace Agent` role
-3. **Wait for flush**: Traces are sent in batches. Wait a few seconds (based on your flush interval) after execution before checking the console
+## Next steps
+
+<Card title="GCP Logging" icon="file-text" horizontal href="/observability/gcp-logging">
+  Pair tracing with structured logs in Google Cloud Logging.
+</Card>
+
+<Card title="Local trace store" icon="database" horizontal href="/observability/traces">
+  Inspect the same agent runs in the bundled admin UI.
+</Card>
+
+<Card title="Deploy to Cloud Run" icon="cloud" horizontal href="/standalone/cloud-run">
+  Run the standalone next to your traces with managed Postgres.
+</Card>

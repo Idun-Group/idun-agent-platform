@@ -2,9 +2,10 @@
 title: "MCP Servers"
 description: "Extend your agent with external tool servers using the Model Context Protocol."
 keywords: ["MCP", "Model Context Protocol", "MCP servers", "agent tools", "stdio", "SSE", "WebSocket"]
+boost: 2
 ---
 
-Idun Agent Platform uses the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) to extend agent capabilities with external tools. You declare MCP servers in your `config.yaml` (or through the admin panel at `/admin/mcp/`), and the engine discovers every advertised tool at boot.
+Idun Engine uses the [Model Context Protocol (MCP)](https://modelcontextprotocol.io) to extend agent capabilities with external tools. You declare MCP servers in your `config.yaml` (or through the admin panel at `/admin/mcp/`), and the engine discovers every advertised tool at boot.
 
 <Tip>
   The [langgraph-tool-local template](/templates) shows how to mix local tools with MCP tools in a single agent.
@@ -39,7 +40,7 @@ Define MCP servers in your `config.yaml` or through the admin panel:
       <Step title="Open the MCP admin page">
         Navigate to `/admin/mcp/` in the running standalone. The catalog at the top groups MCP servers by transport: Streamable HTTP, SSE, WebSocket, and stdio. Existing servers are listed below with their transport, endpoint, and status.
 
-        ![MCP admin page](/images/ui/mcp-overview.png)
+        <Frame><img alt="MCP admin page" src="/images/ui/mcp-overview.png" /></Frame>
       </Step>
       <Step title="Add an MCP server">
         Click the transport card you want and fill in the form: a unique name, the URL (or command and args for stdio), optional headers. The **Enabled** toggle lets you keep a server configured but skipped at startup.
@@ -47,7 +48,7 @@ Define MCP servers in your `config.yaml` or through the admin panel:
       <Step title="Save and verify">
         Save; the reload pipeline re-instantiates the engine with the new MCP registry. Click the wrench icon next to a server to probe it and list the tools it advertises. The probe doubles as a connection check.
 
-        ![Tools discovered for the atlassian MCP server](/images/ui/mcp-tools-discovery.png)
+        <Frame><img alt="Tools discovered for the atlassian MCP server" src="/images/ui/mcp-tools-discovery.png" /></Frame>
       </Step>
     </Steps>
 
@@ -115,3 +116,13 @@ These functions discover all MCP servers attached to your agent and make their t
 <Note>
   `get_langchain_tools()` is async, so it must be awaited inside an `async` function. If you need to bind tools at module load, run it with `asyncio.run(...)` as shown above. A synchronous helper (`get_langchain_tools_sync`) is also available; see the [engine MCP reference](/mcp-servers/overview) for details.
 </Note>
+
+## Next steps
+
+<Card title="Docker MCP toolkit" icon="server" horizontal href="/mcp-servers/docker-toolkit">
+  Pre-built MCP servers packaged as Docker containers. Pull, configure, and use without writing server code.
+</Card>
+
+<Card title="Configuration reference" icon="file-text" horizontal href="/configuration">
+  Full schema for `config.yaml` including the `mcp_servers` block.
+</Card>

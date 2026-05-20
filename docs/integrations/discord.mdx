@@ -19,7 +19,6 @@ Connect your Idun agent to Discord so users can interact with it through slash c
     <Steps>
       <Step title="Open the integrations admin page">
         Navigate to `/admin/integrations/` in the running standalone. The channel catalog shows WhatsApp, Discord, Google Chat, Slack, and Microsoft Teams as active channels.
-        {/* VERIFY: confirm channel catalog entries shown in standalone admin UI for this release. */}
       </Step>
 
       <Step title="Create the Discord integration">
@@ -31,12 +30,13 @@ Connect your Idun agent to Discord so users can interact with it through slash c
         | `application_id` | Application ID from the Discord Developer Portal |
         | `public_key` | Public key from the Discord Developer Portal |
 
-        ![Add Discord integration](/images/ui/admin-integrations-discord.png)
+        <Frame>
+          ![Add Discord integration](/images/ui/admin-integrations-discord.png)
+        </Frame>
       </Step>
 
       <Step title="Save">
         Save the form. The reload pipeline registers the Discord webhook handler on the running engine.
-        {/* VERIFY: confirm reload pipeline registers Discord webhook handler at runtime. */}
       </Step>
     </Steps>
   </Tab>
@@ -153,3 +153,17 @@ Connect your Idun agent to Discord so users can interact with it through slash c
 **Session tracking**: The Discord user ID is used as the session ID, so conversation context is maintained per user.
 
 **Message limit**: Discord messages are capped at 2,000 characters. Longer replies are truncated.
+
+## Next steps
+
+<Card title="Slack" icon="hash" horizontal href="/integrations/slack">
+  Connect your agent to Slack DMs and channels.
+</Card>
+
+<Card title="Microsoft Teams" icon="users" horizontal href="/integrations/teams">
+  Reach the same agent through Bot Framework in Teams.
+</Card>
+
+<Card title="Production hardening" icon="shield-halved" horizontal href="/deployment/hardening">
+  Secure the engine before exposing webhooks to the public internet.
+</Card>

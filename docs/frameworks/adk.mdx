@@ -1,10 +1,11 @@
 ---
 title: "Google ADK"
-description: "Connect a Google ADK agent to Idun Agent Platform with Gemini-powered workflows, session services, and memory backends."
+description: "Connect a Google ADK agent to Idun Engine with Gemini-powered workflows, session services, and memory backends."
 keywords: ["Google ADK", "Agent Development Kit", "Gemini", "ADK agent", "Vertex AI", "session service", "memory service"]
+boost: 2
 ---
 
-Google ADK (Agent Development Kit) is Google's framework for building Gemini-powered agents. Idun Agent Platform wraps ADK agents as production services with AG-UI streaming, guardrails, and observability.
+Google ADK (Agent Development Kit) is Google's framework for building Gemini-powered agents. Idun Engine wraps ADK agents as production services with AG-UI streaming, guardrails, and observability.
 
 <Tip>
   Want to start from working code? The [agent templates](/templates) include ADK examples for tool calling and structured I/O.
@@ -78,7 +79,18 @@ ADK agents have two persistence layers: session services (conversation state) an
 
 ## Next steps
 
-- [Memory and session details for ADK](/memory/adk)
-- [Guardrails](/guardrails/overview)
-- [Observability](/observability/overview)
-- [MCP Servers](/mcp-servers/overview)
+<Card title="Memory and session details for ADK" icon="database" horizontal href="/memory/adk">
+  Configure session and memory services across backends.
+</Card>
+
+<Card title="Guardrails" icon="shield" horizontal href="/guardrails/overview">
+  Add safety guards to your agent inputs and outputs.
+</Card>
+
+<Card title="Observability" icon="activity" horizontal href="/observability/overview">
+  Trace runs, monitor latency, and inspect token usage.
+</Card>
+
+<Card title="MCP Servers" icon="plug" horizontal href="/mcp-servers/overview">
+  Connect external tools through the Model Context Protocol.
+</Card>

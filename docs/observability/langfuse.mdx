@@ -6,7 +6,9 @@ keywords: ["Langfuse", "observability", "tracing", "monitoring", "LLM analytics"
 
 Set up Langfuse to trace agent execution and analyze performance in your Langfuse dashboard.
 
-Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Agent Platform.
+<Tip>
+  Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Engine.
+</Tip>
 
 ## Set up Langfuse observability
 
@@ -29,10 +31,11 @@ Before starting, complete the [quickstart guide](/quickstart) to have an agent r
     - **Secret key**: Langfuse secret key (starts with `sk-lf-...`)
     - **Run name**: (Optional) Display label for traces in Langfuse (e.g., `my-agent`)
 
-    ![Observability admin page with Langfuse selected](/images/ui/admin-observability-langfuse.png)
+    <Frame>
+      ![Observability admin page with Langfuse selected](/images/ui/admin-observability-langfuse.png)
+    </Frame>
 
     Save the form. The reload pipeline re-instantiates the engine; the next agent run starts streaming traces to Langfuse. Use the **Verify** button to test the connection.
-    {/* VERIFY: confirm reload pipeline re-instantiates engine and Verify button exists for this release. */}
 
     <Warning>
       Keep your secret key secure. Do not commit it to version control or share it publicly.
@@ -81,9 +84,25 @@ You will see traces showing:
   ADK does not currently support simultaneous tracing with both Langfuse and GCP tracing. If you need this feature, open an issue on [GitHub](https://github.com/Idun-Group/idun-agent-platform/issues) or join the [Discord server](https://discord.gg/KCZ6nW2jQe).
 </Warning>
 
-### Observability not working?
+<AccordionGroup>
+  <Accordion title="Observability not working?">
+    1. **Check API keys**: Verify that your public and secret keys are correct
+    2. **Verify host URL**: Confirm the URL is accessible and correctly formatted
+    3. **Check agent logs**: Look for connection errors in the agent runtime logs
+    4. **Test connectivity**: Verify your agent can reach the Langfuse host
+  </Accordion>
+</AccordionGroup>
 
-1. **Check API keys**: Verify that your public and secret keys are correct
-2. **Verify host URL**: Confirm the URL is accessible and correctly formatted
-3. **Check agent logs**: Look for connection errors in the agent runtime logs
-4. **Test connectivity**: Verify your agent can reach the Langfuse host
+## Next steps
+
+<Card title="Local trace store" icon="database" horizontal href="/observability/traces">
+  Inspect every agent run in the bundled admin UI alongside Langfuse.
+</Card>
+
+<Card title="Observability overview" icon="chart-line" horizontal href="/observability/overview">
+  Compare built-in providers and their configuration shapes.
+</Card>
+
+<Card title="Custom handler" icon="puzzle" horizontal href="/observability/custom-handler">
+  Write a handler for any provider not on the shipping list.
+</Card>
