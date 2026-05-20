@@ -1,9 +1,4 @@
-/* Idun Engine — Mintlify custom styles (paper / ink).
-   Only overrides that docs.json cannot control.
-   Paper/ink palette ports from the Engine product page on idun-group.com
-   (src/index.css @theme tokens, deliberately not the home-page Aurora). */
-
-/* ── Brand custom properties ───────────────────────────────────── */
+/* Idun Engine — Mintlify custom styles. */
 
 :root {
   --paper:        #F4F1EA;
@@ -21,87 +16,75 @@
   --paper-warm:        #A8825C;
 }
 
-/* ── Page surface ──────────────────────────────────────────────── */
-
-body {
+html, body, main {
   background-color: var(--paper);
-  color: var(--paper-ink-2);
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: 'ss01', 'cv11';
 }
 
-h1, h2, h3, h4, h5, h6 {
+/* ── Idun Engine wordmark next to logo (everywhere) ──────────────
+   Our logo SVG is icon-only. Inject "Idun Engine" text inline after
+   the logo wherever the logo appears (navbar, sidebar, footer). */
+a:has(> img[alt="dark logo"]),
+a:has(> img[alt="light logo"]),
+div:has(> img[alt="dark logo"]),
+div:has(> img[alt="light logo"]),
+span:has(> img[alt="dark logo"]),
+span:has(> img[alt="light logo"]) {
+  display: inline-flex !important;
+  align-items: center;
+  white-space: nowrap;
+}
+
+a:has(> img[alt="dark logo"])::after,
+a:has(> img[alt="light logo"])::after,
+div:has(> img[alt="dark logo"])::after,
+div:has(> img[alt="light logo"])::after,
+span:has(> img[alt="dark logo"])::after,
+span:has(> img[alt="light logo"])::after {
+  content: "Idun Engine";
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 10px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--paper-ink);
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: -0.02em;
+  white-space: nowrap;
+  line-height: 1;
 }
 
-/* ── Code blocks: paper-2 surface to match Engine product page ── */
-
-pre[class*="language-"],
-div[class*="codeblock"],
-.ch-codeblock {
-  background-color: var(--paper-2) !important;
-  border: 1px solid var(--paper-line);
-  border-radius: 8px;
+/* ── Sidebar group headers (Mintlify Luma) ────────────────────────
+   Confirmed via DOM inspection: group label is an <h5> with class
+   `[&]:font-[inherit]` inside a wrapper div `.sidebar-group-header`.
+   Default is 12px / weight 600 / gray-400. Override to bold + bigger
+   + dark, and ditch the text-xs capitalize chain. */
+.sidebar-group-header,
+.sidebar-group-header h5 {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: var(--paper-ink) !important;
+  text-transform: none !important;
+  letter-spacing: -0.01em !important;
+  --tw-text-opacity: 1 !important;
 }
 
-:not(pre) > code {
-  background-color: var(--paper-2);
-  border: 1px solid var(--paper-line);
-  border-radius: 4px;
-  color: var(--paper-ink);
+.sidebar-group-header svg {
+  width: 18px !important;
+  height: 18px !important;
+  color: var(--paper-ink) !important;
 }
 
-/* ── Focus outlines (indigo accent) ────────────────────────────── */
-
-a:focus-visible,
-button:focus-visible,
-[role="button"]:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid rgba(61, 42, 142, 0.6);
-  outline-offset: 2px;
-  border-radius: 2px;
+/* ── Footer: pull social icons under the logo ─────────────────────
+   Move the footer's social-icons block from the right edge to
+   sit underneath the logo on the left. */
+footer {
+  position: relative;
 }
-
-/* ── Scrollbar styling (Webkit / Blink) ────────────────────────── */
-
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--paper);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--paper-ink-4);
-  border: 1px solid var(--paper-line-2);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--paper-accent);
-}
-
-/* ── Reduce left padding, keep max-width ───────────────────────── */
-
-[class*="peer-"][class*="max-w-8xl"] {
-  padding-left: 8px !important;
-}
-
-/* ── Center the tab bar ────────────────────────────────────────── */
-
-.nav-tabs {
-  justify-content: center !important;
-  flex: 1 !important;
-}
-
-/* ── Bigger logo ───────────────────────────────────────────────── */
-
-img[alt="dark logo"], img[alt="light logo"] {
-  height: 28px !important;
-  width: auto !important;
+footer [class*="social" i] {
+  position: absolute !important;
+  top: auto;
+  right: auto;
+  left: 0;
+  bottom: auto;
+  margin-top: 56px;
 }

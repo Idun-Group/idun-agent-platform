@@ -36,7 +36,8 @@ This guide takes the official [text-to-SQL Deep Agent example](https://github.co
 - (Step 7) A free [Langfuse Cloud](https://cloud.langfuse.com) account
 - (Step 8) A Google Cloud project with a Desktop OAuth client and Gmail API enabled
 
-## Step 1: Clone the Deep Agents example
+<Steps>
+  <Step title="Clone the Deep Agents example">
 
 We'll work from the official `text-to-sql-agent` example. It ships with the Chinook SQLite database and a few skills (`query-writing`, `schema-exploration`):
 
@@ -57,7 +58,8 @@ agent = create_sql_deep_agent()
 
 `create_deep_agent(...)` returns a compiled `CompiledStateGraph`. Idun's LangGraph adapter accepts both compiled graphs and raw `StateGraph` builders, so this Just Works — no rewrite needed.
 
-## Step 2: Set up Idun
+  </Step>
+  <Step title="Set up Idun">
 
 Install the engine and the standalone runtime alongside the example's dependencies:
 
@@ -98,7 +100,8 @@ openssl rand -hex 32          # → IDUN_SESSION_SECRET
   `IDUN_ALLOW_OPEN_ADMIN=1` lets you reach `/admin/*` without an auth gate while you explore locally. Turn it off (or remove it) before exposing the service.
 </Note>
 
-## Step 3: `idun init` — the discover flow
+  </Step>
+  <Step title="`idun init` — the discover flow">
 
 You don't need to write `config.yaml` yourself. `idun init` boots the standalone server, opens your browser, and — since no agent is configured yet — routes you to the onboarding wizard.
 
@@ -119,17 +122,23 @@ The wizard asks two things:
 
 That's the entire setup. No FastAPI route, no streaming protocol, no thread-id wiring. Click through and the engine boots with your agent attached.
 
-## Step 4: Verify the wired-up agent
+  </Step>
+  <Step title="Verify the wired-up agent">
 
 Once the wizard finishes you land in the admin **Agent** page. The connection probe confirms the engine reports your agent as `text2sql_deepagent`; the configuration card shows the framework (LangGraph), the agent name, and the `agent.py:agent` graph reference.
 
-![Agent configuration — healthy, LangGraph, agent.py:agent](/images/guides/deepagents/01-agent-config.png)
+<Frame>
+  ![Agent configuration — healthy, LangGraph, agent.py:agent](/images/guides/deepagents/01-agent-config.png)
+</Frame>
 
 Scroll down for the **Agent graph** card. Idun introspects the compiled graph and renders the Deep Agent's actual node structure — the `MemoryMiddleware`, `SkillsMiddleware`, and `PatchToolCallsMiddleware` `before_agent` hooks, the `model` node, the `TodoListMiddleware.after_model` post-hook, and the `tools` node. This is the Deep Agents runtime, made visible.
 
-![Agent graph — Deep Agent middleware + model + tools](/images/guides/deepagents/02-agent-graph.png)
+<Frame>
+  ![Agent graph — Deep Agent middleware + model + tools](/images/guides/deepagents/02-agent-graph.png)
+</Frame>
 
-## Step 5: Chat with the Deep Agent
+  </Step>
+  <Step title="Chat with the Deep Agent">
 
 Open `http://localhost:8000/` and ask something the agent has to plan for:
 
@@ -137,11 +146,15 @@ Open `http://localhost:8000/` and ask something the agent has to plan for:
 
 The chat collapses the agent's planning into a **Reasoning** card. Expand it and you see exactly what the Deep Agent did: it loaded its skills via `read_file`, listed the SQL tables, fetched the `Customer` and `Invoice` schemas, sanity-checked the date, ran the query through `sql_db_query_checker`, and finally executed the result.
 
-![Chat — Deep Agent reasoning, 8 steps](/images/guides/deepagents/03-chat-reasoning.png)
+<Frame>
+  ![Chat — Deep Agent reasoning, 8 steps](/images/guides/deepagents/03-chat-reasoning.png)
+</Frame>
 
 Below the reasoning card, the agent renders the final answer: a clean schema breakdown and a table of the 10 customers who haven't bought anything in six months.
 
-![Chat — final formatted answer](/images/guides/deepagents/04-chat-answer.png)
+<Frame>
+  ![Chat — final formatted answer](/images/guides/deepagents/04-chat-answer.png)
+</Frame>
 
 Try a few more:
 
@@ -151,43 +164,58 @@ Try a few more:
 
 The same `POST /agent/run` endpoint is exposed at the API level — point CopilotKit, Vercel AI SDK, or any AG-UI client at it.
 
-## Step 6: Persist conversations with SQLite
+  </Step>
+  <Step title="Persist conversations with SQLite">
 
 By default the LangGraph checkpointer is in-memory: restart the server and every conversation is gone. The **Memory** page in the admin lets you swap the backend without touching code.
 
 Pick **SQLite**, set a file-backed URL (`sqlite:///deep.db`), **Save**. Idun reloads the checkpointer in place.
 
-![Memory — SQLite backend selected](/images/guides/deepagents/05-memory-sqlite.png)
+<Frame>
+  ![Memory — SQLite backend selected](/images/guides/deepagents/05-memory-sqlite.png)
+</Frame>
 
 Back in the chat, every previous turn now lives in the **History** sidebar. New threads, named after their first message, persist across restarts.
 
-![Chat — history sidebar with past conversations](/images/guides/deepagents/06-chat-history.png)
+<Frame>
+  ![Chat — history sidebar with past conversations](/images/guides/deepagents/06-chat-history.png)
+</Frame>
 
 For multi-replica production deployments, swap SQLite for PostgreSQL the same way — same UI, same one-click reload.
 
-## Step 7: Built-in observability
+  </Step>
+  <Step title="Built-in observability">
 
 Before you wire up an external trace backend, Idun already gives you a built-in dashboard and a trace viewer powered by the same OpenTelemetry stream.
 
 The **Dashboard** summarizes the last 24 hours: request count, p50/p95 latency, error rate, total cost, requests-per-minute and latency time series, and top error spans.
 
-![Built-in dashboard — requests, latency, error rate, cost](/images/guides/deepagents/07-dashboard.png)
+<Frame>
+  ![Built-in dashboard — requests, latency, error rate, cost](/images/guides/deepagents/07-dashboard.png)
+</Frame>
 
 The **Traces** page lists every run with model, tokens, cost, and status — filter by model, status, user, or session.
 
-![Traces — per-run list with tokens and cost](/images/guides/deepagents/08-traces-list.png)
+<Frame>
+  ![Traces — per-run list with tokens and cost](/images/guides/deepagents/08-traces-list.png)
+</Frame>
 
 Click any trace to inspect the span tree. You see the same node structure as the agent graph, plus the `ChatGoogleGenerativeAI` calls with their token counts, and the `sql_db_query` tool span.
 
-![Trace detail — tree view](/images/guides/deepagents/09-trace-tree.png)
+<Frame>
+  ![Trace detail — tree view](/images/guides/deepagents/09-trace-tree.png)
+</Frame>
 
 Switch to **Waterfall** for the time-ordered view — which span ran in parallel, which blocked, where the latency lives.
 
-![Trace detail — waterfall view](/images/guides/deepagents/10-trace-waterfall.png)
+<Frame>
+  ![Trace detail — waterfall view](/images/guides/deepagents/10-trace-waterfall.png)
+</Frame>
 
 This works out of the box. Nothing to configure.
 
-## Step 8: Add Langfuse on top
+  </Step>
+  <Step title="Add Langfuse on top">
 
 Already-rich built-in observability is fine for development. For long-term storage, evaluations, prompt management, and team-wide sharing, plug in [Langfuse](https://langfuse.com).
 
@@ -195,19 +223,24 @@ Already-rich built-in observability is fine for development. For long-term stora
 
 2. In the Idun admin, open **Observability** → pick **Langfuse**, fill in host, public key, secret key, and a run name. Toggle **Enabled** and **Save**.
 
-![Configure Langfuse from the admin](/images/guides/deepagents/11-langfuse-config.png)
+<Frame>
+  ![Configure Langfuse from the admin](/images/guides/deepagents/11-langfuse-config.png)
+</Frame>
 
 3. Ask the agent another question. Refresh the Langfuse dashboard.
 
 Every Deep Agent step is captured: the middleware hooks, each `ChatGoogleGenerativeAI` call with tokens and cost, the tool spans, the full prompt/completion pair. Langfuse also renders the graph topology — same nodes you saw inside Idun, now persisted for evaluation runs and team review.
 
-![Langfuse trace of the same Deep Agent run](/images/guides/deepagents/12-langfuse-cloud.png)
+<Frame>
+  ![Langfuse trace of the same Deep Agent run](/images/guides/deepagents/12-langfuse-cloud.png)
+</Frame>
 
 <Note>
   Idun supports Langfuse, Arize Phoenix, LangSmith, GCP Trace, and GCP Logging side-by-side. They don't conflict; add more on the same Observability page.
 </Note>
 
-## Step 9: Plug in the Google Workspace MCP
+  </Step>
+  <Step title="Plug in the Google Workspace MCP">
 
 Now the fun part: give the agent the ability to email its findings. We'll use the open-source [Google Workspace MCP server](https://github.com/taylorwilsdon/google_workspace_mcp), which exposes Gmail, Calendar, Drive, Docs, Sheets, Slides, and Forms as MCP tools.
 
@@ -240,11 +273,15 @@ The first time you connect, the server prints an OAuth URL — complete the cons
 
 In the admin: **MCP** → pick **Streamable HTTP** → fill in the endpoint (`http://127.0.0.1:8000/mcp`), name it `google-workspace`, save.
 
-![MCP servers — google-workspace registered](/images/guides/deepagents/13-mcp-google-workspace.png)
+<Frame>
+  ![MCP servers — google-workspace registered](/images/guides/deepagents/13-mcp-google-workspace.png)
+</Frame>
 
 Click the wrench (🔧) to probe the server. Idun lists every tool it discovered — `send_gmail_message`, `create_doc`, `create_calendar`, `append_table_rows`, and 116 others.
 
-![Tools — google-workspace, 120 tools discovered](/images/guides/deepagents/14-mcp-tools-discovered.png)
+<Frame>
+  ![Tools — google-workspace, 120 tools discovered](/images/guides/deepagents/14-mcp-tools-discovered.png)
+</Frame>
 
 ### 9d. Wire the tools into the Deep Agent
 
@@ -289,13 +326,20 @@ Back in chat:
 
 The Deep Agent plans, runs the SQL, edits its working file with the report content, saves your address to memory via `write_todos`, then calls the MCP tools to create a Google Doc and send the email with the doc linked.
 
-![Chat — agent creating the doc and sending the email](/images/guides/deepagents/15-send-mail-chat.png)
+<Frame>
+  ![Chat — agent creating the doc and sending the email](/images/guides/deepagents/15-send-mail-chat.png)
+</Frame>
 
 Check your inbox: the agent sent a clean message with the Doc link, signed as "Deep Agent", with the Google Doc auto-attached by Gmail.
 
-![Email delivered with Google Doc attachment](/images/guides/deepagents/16-send-mail-inbox.png)
+<Frame>
+  ![Email delivered with Google Doc attachment](/images/guides/deepagents/16-send-mail-inbox.png)
+</Frame>
 
 And because Langfuse is still attached, the `create_doc` and `send_gmail_message` calls show up in the trace alongside the SQL steps — full causal chain in one place.
+
+  </Step>
+</Steps>
 
 ## What this gave you
 
@@ -315,9 +359,20 @@ Total engine code written: **zero lines**.
 
 ## Next steps
 
-- Lock down access: turn off `IDUN_ALLOW_OPEN_ADMIN`, add SSO/OIDC, generate API keys for `/agent/run`.
-- Swap SQLite for PostgreSQL when you go multi-replica — same Memory page, same one-click reload.
-- Add input guardrails (PII, prompt injection) before exposing the chat publicly — see [Guardrails](/guardrails/reference).
-- Deploy to Cloud Run with the [provided Dockerfile](/standalone/cloud-run).
+<Card title="Lock down access" icon="lock" horizontal href="/auth/sso">
+  turn off `IDUN_ALLOW_OPEN_ADMIN`, add SSO/OIDC, generate API keys for `/agent/run`.
+</Card>
+
+<Card title="Swap SQLite for PostgreSQL" icon="database" horizontal href="/memory/overview">
+  when you go multi-replica — same Memory page, same one-click reload.
+</Card>
+
+<Card title="Add input guardrails" icon="shield-halved" horizontal href="/guardrails/reference">
+  (PII, prompt injection) before exposing the chat publicly.
+</Card>
+
+<Card title="Deploy to Cloud Run" icon="cloud" horizontal href="/standalone/cloud-run">
+  with the provided Dockerfile.
+</Card>
 
 The Deep Agents framework gives you planning, filesystem, and subagents. Idun gives you the production wrapper. Together: an agent you can actually ship.

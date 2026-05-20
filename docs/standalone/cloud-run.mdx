@@ -2,6 +2,7 @@
 title: Deploy to Cloud Run
 description: Single-container deploy on Google Cloud Run with managed Postgres.
 keywords: ["Cloud Run", "GCP", "deploy", "Postgres", "Cloud SQL", "container", "production"]
+boost: 2
 ---
 
 Cloud Run runs a single container per request, scales to zero by default, and forwards HTTPS. The standalone is designed to fit.
@@ -66,3 +67,17 @@ Recommended runtime settings (already set in the template):
 - **MCP servers using `command: docker run …`** won't work on Cloud Run. Switch to `transport: stdio` with a binary command (e.g. `npx`, `uvx`, a precompiled binary) or use HTTP transport pointing at another Cloud Run service.
 - **Trace retention purge** runs hourly via APScheduler — when Cloud Run scales to zero the scheduler stops too. With `minScale: "1"` it runs continuously.
 - Cookies need `Secure` — Cloud Run's load balancer sets `X-Forwarded-Proto: https`. The standalone honors that automatically.
+
+## Next steps
+
+<Card title="Production hardening" icon="shield-halved" horizontal href="/deployment/hardening">
+  Lock down admin auth, TLS, secrets, and trace retention before exposing the service.
+</Card>
+
+<Card title="GCP Trace" icon="route" horizontal href="/observability/gcp-trace">
+  Send distributed traces to the same Google Cloud project.
+</Card>
+
+<Card title="GCP Logging" icon="file-text" horizontal href="/observability/gcp-logging">
+  Stream structured logs to Cloud Logging from the running service.
+</Card>

@@ -6,7 +6,9 @@ keywords: ["Google Cloud Logging", "GCP", "structured logging", "observability",
 
 Set up Google Cloud Logging to send structured logs from your agents to Google Cloud for centralized log management.
 
-Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Agent Platform.
+<Tip>
+  Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Engine.
+</Tip>
 
 ## Set up GCP Logging observability
 
@@ -25,10 +27,11 @@ Before starting, complete the [quickstart guide](/quickstart) to have an agent r
     - **Resource type**: Resource type label (e.g., `global`, `gce_instance`, `cloud_run_revision`)
     - **Severity**: Minimum level to record (`INFO`, `WARNING`, `ERROR`, `CRITICAL`)
 
-    ![Observability admin page with GCP Logging selected](/images/ui/admin-observability-gcp-logging.png)
+    <Frame>
+      ![Observability admin page with GCP Logging selected](/images/ui/admin-observability-gcp-logging.png)
+    </Frame>
 
     Save the form. The reload pipeline re-instantiates the engine with the new observability config; subsequent agent runs ship structured logs to GCP.
-    {/* VERIFY: confirm reload pipeline re-instantiates engine and ships structured logs to GCP. */}
   </Step>
 </Steps>
 
@@ -62,7 +65,23 @@ Filter by the **Log Name** you configured to see your agent's logs.
 
 ## Troubleshooting
 
-### Logs not showing up?
+<AccordionGroup>
+  <Accordion title="Logs not showing up?">
+    1. **Check permissions**: Verify the `Logs Writer` role is assigned to the agent's service account
+    2. **Check log name**: Confirm you are filtering by the correct log name in Logs Explorer
+  </Accordion>
+</AccordionGroup>
 
-1. **Check permissions**: Verify the `Logs Writer` role is assigned to the agent's service account
-2. **Check log name**: Confirm you are filtering by the correct log name in Logs Explorer
+## Next steps
+
+<Card title="GCP Trace" icon="route" horizontal href="/observability/gcp-trace">
+  Add distributed tracing alongside structured logs in Google Cloud.
+</Card>
+
+<Card title="Local trace store" icon="database" horizontal href="/observability/traces">
+  See the same agent runs in the bundled admin UI without GCP setup.
+</Card>
+
+<Card title="Deploy to Cloud Run" icon="cloud" horizontal href="/standalone/cloud-run">
+  Run the standalone next to your logs with managed Postgres.
+</Card>

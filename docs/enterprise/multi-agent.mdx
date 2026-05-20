@@ -1,0 +1,24 @@
+---
+title: "Multi-agent management"
+description: "Register, monitor, and update multiple Idun Engine standalones from a single control plane."
+keywords: ["multi-agent", "control plane", "fleet", "many standalones"]
+---
+
+Each Idun Engine standalone runs one agent in one process. Enterprise lets you manage a fleet of those standalones together: register them, see their health, push configuration, and route traffic without SSH-ing into each box.
+
+## Capabilities
+
+- **Fleet registry**: every standalone reports its identity, version, configured agent, and current health to the control plane on boot.
+- **Centralized configuration**: push agent, guardrail, MCP, observability, and prompt updates to one or many standalones from a single UI.
+- **Routing**: map an incoming request to the right standalone based on agent ID, tenant, or custom selectors.
+- **Drift detection**: surface standalones whose live config no longer matches what the control plane expects.
+
+## Next steps
+
+<Card title="Enterprise SSO" icon="lock" horizontal href="/enterprise/sso">
+  Wire Okta, Entra ID, or any SAML provider into every agent.
+</Card>
+
+<Card title="RBAC" icon="users" horizontal href="/enterprise/rbac">
+  Control who can see and edit which agents.
+</Card>

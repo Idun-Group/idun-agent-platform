@@ -2,6 +2,7 @@
 title: "Quickstart"
 description: "Deploy your first AI agent with Idun in under 30 minutes, from pip install to live chat UI."
 keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", "idun-agent-engine", "pip install"]
+boost: 3
 ---
 
 `pip install` → chat UI → production agent in under 30 minutes. No Docker required, no separate frontend, no extra services to deploy.
@@ -48,33 +49,53 @@ keywords: ["quickstart", "getting started", "deploy agent", "LangGraph", "ADK", 
     ```
     Runs Alembic migrations, seeds the database from `config.yaml`, and starts uvicorn at `http://localhost:8000`.
 
-    ![Admin landing page](/images/readme/dashboard.png)
+    <Frame>
+      <img alt="Admin landing page" src="/images/readme/dashboard.png" />
+    </Frame>
   </Step>
 
   <Step title="Chat">
     Open [http://localhost:8000](http://localhost:8000) in your browser. Send a message and the response streams back in real time.
 
-    ![Chat conversation](/images/readme/chat.png)
+    <Frame>
+      <img alt="Chat conversation" src="/images/readme/chat.png" />
+    </Frame>
   </Step>
 
   <Step title="Explore the admin">
     Open [http://localhost:8000/admin](http://localhost:8000/admin). View your agent's config, attach guardrails, register MCP tools, and inspect traces, all without redeploying.
 
-    ![Agent detail](/images/readme/agent-detail.png)
+    <Frame>
+      <img alt="Agent detail" src="/images/readme/agent-detail.png" />
+    </Frame>
   </Step>
 </Steps>
 
-## What next?
+## Next steps
 
-- [Pick a framework](/frameworks/overview): LangGraph or Google ADK
-- [Add guardrails](/guardrails/overview): 15+ built-in safety guards
-- [Wire observability](/observability/overview): Langfuse, Phoenix, LangSmith, or GCP Trace
-- [Connect MCP servers](/mcp-servers/overview): stdio, SSE, streamable HTTP, or WebSocket transports
-- [Deploy](/deployment/overview): Cloud Run, Kubernetes, or any single-container host
+<Card title="Pick a framework" icon="layers" horizontal href="/frameworks/overview">
+  LangGraph or Google ADK
+</Card>
+
+<Card title="Add guardrails" icon="shield" horizontal href="/guardrails/overview">
+  15+ built-in safety guards
+</Card>
+
+<Card title="Wire observability" icon="chart-line" horizontal href="/observability/overview">
+  Langfuse, Phoenix, LangSmith, or GCP Trace
+</Card>
+
+<Card title="Connect MCP servers" icon="plug" horizontal href="/mcp-servers/overview">
+  stdio, SSE, streamable HTTP, or WebSocket transports
+</Card>
+
+<Card title="Deploy" icon="cloud" horizontal href="/deployment/overview">
+  Cloud Run, Kubernetes, or any single-container host
+</Card>
 
 ## Switching to Postgres
 
-The standalone runtime ships with SQLite as the default database for quickstart and demo. For production, switch to Postgres. SQLite's trace-storage ceiling is around 10k traces before the list view starts to lag. {/* VERIFY: 10k trace ceiling sourced from tasks/trace-feature-08-05-2026/13-sizing-perf.md and 18-postgres-throughput-probe.md; rerun probe before each release. */} The trace UI shows a permanent banner reminding operators of this when SQLite is the active backend.
+The standalone runtime ships with SQLite as the default database for quickstart and demo. For production, switch to Postgres. SQLite's trace-storage ceiling is around 10k traces before the list view starts to lag. The trace UI shows a permanent banner reminding operators of this when SQLite is the active backend.
 
 To switch:
 
@@ -101,7 +122,7 @@ To switch:
   </Step>
 </Steps>
 
-Postgres unlocks 5–8k spans/sec sustained write (Linux production floor) versus 1k spans/sec on SQLite, plus richer free-text search and bounded read latency at scale. {/* VERIFY: span/sec figures sourced from tasks/trace-feature-08-05-2026/18-postgres-throughput-probe.md (asyncpg copy_records_to_table benchmark); rerun probe before each release. */}
+Postgres unlocks 5–8k spans/sec sustained write (Linux production floor) versus 1k spans/sec on SQLite, plus richer free-text search and bounded read latency at scale.
 
 ### Trace-store environment variables
 

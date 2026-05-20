@@ -2,6 +2,7 @@
 title: Overview
 description: A self-sufficient single-agent deployment with embedded chat UI, admin panel, and traces viewer.
 keywords: ["standalone", "single-agent", "chat UI", "admin panel", "traces", "deployment", "self-hosted"]
+boost: 2
 ---
 
 **Idun Agent Standalone** packages one agent into a single FastAPI process — chat UI, admin panel, traces viewer, and a local DB included. Deploy on Google Cloud Run, a VM, or your laptop.
@@ -45,7 +46,7 @@ Spans flow into `standalone_trace` + `standalone_span` tables via an OTel export
 
 The admin panel opens on a dashboard sourced from the trace store. It refreshes every time you reload and gives you a single-pane view of whether the agent is healthy.
 
-![Standalone admin dashboard](/images/ui/admin-dashboard.png)
+<Frame><img alt="Standalone admin dashboard" src="/images/ui/admin-dashboard.png" /></Frame>
 
 Default panels:
 
@@ -56,4 +57,20 @@ Default panels:
 
 All of it reads from `standalone_trace` + `standalone_span` directly. No external observability provider needed.
 
-Continue to the [Quickstart →](/standalone/quickstart).
+## Next steps
+
+<Card title="Quickstart" icon="rocket" horizontal href="/standalone/quickstart">
+  Get the standalone running locally with your first agent.
+</Card>
+
+<Card title="CLI reference" icon="terminal" horizontal href="/standalone/cli">
+  Every flag of `idun serve` and the supporting commands.
+</Card>
+
+<Card title="Cloud Run deployment" icon="cloud" horizontal href="/standalone/cloud-run">
+  Deploy the standalone to Google Cloud Run.
+</Card>
+
+<Card title="Customizing the UI" icon="layers" horizontal href="/standalone/customizing-ui">
+  Theme the chat UI and pick a layout variant.
+</Card>

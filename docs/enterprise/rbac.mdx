@@ -1,0 +1,24 @@
+---
+title: "RBAC"
+description: "Role-based access control across agents, configurations, and the admin surface."
+keywords: ["RBAC", "roles", "permissions", "access control", "enterprise"]
+---
+
+The single-standalone admin panel uses a single password or open mode. Enterprise replaces that with role-based access control: distinct roles, granular permissions, and visibility scoped to the agents a user should see.
+
+## Capabilities
+
+- **Built-in roles**: Owner, Admin, Operator, Auditor, Viewer. Operators can edit live config; Auditors can read traces and logs but not change anything.
+- **Custom roles**: compose permissions across agent edits, guardrail config, MCP registry, observability providers, integrations, prompts, traces, and audit logs.
+- **Per-agent scope**: a role can be granted on the whole fleet, on a tenant, or on a specific agent.
+- **IdP-driven**: roles can be derived from SSO group membership so HR systems drive access.
+
+## Next steps
+
+<Card title="Enterprise SSO" icon="lock" horizontal href="/enterprise/sso">
+  Source role assignments from your identity provider.
+</Card>
+
+<Card title="Audit logs" icon="scroll-text" horizontal href="/enterprise/audit-logs">
+  Verify what users with each role actually did.
+</Card>

@@ -2,6 +2,7 @@
 title: Quickstart
 description: Run your first agent in under 5 minutes.
 keywords: ["quickstart", "getting started", "standalone", "idun init", "idun serve", "first agent", "tutorial"]
+boost: 2
 ---
 
 ## 1. Install
@@ -58,13 +59,17 @@ Sign in at `http://localhost:8000/login/` with the password you typed into `hash
 
 Open `/admin/agent/`, change any field, click **Save**. A toast confirms the running agent was hot-swapped. Structural changes (framework, `graph_definition` path) require a process restart; the UI shows a banner.
 
-![Admin agent configuration page](/images/ui/admin-agent-config.png)
+<Frame>
+  ![Admin agent configuration page](/images/ui/admin-agent-config.png)
+</Frame>
 
 ## 6. Watch traces
 
 Send a few messages from `/`. Open `/admin/traces/`; your runs appear with latency, token counts, cost, and per-span detail.
 
-![Admin traces list view](/images/ui/admin-traces-list.png)
+<Frame>
+  ![Admin traces list view](/images/ui/admin-traces-list.png)
+</Frame>
 
 <Note>
   The trace store is in alpha. If your runs don't appear right away, refresh the page; the write path is asynchronous and the list view doesn't yet auto-poll.
@@ -86,6 +91,14 @@ IDUN_CONFIG_PATH=path/to/your/config.yaml uv run idun serve
 
 ## Next
 
-- [Deploy to Cloud Run →](/standalone/cloud-run)
-- [Customize the chat UI →](/standalone/customizing-ui)
-- [CLI reference →](/standalone/cli)
+<Card title="Deploy to Cloud Run" icon="cloud-upload" horizontal href="/standalone/cloud-run">
+  Run the standalone on Google Cloud Run with a managed container.
+</Card>
+
+<Card title="Customize the chat UI" icon="paintbrush" horizontal href="/standalone/customizing-ui">
+  Theme, layout, and full UI replacement.
+</Card>
+
+<Card title="CLI reference" icon="terminal" horizontal href="/standalone/cli">
+  Every `idun` command, the flags it accepts, and what it does.
+</Card>

@@ -2,9 +2,10 @@
 title: "Observability"
 description: "Monitor, trace, and debug your agents with built-in integrations for popular observability platforms."
 keywords: ["observability", "tracing", "monitoring", "OpenTelemetry", "Langfuse", "Phoenix", "LangSmith", "GCP"]
+boost: 2
 ---
 
-Idun Agent Platform includes built-in observability backed by OpenTelemetry auto-instrumentation. It captures traces, logs, and metrics from your agents with minimal configuration.
+Idun Engine includes built-in observability backed by OpenTelemetry auto-instrumentation. It captures traces, logs, and metrics from your agents with minimal configuration.
 
 The standalone runtime always captures traces locally into its own DB-backed [trace store](/observability/traces). External providers (Langfuse, Phoenix, LangSmith, GCP Trace) stack on top: configure one or more in the admin panel or `config.yaml`, and the engine fans spans out to local storage and every enabled provider.
 
@@ -66,7 +67,7 @@ When you attach an observability configuration to an agent, the platform automat
       <Step title="Open the observability admin page">
         Navigate to `/admin/observability/` in the running standalone. The catalog shows the supported providers: Langfuse, Arize Phoenix, LangSmith, GCP Trace, GCP Logging.
 
-        ![Observability admin page with Langfuse selected](/images/ui/admin-observability-langfuse.png)
+        <Frame><img alt="Observability admin page with Langfuse selected" src="/images/ui/admin-observability-langfuse.png" /></Frame>
       </Step>
       <Step title="Add a provider">
         Click the provider you want and fill in the credentials. The reload pipeline re-instantiates the engine with the new observability config when you save.
@@ -89,3 +90,17 @@ When you attach an observability configuration to an agent, the platform automat
     The `observability` key is a list, and you can attach more than one provider at a time; each entry is lazy-loaded and the engine fans spans out to every enabled provider. See the provider-specific pages for the full list of fields each provider requires.
   </Tab>
 </Tabs>
+
+## Next steps
+
+<Card title="Local traces" icon="chart-line" horizontal href="/observability/traces">
+  Browse, search, and inspect AG-UI run events captured by the standalone's trace store.
+</Card>
+
+<Card title="Telemetry events" icon="file-json" horizontal href="/observability/telemetry-events">
+  The OpenTelemetry event shape the engine emits.
+</Card>
+
+<Card title="Custom handler" icon="wrench" horizontal href="/observability/custom-handler">
+  Wire your own span handler when the built-in providers don't fit.
+</Card>

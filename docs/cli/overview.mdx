@@ -43,11 +43,15 @@ The standalone [CLI reference](/standalone/cli) documents every subcommand, ever
 
 Once `idun serve` is up, open the bundled chat UI at `http://localhost:8000/`. You land on the welcome screen.
 
-![Chat UI welcome state](/images/ui/chat-welcome.png)
+<Frame>
+  ![Chat UI welcome state](/images/ui/chat-welcome.png)
+</Frame>
 
 Send a message. The chat surface streams the AG-UI response in real time and renders tool calls inline.
 
-![Chat UI showing a hello/Hey-what's-up exchange](/images/ui/chat-conversation.png)
+<Frame>
+  ![Chat UI showing a hello/Hey-what's-up exchange](/images/ui/chat-conversation.png)
+</Frame>
 
 Open `/admin/traces/` to inspect the run after it completes. If you need to hit `/agent/run` directly from a script or external client, see [Programmatic chat](/guides/programmatic-chat) for the request shape and SSE event stream.
 
@@ -65,3 +69,17 @@ xdg-open http://localhost:8000/docs
 # Windows (cmd)
 start http://localhost:8000/docs
 ```
+
+## Next steps
+
+<Card title="Standalone CLI reference" icon="book" horizontal href="/standalone/cli">
+  Every subcommand, flag, and env var, with verified defaults from source.
+</Card>
+
+<Card title="Programmatic chat" icon="terminal" horizontal href="/guides/programmatic-chat">
+  Hit `/agent/run` directly with the request shape and SSE event stream.
+</Card>
+
+<Card title="Deployment overview" icon="cloud" horizontal href="/deployment/overview">
+  Run `idun serve` on Cloud Run, Docker, or any container host.
+</Card>

@@ -2,6 +2,7 @@
 title: "Production hardening"
 description: "Production deployment checklist for the standalone server: bind address, admin auth, session secret, cookie security, TLS termination, secrets management, and trace retention."
 keywords: ["deployment", "hardening", "security", "production", "TLS", "session secret", "IDUN_HOST", "IDUN_ADMIN_AUTH_MODE", "bcrypt", "secrets manager"]
+boost: 2
 ---
 
 This page lists the minimum production configuration for the standalone server. Every item here applies to any deployment exposed beyond `localhost`.
@@ -116,7 +117,7 @@ If your reverse proxy is not forwarding `X-Forwarded-Proto`, the `Secure` flag w
 
 ## Engine route protection
 
-Admin-panel auth (`IDUN_ADMIN_AUTH_MODE=password`) gates the `/admin/*` UI and admin REST. It does **not** gate the `/agent/*` runtime routes. To require an OIDC JWT on the agent API, enable per-agent SSO. See [SSO](/auth/sso). {/* VERIFY: gating scope (admin-only) sourced from libs/idun_agent_standalone/src/idun_agent_standalone/services/auth.py and the SSO dependency in libs/idun_agent_engine/src/idun_agent_engine/server/dependencies.py; recheck before each release that no admin route is left ungated and no agent route is gated by the session cookie. */}
+Admin-panel auth (`IDUN_ADMIN_AUTH_MODE=password`) gates the `/admin/*` UI and admin REST. It does **not** gate the `/agent/*` runtime routes. To require an OIDC JWT on the agent API, enable per-agent SSO. See [SSO](/auth/sso).
 
 ## CORS
 
@@ -139,5 +140,10 @@ Before a production deploy:
 
 ## What's next
 
-- [SSO](/auth/sso): require an OIDC JWT on the agent API
-- [Troubleshooting](/troubleshooting): what to do when reload fails or the admin panel says `agent_not_ready`
+<Card title="SSO" icon="key" horizontal href="/auth/sso">
+  Require an OIDC JWT on the agent API.
+</Card>
+
+<Card title="Troubleshooting" icon="life-buoy" horizontal href="/troubleshooting">
+  What to do when reload fails or the admin panel says `agent_not_ready`.
+</Card>

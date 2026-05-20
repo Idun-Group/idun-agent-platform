@@ -1,10 +1,11 @@
 ---
 title: "LangGraph"
-description: "Connect a LangGraph agent to Idun Agent Platform with graph-based workflows, AG-UI streaming, and persistent checkpointing."
+description: "Connect a LangGraph agent to Idun Engine with graph-based workflows, AG-UI streaming, and persistent checkpointing."
 keywords: ["LangGraph", "StateGraph", "graph_definition", "checkpointing", "AG-UI streaming", "LangGraph agent"]
+boost: 2
 ---
 
-LangGraph is the primary framework integration in Idun Agent Platform. It supports full AG-UI streaming, CopilotKit, and persistent checkpointing through in-memory, SQLite, or PostgreSQL backends.
+LangGraph is the primary framework integration in Idun Engine. It supports full AG-UI streaming, CopilotKit, and persistent checkpointing through in-memory, SQLite, or PostgreSQL backends.
 
 <Tip>
   Want to start from working code? The [agent templates](/templates) include 7 LangGraph examples covering tool calling, structured I/O, and multi-step workflows.
@@ -92,7 +93,18 @@ LangGraph agents can persist conversation state across restarts using checkpoint
 
 ## Next steps
 
-- [Memory and checkpointing details](/memory/langgraph)
-- [Guardrails](/guardrails/overview)
-- [Observability](/observability/overview)
-- [MCP Servers](/mcp-servers/overview)
+<Card title="Memory and checkpointing details" icon="database" horizontal href="/memory/langgraph">
+  Backend options and configuration for persistent state.
+</Card>
+
+<Card title="Guardrails" icon="shield" horizontal href="/guardrails/overview">
+  Add safety guards to your agent inputs and outputs.
+</Card>
+
+<Card title="Observability" icon="activity" horizontal href="/observability/overview">
+  Trace runs, monitor latency, and inspect token usage.
+</Card>
+
+<Card title="MCP Servers" icon="plug" horizontal href="/mcp-servers/overview">
+  Connect external tools through the Model Context Protocol.
+</Card>

@@ -2,6 +2,7 @@
 title: CLI reference
 description: Every idun command, the flags it accepts, and what it does.
 keywords: ["idun", "cli", "serve", "init", "setup", "hash-password", "agent serve"]
+boost: 2
 ---
 
 `idun` is the console script installed by the `idun-agent-engine` wheel (the standalone is bundled). All commands accept `--help` for inline documentation.
@@ -115,3 +116,17 @@ idun agent serve --source file --path ./config.yaml
 | `IDUN_DEPLOYMENT_TYPE` | `self-hosted` | Tag events with `cloud`, `self-hosted`, or `dev`. |
 | `IDUN_TELEMETRY_IDENTIFY_USERS` | `true` | Set to `false` to keep all browser events anonymous (no email-level `identify`). |
 | `IDUN_TELEMETRY_SESSION_REPLAY` | `true` | Set to `false` to ship browser analytics without recording sessions. |
+
+## Next steps
+
+<Card title="Quickstart" icon="rocket" horizontal href="/standalone/quickstart">
+  Run your first agent in under 5 minutes.
+</Card>
+
+<Card title="Customize the chat UI" icon="paintbrush" horizontal href="/standalone/customizing-ui">
+  Theme, layout, and full UI replacement.
+</Card>
+
+<Card title="Deploy to Cloud Run" icon="cloud-upload" horizontal href="/standalone/cloud-run">
+  Run the standalone on Google Cloud Run with a managed container.
+</Card>

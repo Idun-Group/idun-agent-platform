@@ -6,7 +6,9 @@ keywords: ["LangSmith", "observability", "tracing", "debugging", "LangChain"]
 
 Set up LangSmith to debug, trace, and monitor your agents from the LangSmith dashboard.
 
-Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Agent Platform.
+<Tip>
+  Before starting, complete the [quickstart guide](/quickstart) to have an agent running on Idun Engine.
+</Tip>
 
 ## Set up LangSmith observability
 
@@ -28,7 +30,9 @@ Before starting, complete the [quickstart guide](/quickstart) to have an agent r
     - **Endpoint**: (Optional) Custom endpoint if you are self-hosting LangSmith (defaults to `https://api.smith.langchain.com`)
     - **Run Name**: (Optional) Display name for each trace run in LangSmith (for example, `my-agent`)
 
-    ![Observability admin page with LangSmith selected](/images/ui/admin-observability-langsmith.png)
+    <Frame>
+      ![Observability admin page with LangSmith selected](/images/ui/admin-observability-langsmith.png)
+    </Frame>
 
     Save the form. The reload pipeline re-instantiates the engine with the new observability config; the next agent run starts streaming spans to LangSmith.
 
@@ -68,8 +72,24 @@ You will see traces showing the execution run tree, LLM inputs/outputs, and late
 
 ## Troubleshooting
 
-### Observability not working?
+<AccordionGroup>
+  <Accordion title="Observability not working?">
+    1. **Check API key**: Verify it is valid and has the required permissions
+    2. **Verify project name**: Traces are sent to the "default" project if the project name is not specified or is incorrect
+    3. **Check tracing toggle**: Confirm the tracing toggle is enabled in the configuration
+  </Accordion>
+</AccordionGroup>
 
-1. **Check API key**: Verify it is valid and has the required permissions
-2. **Verify project name**: Traces are sent to the "default" project if the project name is not specified or is incorrect
-3. **Check tracing toggle**: Confirm the tracing toggle is enabled in the configuration
+## Next steps
+
+<Card title="Local trace store" icon="database" horizontal href="/observability/traces">
+  Inspect every agent run in the bundled admin UI alongside LangSmith.
+</Card>
+
+<Card title="Observability overview" icon="chart-line" horizontal href="/observability/overview">
+  Compare built-in providers and their configuration shapes.
+</Card>
+
+<Card title="Custom handler" icon="puzzle" horizontal href="/observability/custom-handler">
+  Write a handler for any provider not on the shipping list.
+</Card>

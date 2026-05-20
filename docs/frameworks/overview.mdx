@@ -1,10 +1,11 @@
 ---
 title: "Agent frameworks"
-description: "Connect LangGraph or Google ADK agents to Idun Agent Platform and run them as production-ready services."
+description: "Connect LangGraph or Google ADK agents to Idun Engine and run them as production-ready services."
 keywords: ["agent frameworks", "LangGraph", "Google ADK", "framework adapter", "AG-UI streaming"]
+boost: 2
 ---
 
-Idun Agent Platform wraps your agent code into a FastAPI service through framework-specific adapters. You write your agent in the framework you prefer, and the engine handles streaming, checkpointing, guardrails, and observability through a unified API.
+Idun Engine wraps your agent code into a FastAPI service through framework-specific adapters. You write your agent in the framework you prefer, and the engine handles streaming, checkpointing, guardrails, and observability through a unified API.
 
 Each adapter implements a common `BaseAgent` protocol. Your clients talk to the same HTTP API regardless of the underlying framework.
 
@@ -55,6 +56,18 @@ The engine validates that the `config` shape matches the selected `type` at star
 
 ## Next steps
 
-- [LangGraph integration guide](/frameworks/langgraph)
-- [Google ADK integration guide](/frameworks/adk)
-- [Configuration reference](/configuration)
+<Card title="LangGraph integration guide" icon="layers" horizontal href="/frameworks/langgraph">
+  Graph-based agents with full AG-UI streaming, checkpointing, and CopilotKit support.
+</Card>
+
+<Card title="Google ADK integration guide" icon="bot" horizontal href="/frameworks/adk">
+  Google's Agent Development Kit for Gemini-powered agents with session and memory services.
+</Card>
+
+<Card title="Custom adapter" icon="plug" horizontal href="/frameworks/custom-adapter">
+  Build your own adapter to bring a different agent framework into Idun Engine.
+</Card>
+
+<Card title="Configuration reference" icon="file-text" horizontal href="/configuration">
+  Full schema for `config.yaml` including agent, guardrails, MCP, observability, and more.
+</Card>
