@@ -33,7 +33,12 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon, GitBranchIcon, ListTreeIcon, Trash2Icon } from "lucide-react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -139,9 +144,9 @@ function StatusBadge({ status }: { status: string | null }) {
 // docstring in ``page.tsx`` and AUDIT.md follow-up #43.
 const _PLACEHOLDER_TRACE_ID = "__trace__";
 
-function readTraceIdFromLocation(): string | null {
-  if (typeof window === "undefined") return null;
-  const segments = window.location.pathname.split("/").filter(Boolean);
+export function readTraceIdFromPathname(pathname: string | null): string | null {
+  if (!pathname) return null;
+  const segments = pathname.split("/").filter(Boolean);
   // ``/admin/traces/<id>`` and ``/admin/traces/<id>/`` both produce
   // ``["admin", "traces", "<id>"]`` after the empty-segment filter. The
   // id sits at index 2.
@@ -155,15 +160,31 @@ export default function TraceDetailClient() {
   const params = useParams<{ traceId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Resolve the trace id from ``window.location.pathname`` first because
-  // ``useParams`` returns the build-time placeholder ``__trace__`` under
-  // ``output: "export"`` with ``dynamicParams: false`` — the static
-  // export only knows about the placeholder route, so the runtime
-  // params object reflects the placeholder, not the URL. Fall back to
-  // ``params?.traceId`` only when the location parser can't extract a
-  // value (e.g. an in-app ``router.push`` that hasn't flushed yet).
+  // Resolve the trace id from the pathname because ``useParams`` returns
+  // the build-time placeholder ``__trace__`` under ``output: "export"``
+  // with ``dynamicParams: false`` — the static export only knows about
+  // the placeholder route, so the runtime params object reflects the
+  // placeholder, not the URL.
+  //
+  // We read ``usePathname`` (not ``window.location.pathname``) because on
+  // a soft client-side navigation Next.js mounts this component before
+  // it flushes ``history.pushState``; reading ``window.location`` once
+  // at mount captured the previous page's path, leaving ``traceId``
+  // empty and the data query disabled until the user hard-refreshed.
+  // ``usePathname`` is reactive to the router state, so it returns the
+  // target URL by the time React commits.
+  //
+  // The ``paramTraceId`` fallback is documentation: under the current
+  // static-export config it never fires (``useParams`` only ever yields
+  // the placeholder), but it preserves the contract — if a future
+  // refactor drops ``dynamicParams: false`` the param will become live
+  // and the resolver still works.
   const paramTraceId = params?.traceId ?? "";
-  const locationTraceId = useMemo(readTraceIdFromLocation, []);
+  const pathname = usePathname();
+  const locationTraceId = useMemo(
+    () => readTraceIdFromPathname(pathname),
+    [pathname],
+  );
   const traceId =
     locationTraceId ??
     (paramTraceId && paramTraceId !== _PLACEHOLDER_TRACE_ID ? paramTraceId : "");
