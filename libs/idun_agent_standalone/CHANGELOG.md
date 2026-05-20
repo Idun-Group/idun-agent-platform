@@ -6,6 +6,24 @@ All notable changes to `idun-agent-standalone` are documented here. This package
 
 _No unreleased changes yet._
 
+## 0.6.1 — 2026-05-20
+
+Patch release. Fixes the password-mode chat surface that the v0.6.0 hardening accidentally locked behind `/login`, and propagates a stable per-session `user_id` end-to-end so chat history and traces can be scoped per user when the standalone UI runs under password auth without a full OIDC ladder.
+
+### Added
+
+- `/runtime-config.js` now carries `agentReady` (bool) and `bootFailed` (bool) so the SPA can decide between rendering chat and redirecting to `/onboarding` synchronously at hydration, with no extra HTTP roundtrip. `bootFailed` is boolean by design — the raw boot-error string was previously echoed back to anonymous browsers and could leak DB connection URIs, file paths, and parse traces (#671).
+- Chat SPA mints a stable per-session `user_id` (SSO email when present, else fresh UUID, cached in module state) and attaches `X-Idun-User-Id` on every `/agent/*` call. The active id renders in the History sidebar so visitors can confirm which identity is being sent to the engine (#671).
+
+### Changed
+
+- `_is_public_runtime_path` lets `/agent/sessions` and `/agent/sessions/{id}` through the password gate. `useChat` hits these on every chat page load; without this they 401 and the SPA's global handler hard-navigates to `/login` even though chat itself is open under `auth_mode: password`. Per-user scoping of these endpoints is the engine adapter's job (#671).
+- `BrandedLayout` and `InspectorLayout` drop the duplicated brand from their own chat-area headers; brand (logo + app name) and the active `user_id` move into the sidebar top, above History/New (#671).
+
+### Fixed
+
+- Password mode no longer hard-redirects to `/login` on the chat surface. The chat root no longer calls `api.getAgent()` (admin-gated under password mode, the source of the 401-redirect-to-`/login` bug); onboarding routing now reads `agentReady` / `bootFailed` from `/runtime-config.js` synchronously (#671).
+
 ## 0.6.0 — 2026-05-17
 
 First wide release of the standalone admin/chat/traces app, the bundled UI behind the **Idun Engine v0.6.0** launch. Previously circulated as a `0.1.0` dev snapshot; this release is the version published as part of `idun-agent-engine 0.6.0` and is the first one adopters will install via `pip install idun-agent-engine && idun setup && idun serve`. Full launch context: [The third path](https://idun-group.com/blog/2026-05-17-third-path-engine-v0.6).
