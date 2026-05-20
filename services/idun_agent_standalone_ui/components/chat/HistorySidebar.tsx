@@ -9,6 +9,8 @@ import {
   signOut as ssoSignOut,
   type SsoInfo,
 } from "@/lib/auth";
+import { getRuntimeConfig } from "@/lib/runtime-config";
+import { useUserId } from "@/lib/user-id";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -119,9 +121,33 @@ export function HistorySidebar({
     if (typeof window !== "undefined") window.location.replace("/");
   };
 
+  const theme = getRuntimeConfig().theme;
+  const appName = theme.appName;
+  const logoText = (theme.logo?.text ?? "IA").slice(0, 2).toUpperCase();
+  const userId = useUserId();
+
   return (
     <aside className="flex h-screen w-[300px] shrink-0 flex-col border-r border-border bg-card/60">
-      <header className="flex items-center justify-between px-5 pt-5 pb-3">
+      <div className="px-5 pt-5 pb-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-foreground font-serif text-xs font-medium text-background">
+            {logoText}
+          </span>
+          <span className="text-[14px] font-medium text-foreground">
+            {appName}
+          </span>
+        </div>
+        {userId ? (
+          <div
+            className="mt-2 break-all text-[11px] text-muted-foreground"
+            title={userId}
+            data-testid="sidebar-user-id"
+          >
+            User ID: {userId}
+          </div>
+        ) : null}
+      </div>
+      <header className="flex items-center justify-between px-5 pt-2 pb-3">
         <div className="font-serif text-[18px] font-medium text-foreground">
           History
         </div>
@@ -133,7 +159,6 @@ export function HistorySidebar({
           + New
         </button>
       </header>
-      <div className="hairline mx-5" />
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {!canListHistory ? (
           <Alert className="mx-1">

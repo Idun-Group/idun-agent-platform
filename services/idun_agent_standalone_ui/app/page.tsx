@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getRuntimeConfig } from "@/lib/runtime-config";
-import { ApiError, api } from "@/lib/api";
 import {
   fetchSsoInfo,
   getCurrentAuthUser,
@@ -53,23 +52,12 @@ function ChatHome() {
 
   useEffect(() => {
     if (signedIn !== true) return;
-    let cancelled = false;
-    api
-      .getAgent()
-      .then(() => {
-        if (!cancelled) setAgentReady(true);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        if (err instanceof ApiError && err.status === 404) {
-          router.replace("/onboarding");
-        } else {
-          setAgentReady(true);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
+    const cfg = getRuntimeConfig();
+    if (!cfg.agentReady && !cfg.bootFailed) {
+      router.replace("/onboarding");
+      return;
+    }
+    setAgentReady(true);
   }, [router, signedIn]);
 
   if (ssoInfo === null || signedIn === null) {

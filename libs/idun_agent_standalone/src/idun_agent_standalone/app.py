@@ -90,6 +90,9 @@ def _is_public_runtime_path(path: str) -> bool:
         or path.startswith("/_next/")
     ):
         return True
+    # Chat sessions are public; per-user scoping happens in the adapter.
+    if path == "/agent/sessions" or path.startswith("/agent/sessions/"):
+        return True
     if path.startswith("/agent/") or path.startswith("/_engine/"):
         return False
     return path != "/reload"

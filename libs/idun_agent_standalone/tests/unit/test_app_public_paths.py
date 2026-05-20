@@ -47,3 +47,28 @@ def test_public_paths_bypass_gate(path: str) -> None:
 )
 def test_private_paths_require_auth(path: str) -> None:
     assert _is_public_runtime_path(path) is False
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        # List endpoint — the SPA's useChat fetches this on every chat
+        # page load to render the history sidebar.
+        "/agent/sessions",
+        # Detail endpoint — useChat hydrates the active thread by id.
+        # The path parameter is arbitrary user_id-scoped state, not an
+        # admin handle.
+        "/agent/sessions/abc-123",
+        "/agent/sessions/12345678-90ab-4cde-9f01-234567890abc",
+    ],
+)
+def test_chat_session_paths_are_public(path: str) -> None:
+    """Chat-surface endpoints must be reachable under password mode.
+
+    Without this, the SPA's `useChat` hits 401 on every page load and
+    `apiFetch`'s global 401 handler hard-redirects the user to /login —
+    even though the chat page itself is not gated. Per-user scoping of
+    these endpoints is the engine's job (Step 2 of the SPEC); the gate
+    must not pre-empt that.
+    """
+    assert _is_public_runtime_path(path) is True

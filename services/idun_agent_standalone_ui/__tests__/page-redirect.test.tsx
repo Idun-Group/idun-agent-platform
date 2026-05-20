@@ -1,26 +1,15 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, waitFor } from "@testing-library/react";
 import Home from "@/app/page";
+import { DEFAULT_RUNTIME_CONFIG } from "@/lib/runtime-config";
 
 const replace = vi.fn();
-// Stable router object so useEffect deps don't refire across renders.
 const routerInstance = { replace };
 
 vi.mock("next/navigation", () => ({
   useRouter: () => routerInstance,
   useSearchParams: () => new URLSearchParams(""),
 }));
-
-vi.mock("@/lib/api", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/api")>("@/lib/api");
-  return {
-    ...actual,
-    api: {
-      ...actual.api,
-      getAgent: vi.fn(),
-    },
-  };
-});
 
 vi.mock("@/components/chat/BrandedLayout", () => ({
   BrandedLayout: () => <div data-testid="branded-layout" />,
@@ -34,57 +23,52 @@ vi.mock("@/components/chat/InspectorLayout", () => ({
   InspectorLayout: () => <div data-testid="inspector-layout" />,
 }));
 
-import { api, ApiError } from "@/lib/api";
-
+/**
+ * Home reads `agentReady` + `bootReason` from `window.__IDUN_CONFIG__`
+ * (seeded by /runtime-config.js) and decides:
+ *   - agentReady=true → render chat,
+ *   - agentReady=false + no bootReason → redirect to /onboarding (wizard),
+ *   - agentReady=false + bootReason → render chat (wizard can't fix a
+ *     broken-config deploy; let the eventual 503 surface).
+ * Source of truth: SPEC S1.9.
+ */
 describe("Home (chat root)", () => {
   beforeEach(() => {
     replace.mockReset();
-    (api.getAgent as ReturnType<typeof vi.fn>).mockReset();
+  });
+  afterEach(() => {
+    delete window.__IDUN_CONFIG__;
   });
 
-  it("renders chat when getAgent returns 200", async () => {
-    (api.getAgent as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      id: "x",
-      name: "Foo",
-    });
+  it("renders chat when the bootstrap reports the agent is ready", async () => {
+    window.__IDUN_CONFIG__ = { ...DEFAULT_RUNTIME_CONFIG, agentReady: true };
     const { findByTestId } = render(<Home />);
     await findByTestId("branded-layout");
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("redirects to /onboarding when getAgent returns 404", async () => {
-    (api.getAgent as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new ApiError(404, null),
-    );
+  it("redirects to /onboarding on fresh install (no agent, no boot error)", async () => {
+    window.__IDUN_CONFIG__ = {
+      ...DEFAULT_RUNTIME_CONFIG,
+      agentReady: false,
+      bootFailed: false,
+    };
     render(<Home />);
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/onboarding"));
-  });
-
-  it("does not redirect on non-404 errors (e.g. transient 500)", async () => {
-    (api.getAgent as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new ApiError(500, null),
-    );
-    render(<Home />);
-    // Wait until the probe was invoked, then assert no redirect happened.
     await waitFor(() =>
-      expect(api.getAgent as ReturnType<typeof vi.fn>).toHaveBeenCalled(),
+      expect(replace).toHaveBeenCalledWith("/onboarding"),
     );
-    expect(replace).not.toHaveBeenCalled();
   });
 
-  it("does not redirect if unmounted before getAgent resolves", async () => {
-    let resolveIt!: () => void;
-    (api.getAgent as ReturnType<typeof vi.fn>).mockReturnValueOnce(
-      new Promise<never>((_resolve, reject) => {
-        // Reject (matches the 404 path) only after we've unmounted.
-        resolveIt = () => reject(new ApiError(404, null));
-      }),
-    );
-    const { unmount } = render(<Home />);
-    unmount();
-    resolveIt();
-    // Yield one microtask so any leaked then/catch would have a chance to fire.
-    await new Promise((r) => setTimeout(r, 0));
+  it("renders chat on a broken-config deploy so the eventual 503 reaches the user", async () => {
+    // Wizard can't fix assembly errors. Redirecting would loop the
+    // operator through onboarding fruitlessly.
+    window.__IDUN_CONFIG__ = {
+      ...DEFAULT_RUNTIME_CONFIG,
+      agentReady: false,
+      bootFailed: true,
+    };
+    const { findByTestId } = render(<Home />);
+    await findByTestId("branded-layout");
     expect(replace).not.toHaveBeenCalled();
   });
 });

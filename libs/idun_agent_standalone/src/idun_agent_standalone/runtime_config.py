@@ -87,10 +87,18 @@ _POSTHOG_PROJECT_KEY = "phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw"  # noqa
 async def runtime_config_js(request: Request) -> Response:
     """Return a tiny script that seeds ``window.__IDUN_CONFIG__``."""
     settings = request.app.state.settings
+    # agentReady + bootFailed let the chat root route fresh installs to
+    # /onboarding without an extra fetch. bootFailed is a boolean — the
+    # raw error string can carry DB URIs or file paths and this endpoint
+    # is public.
+    agent = getattr(request.app.state, "agent", None)
+    boot_error = getattr(request.app.state, "boot_error", None)
     config: dict[str, Any] = {
         "theme": _DEFAULT_THEME,
         "authMode": settings.auth_mode.value,
         "layout": _DEFAULT_THEME["layout"],
+        "agentReady": agent is not None,
+        "bootFailed": boot_error is not None,
         "telemetry": {
             "enabled": settings.telemetry_enabled,
             "host": _POSTHOG_HOST,
