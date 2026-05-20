@@ -75,15 +75,14 @@ export function BrandedLayout({ threadId }: { threadId: string }) {
 
   const header = (
     <header className="relative z-10">
-      <div className="mx-auto flex max-w-[720px] items-center justify-between gap-3 px-6 pt-6 pb-4">
-        <div className="flex items-center gap-3">
-          <HamburgerButton onClick={() => setDrawerOpen(true)} />
-          <Logo theme={theme} />
+      <div className="flex items-center gap-3 px-6 pt-6 pb-4">
+        <HamburgerButton onClick={() => setDrawerOpen(true)} />
+        <div className="ml-auto">
+          <HeaderActions
+            threadId={threadId}
+            onNewSession={newConversation}
+          />
         </div>
-        <HeaderActions
-          threadId={threadId}
-          onNewSession={newConversation}
-        />
       </div>
       {!empty ? (
         <div className="mx-auto max-w-[720px] px-6">
