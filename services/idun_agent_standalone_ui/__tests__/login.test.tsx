@@ -2,11 +2,15 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import LoginPage from "@/app/login/page";
 
-const replace = vi.fn();
+// The login page hard-navigates via `window.location.replace` instead of
+// Next.js `router.replace`. The former forces the browser to re-issue the
+// request with the freshly-set `idun_session` cookie attached, which
+// `router.replace` does not reliably do in an App Router static export with
+// `trailingSlash: true`. Tests assert against this hard navigation.
+const locationReplace = vi.fn();
 const useSearchParamsMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace }),
   useSearchParams: () => useSearchParamsMock(),
 }));
 
@@ -30,8 +34,32 @@ import { toast } from "sonner";
 import { makeRuntimeConfig } from "./helpers/runtime-config-fixture";
 
 describe("LoginPage", () => {
+  let restoreReplace: (() => void) | null = null;
+
   beforeEach(() => {
-    replace.mockReset();
+    locationReplace.mockReset();
+    // jsdom marks `Location.prototype.replace` as non-configurable, so we
+    // can't `defineProperty` on the instance. Swap the whole `location`
+    // (which IS configurable on `window`) for a stub that delegates the
+    // properties we don't care about and captures the navigation we do.
+    const originalLocation = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        href: originalLocation.href,
+        replace: locationReplace,
+        assign: vi.fn(),
+        reload: vi.fn(),
+      },
+    });
+    restoreReplace = () => {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: originalLocation,
+      });
+    };
+
     useSearchParamsMock.mockReturnValue(new URLSearchParams(""));
     (api.login as ReturnType<typeof vi.fn>).mockReset();
     (toast.error as ReturnType<typeof vi.fn>).mockReset();
@@ -42,6 +70,8 @@ describe("LoginPage", () => {
   });
 
   afterEach(() => {
+    restoreReplace?.();
+    restoreReplace = null;
     vi.clearAllMocks();
     delete window.__IDUN_CONFIG__;
   });
@@ -53,7 +83,7 @@ describe("LoginPage", () => {
       target: { value: "hunter2" },
     });
     fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(locationReplace).toHaveBeenCalledWith("/"));
   });
 
   it("on success with ?next=/onboarding, redirects there", async () => {
@@ -64,7 +94,26 @@ describe("LoginPage", () => {
       target: { value: "hunter2" },
     });
     fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/onboarding"));
+    await waitFor(() =>
+      expect(locationReplace).toHaveBeenCalledWith("/onboarding"),
+    );
+  });
+
+  it("on success with ?next=/admin/, redirects there (regression: cookie must travel)", async () => {
+    // The original bug: router.replace("/admin/") fired but didn't actually
+    // navigate the browser in static export mode, so the freshly-set
+    // idun_session cookie never reached /admin/ and the user stayed
+    // looking at the (already-submitted) sign-in form.
+    useSearchParamsMock.mockReturnValue(new URLSearchParams("next=/admin/"));
+    (api.login as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ ok: true });
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText(/admin password/i), {
+      target: { value: "hunter2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    await waitFor(() =>
+      expect(locationReplace).toHaveBeenCalledWith("/admin/"),
+    );
   });
 
   it("on 401, fires toast.error and does not redirect", async () => {
@@ -77,7 +126,7 @@ describe("LoginPage", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(replace).not.toHaveBeenCalled();
+    expect(locationReplace).not.toHaveBeenCalled();
   });
 
   it("rejects unsafe ?next= values and falls back to /", async () => {
@@ -90,7 +139,7 @@ describe("LoginPage", () => {
       target: { value: "hunter2" },
     });
     fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(locationReplace).toHaveBeenCalledWith("/"));
   });
 
   it("rejects protocol-relative ?next= values", async () => {
@@ -103,7 +152,7 @@ describe("LoginPage", () => {
       target: { value: "hunter2" },
     });
     fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(locationReplace).toHaveBeenCalledWith("/"));
   });
 
   describe("when runtime config is missing entirely", () => {
@@ -118,7 +167,7 @@ describe("LoginPage", () => {
     it("renders the sign-in form (no auto-redirect)", () => {
       render(<LoginPage />);
       expect(screen.getByLabelText(/admin password/i)).toBeInTheDocument();
-      expect(replace).not.toHaveBeenCalled();
+      expect(locationReplace).not.toHaveBeenCalled();
     });
   });
 
@@ -139,7 +188,7 @@ describe("LoginPage", () => {
 
     it("redirects to / on mount", async () => {
       render(<LoginPage />);
-      await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
+      await waitFor(() => expect(locationReplace).toHaveBeenCalledWith("/"));
     });
 
     it("honors ?next=/admin/ when the form would have redirected there", async () => {
@@ -147,7 +196,9 @@ describe("LoginPage", () => {
         new URLSearchParams("next=/admin/"),
       );
       render(<LoginPage />);
-      await waitFor(() => expect(replace).toHaveBeenCalledWith("/admin/"));
+      await waitFor(() =>
+        expect(locationReplace).toHaveBeenCalledWith("/admin/"),
+      );
     });
 
     it("falls back to / for unsafe ?next= values", async () => {
@@ -155,7 +206,7 @@ describe("LoginPage", () => {
         new URLSearchParams("next=https://evil.com"),
       );
       render(<LoginPage />);
-      await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
+      await waitFor(() => expect(locationReplace).toHaveBeenCalledWith("/"));
     });
 
     it("rejects ?next=/login to avoid an infinite redirect loop (CR-1)", async () => {
@@ -163,7 +214,7 @@ describe("LoginPage", () => {
         new URLSearchParams("next=/login"),
       );
       render(<LoginPage />);
-      await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
+      await waitFor(() => expect(locationReplace).toHaveBeenCalledWith("/"));
     });
 
     it("rejects ?next=/login/ (trailing slash) to avoid loops", async () => {
@@ -171,7 +222,7 @@ describe("LoginPage", () => {
         new URLSearchParams("next=/login/"),
       );
       render(<LoginPage />);
-      await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
+      await waitFor(() => expect(locationReplace).toHaveBeenCalledWith("/"));
     });
   });
 });

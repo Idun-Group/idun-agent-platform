@@ -1,6 +1,6 @@
 [project]
 name = "idun-agent-engine"
-version = "0.6.1"
+version = "0.6.2"
 description = "Python SDK and runtime to serve AI agents with FastAPI, LangGraph, and observability."
 authors = [{ name = "Idun Group", email = "h.geoffrey@idun-group.com" }]
 requires-python = ">=3.12,<3.13"
