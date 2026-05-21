@@ -6,6 +6,25 @@ All notable changes to `idun-agent-standalone` are documented here. This package
 
 _No unreleased changes yet._
 
+## 0.6.2 — 2026-05-21
+
+Patch release. Fixes a cluster of SPA-navigation bugs in the standalone admin UI under Next.js 15 `output: "export"` + FastAPI SPA-rewrite, where soft client-side navigation and cookie handling do not behave as they would in a standard server-rendered Next.js app.
+
+### Fixed
+
+- **AuthGuard `?next=` preservation.** `api.me()` returns `200 {authenticated:false}` under password mode, so the global 401 redirect in `lib/api/client.ts` does not fire for the `me()` probe itself. AuthGuard's redirect now builds `?next=<current path>` so login round-trips back to the admin page the operator tried to reach instead of defaulting to `/` (chat) (#682).
+- **Hard-nav after login.** Replaced `router.replace` with `window.location.replace` on the login form's success path. Soft cross-route navigation under `output:"export" + trailingSlash:true` is not reliable; the hard nav also forces the next request to reissue with the freshly-set session cookie (#682).
+- **Trace detail data fetch on soft nav.** `TraceDetailClient` previously resolved the trace id via `useMemo(readLocation, [])`. The empty deps captured the previous page's pathname on `<Link>` clicks because React commits the new tree before Next.js flushes `history.pushState`. `traceId` resolved to `""`, `useQuery` was disabled, page rendered "No spans recorded" until refresh. Switched to the reactive `usePathname()` hook (#682).
+- **Sidebar Traces hard-nav.** Soft nav to `/admin/traces/` from another admin page sometimes mounted the sibling `[traceId]` component at the list URL (Next.js router cache + `dynamicParams:false` collision). Sidebar Traces link now uses `window.location.assign` (#682).
+- **Post-delete hard-nav.** The delete mutation's `onSuccess` now uses `window.location.assign("/admin/traces/")` instead of `router.push("/admin/traces")` — same router-cache collision the sidebar workaround addresses, but immediately after a destructive action where landing on a stale shell would be the worst UX (#682).
+- **`goBackToList` no-history fallback.** Same hard-nav treatment as the delete-success path for the error-screen back-to-list fallback (#682).
+
+### Tests
+
+- New `__tests__/admin/AuthGuard.test.tsx` covering authenticated / unauthenticated / loading / loading-to-resolved / hash-drop / query-string preservation (#682).
+- New `__tests__/traces/readTraceIdFromPathname.test.ts` for the now-exported pure resolver (#682).
+- Repaired `__tests__/traces/detail-page.test.tsx` and `__tests__/traces/detail-page-url-parser.test.tsx` to mock `usePathname` and stub `window.location.assign` (#682).
+
 ## 0.6.1 — 2026-05-20
 
 Patch release. Fixes the password-mode chat surface that the v0.6.0 hardening accidentally locked behind `/login`, and propagates a stable per-session `user_id` end-to-end so chat history and traces can be scoped per user when the standalone UI runs under password auth without a full OIDC ladder.
