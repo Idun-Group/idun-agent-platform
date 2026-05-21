@@ -6,6 +6,10 @@ All notable changes to `idun-agent-engine` are documented here. This project fol
 
 _No unreleased changes yet._
 
+## 0.6.2 — 2026-05-21
+
+Patch release. No engine code changes. Ships the bundled `idun-agent-standalone` UI at 0.6.2, which fixes a cluster of SPA-navigation bugs in the admin surface under Next.js 15 `output: "export"` (AuthGuard `?next=` preservation, post-login hard-nav, trace detail soft-nav resolution, sidebar Traces + post-delete hard-nav). See `libs/idun_agent_standalone/CHANGELOG.md` for the full list (#682).
+
 ## 0.6.1 — 2026-05-20
 
 Patch release. The engine now accepts a per-request `X-Idun-User-Id` header and binds it to a `current_user_id` ContextVar that adapter code (and the standalone trace writer) read at the start of every `/agent/*` invocation, so chat history and traces can be scoped per user when the standalone UI runs under password auth without a full OIDC ladder. Pairs with the standalone changes in `0.6.1` that open the chat shell under password mode.

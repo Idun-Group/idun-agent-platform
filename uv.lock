@@ -1709,7 +1709,7 @@ wheels = [
 
 [[package]]
 name = "idun-agent-engine"
-version = "0.6.1"
+version = "0.6.2"
 source = { editable = "libs/idun_agent_engine" }
 dependencies = [
     { name = "ag-ui-adk" },
@@ -1873,7 +1873,7 @@ dev = [
 
 [[package]]
 name = "idun-agent-schema"
-version = "0.6.1"
+version = "0.6.2"
 source = { editable = "libs/idun_agent_schema" }
 dependencies = [
     { name = "jinja2" },
@@ -1890,7 +1890,7 @@ requires-dist = [
 
 [[package]]
 name = "idun-agent-standalone"
-version = "0.6.1"
+version = "0.6.2"
 source = { editable = "libs/idun_agent_standalone" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1941,7 +1941,7 @@ requires-dist = [
 
 [[package]]
 name = "idun-engine"
-version = "0.6.1"
+version = "0.6.2"
 source = { virtual = "." }
 dependencies = [
     { name = "idun-agent-engine" },
