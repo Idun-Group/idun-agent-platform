@@ -76,7 +76,7 @@ Each event is a JSON line; pipe through `jq` to follow the run. Drill into [`POS
 
 ## Spec source
 
-This reference reflects a snapshot of `GET /openapi.json` from a running standalone. On every release we re-export the spec to `docs/standalone/openapi.json`; the API pages regenerate automatically.
+This reference reflects a snapshot of `GET /openapi.json` from a running standalone. To refresh the spec before a release, run `curl -sS http://localhost:8000/openapi.json > docs/standalone/openapi.json` and commit the result; the API pages regenerate automatically on the next deploy.
 
 <Card title="Standalone overview" icon="server" horizontal href="/standalone/overview">
   How the standalone wraps the engine, what ships in the wheel, when to use it.
