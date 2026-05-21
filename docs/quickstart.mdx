@@ -49,6 +49,10 @@ boost: 3
     ```
     Runs Alembic migrations, seeds the database from `config.yaml`, and starts uvicorn at `http://localhost:8000`.
 
+    <Warning>
+      `config.yaml` is a **one-shot bootstrap**, not a runtime config file. Each resource (agent, MCP servers, guardrails, observability, …) is seeded into the DB only if the corresponding row is empty. After the first boot the admin panel at `/admin/` becomes the source of truth, and later edits to `config.yaml` are ignored. To re-seed from YAML, clear the relevant rows from the DB (or delete `idun_standalone.db` for a clean restart) and run `idun setup` again.
+    </Warning>
+
     <Frame>
       <img alt="Admin landing page" src="/images/readme/dashboard.png" />
     </Frame>

@@ -86,7 +86,39 @@ For evaluation and local development, use the standalone launcher:
 idun init
 ```
 
-`idun init` runs Alembic migrations, seeds the DB from your `config.yaml`, opens your browser, and serves on `http://localhost:8000`. Subsequent boots only need:
+`idun init` runs Alembic migrations, seeds the DB from your `config.yaml`, opens your browser, and serves on `http://localhost:8000`.
+
+### Skipping Step 1: let the wizard find your agent
+
+If you'd rather not hand-write `config.yaml`, `idun init` ships with an onboarding scanner that walks the current folder and offers any LangGraph or Google ADK agents it finds. Drop into an existing repo, run `idun init`, and the wizard surfaces the detected agents so you can pick one without touching YAML.
+
+The scanner (`libs/idun_agent_standalone/src/idun_agent_standalone/services/scanner.py`) looks at three sources, in order of confidence:
+
+| Source | Confidence | What it parses |
+|---|---|---|
+| `config.yaml` or `config.yml` at depth 0 to 2 | HIGH | Reads `agent.type` and either `graph_definition` (LangGraph) or `agent` (ADK). |
+| `langgraph.json` at the root | HIGH | One detection per entry in the `graphs` dict. |
+| `.py` source files, depth up to 4 | MEDIUM | Regex pre-filter for `langgraph`, `deepagents`, or `google.adk` imports, then AST analysis. |
+
+From Python source, the AST pass recognizes:
+
+- `StateGraph(...)` and `<g>.compile()` where `<g>` is a known `StateGraph` binding
+- Factory calls: `create_react_agent` (from `langgraph.prebuilt`) and `create_deep_agent` (from `deepagents`)
+- Same-module builder functions that return a LangGraph (the common `graph = _build()` idiom)
+- ADK agent classes: `Agent`, `LlmAgent`, `SequentialAgent`, `ParallelAgent`, `LoopAgent`
+
+A few limits worth knowing:
+
+- The walker stops at depth 4 and skips standard junk directories (`.git`, `__pycache__`, `node_modules`, `.venv`, `venv`, `env`, `dist`, `build`, `target`, plus any dot-folder).
+- Files over 1 MB are skipped to keep the scan fast.
+- Symlinks are not followed.
+- Parse errors (broken YAML, syntax errors in a `.py` file) are silently skipped; the scan never fails on malformed input.
+
+When multiple sources point at the same `(file_path, variable_name)`, the highest-confidence detection wins, so a YAML or `langgraph.json` entry always beats a source-only match for the same target.
+
+The wizard then runs a 6-rule cascade to pick a display name: `config.name`, then the `langgraph.json` graph key, then `pyproject.toml`'s `project.name`, then the parent directory (skipping `src`), then the filename with a trailing `_agent` stripped, and finally `My Agent` as a fallback.
+
+Subsequent boots only need:
 
 ```bash
 idun serve

@@ -6,6 +6,17 @@ keywords: ["CLI", "command line", "idun", "idun init", "idun serve", "idun setup
 
 `idun` is the single console script installed by `pip install idun-agent-engine`. It covers the full lifecycle: scaffold a project, serve the standalone, run engine-only, hash a password, pre-stage migrations.
 
+## Verbs at a glance
+
+| Verb | Migrates schema | Seeds from `config.yaml` | Serves uvicorn | Notes |
+|---|---|---|---|---|
+| `idun init` | yes | yes (only if rows missing) | yes | First-run bootstrap. Opens the browser to the wizard if no agent row exists yet. Idempotent, so re-running is safe. |
+| `idun setup` | yes | yes (only if rows missing) | no | Use to pre-stage the DB during a deploy, or to re-run the seeder after wiping rows. |
+| `idun serve` | no | no | yes | Steady-state startup. DB is treated as source of truth; `config.yaml` is not consulted. |
+| `idun agent serve` | n/a | n/a | yes | Engine-only mode. No DB, no admin surface; just the engine routes. |
+
+The seeder writes a row only if the corresponding table is empty. To re-seed after `config.yaml` changes, clear the row first (or delete `idun_standalone.db` for a full reset) and re-run `idun setup`. See [Troubleshooting](/troubleshooting) for the full re-seed recipe.
+
 ## Common flows
 
 <CodeGroup>
