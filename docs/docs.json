@@ -206,6 +206,21 @@
         ]
       },
       {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "icon": "compass",
+            "pages": ["api-reference/introduction"]
+          },
+          {
+            "group": "Standalone",
+            "icon": "server",
+            "openapi": "standalone/openapi.json"
+          }
+        ]
+      },
+      {
         "tab": "Enterprise",
         "groups": [
           {

@@ -23,7 +23,7 @@ Self-hosted. Open source. No vendor lock-in.
 
 <br/>
 
-[Cloud](https://cloud.idunplatform.com) · [Quickstart](https://docs.idun-group.com/quickstart) · [Docs](https://docs.idun-group.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Book a demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
+[Cloud](https://cloud.idunplatform.com) · [Try the demos](https://idun-group.com/demo) · [Quickstart](https://docs.idun-group.com/quickstart) · [Docs](https://docs.idun-group.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Book a demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
 
 ⭐ If you find this useful, please star the repo. It helps others discover the project.
 
