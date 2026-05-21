@@ -15,16 +15,18 @@ import * as tracesApi from "@/lib/api/traces";
  * ``dynamicParams: false`` and one materialised placeholder
  * (``__trace__``), ``useParams()`` returns the build-time placeholder
  * for every dynamic URL hit at runtime. The real trace id only lives
- * on ``window.location.pathname``. ``readTraceIdFromLocation`` is the
- * fix; this file pins its behaviour against drift.
+ * on the pathname. ``readTraceIdFromPathname`` is the fix; this file
+ * pins its integration with ``TraceDetailClient`` against drift.
  *
- * The function itself is module-private — it is exercised through the
- * component (``TraceDetailClient``) by:
+ * The pure function is unit-tested in
+ * ``readTraceIdFromPathname.test.ts``. This file exercises the
+ * end-to-end resolver chain inside ``TraceDetailClient`` by:
  *
  *   1. configuring ``useParams`` to return the placeholder (the real
- *      runtime shape under static export), and
- *   2. setting ``window.location.pathname`` to the deep link the user
- *      lands on.
+ *      runtime shape under static export),
+ *   2. configuring ``usePathname`` to mirror ``window.location.pathname``
+ *      (so the legacy ``setPath()`` helper still drives the test), and
+ *   3. setting the pathname to the deep link the user lands on.
  *
  * Each test asserts what id ``getTrace`` is invoked with — that is the
  * single observable that decides whether the user sees their real
@@ -38,6 +40,13 @@ const mockUseParams = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useParams: () => mockUseParams(),
+  // Read from ``window.location.pathname`` so the legacy ``setPath()``
+  // helper below continues to drive the component without per-test
+  // mock-return-value wiring. ``usePathname`` is non-reactive here
+  // (no listener) — that's fine because each test calls ``setPath``
+  // before ``render``, so the first paint already reads the right path.
+  usePathname: () =>
+    typeof window !== "undefined" ? window.location.pathname : "",
   useRouter: () => ({
     push: vi.fn(),
     replace: vi.fn(),

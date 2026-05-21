@@ -106,8 +106,17 @@ const replaceMock = vi.fn((url: string) => {
   setSearchParams(qs);
 });
 
+// `usePathname` is read by the production component to resolve the
+// trace id reactively under `output: "export"` + `dynamicParams:false`
+// (see TraceDetailClient comment). We stub a fixed detail-page path
+// so the resolver returns the canonical TRACE_ID in every test.
+const pathnameMock = vi.fn<() => string>(
+  () => `/admin/traces/${TRACE_ID}`,
+);
+
 vi.mock("next/navigation", () => ({
   useParams: () => ({ traceId: TRACE_ID }),
+  usePathname: () => pathnameMock(),
   useRouter: () => ({
     push: pushMock,
     replace: replaceMock,
@@ -151,6 +160,13 @@ function withQuery(children: ReactNode) {
 }
 
 describe("TraceDetailPage", () => {
+  // Captures `window.location.assign` calls — the production code
+  // hard-navs to `/admin/traces/` on delete-success and on the
+  // `goBackToList` no-history fallback to dodge the static-export
+  // router-cache collision documented in TraceDetailClient.
+  const locationAssign = vi.fn();
+  let restoreLocation: (() => void) | null = null;
+
   beforeEach(() => {
     // Use mockClear(), not mockReset(). mockReset() drops the
     // implementation we registered in `vi.fn(impl)`, which means
@@ -161,10 +177,37 @@ describe("TraceDetailPage", () => {
     pushMock.mockClear();
     replaceMock.mockClear();
     backMock.mockClear();
+    pathnameMock.mockClear();
+    pathnameMock.mockImplementation(() => `/admin/traces/${TRACE_ID}`);
+    locationAssign.mockReset();
     setSearchParams("");
+
+    // jsdom marks `Location.prototype.assign` as non-configurable, so
+    // we swap the whole `location` (which IS configurable on `window`)
+    // for a stub that captures the navigation. Mirrors the pattern in
+    // __tests__/login.test.tsx.
+    const originalLocation = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        href: originalLocation.href,
+        assign: locationAssign,
+        replace: vi.fn(),
+        reload: vi.fn(),
+      },
+    });
+    restoreLocation = () => {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: originalLocation,
+      });
+    };
   });
 
   afterEach(() => {
+    restoreLocation?.();
+    restoreLocation = null;
     vi.restoreAllMocks();
   });
 
@@ -305,9 +348,12 @@ describe("TraceDetailPage", () => {
     await waitFor(() => {
       expect(deleteSpy).toHaveBeenCalledWith(TRACE_ID);
     });
+    // Hard nav (window.location.assign) — see comment on the
+    // delete-success path in TraceDetailClient for the rationale.
     await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith("/admin/traces");
+      expect(locationAssign).toHaveBeenCalledWith("/admin/traces/");
     });
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   // ── P3 Sub-A coverage ────────────────────────────────────────────────

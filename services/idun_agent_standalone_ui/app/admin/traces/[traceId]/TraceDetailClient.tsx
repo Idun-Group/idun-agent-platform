@@ -330,7 +330,13 @@ export default function TraceDetailClient() {
           result.deletedSpans === 1 ? "" : "s"
         } removed)`,
       );
-      router.push("/admin/traces");
+      // Hard nav, mirroring the AppSidebar Traces workaround: a soft
+      // `router.push("/admin/traces")` under `output: "export"` +
+      // `dynamicParams: false` can mount the sibling `[traceId]` route
+      // at the list URL, leaving the operator on "No spans recorded"
+      // until refresh — especially confusing immediately after a
+      // destructive action.
+      window.location.assign("/admin/traces/");
     },
     onError: (err) => {
       const detail =
@@ -357,7 +363,8 @@ export default function TraceDetailClient() {
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
     } else {
-      router.push("/admin/traces");
+      // Hard nav for the same reason as the delete-success path above.
+      window.location.assign("/admin/traces/");
     }
   }, [router]);
 
