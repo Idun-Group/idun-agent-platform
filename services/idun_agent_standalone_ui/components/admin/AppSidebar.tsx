@@ -42,6 +42,14 @@ type NavItem = {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   external?: boolean;
+  // Render as a plain ``<a>`` and force a hard browser navigation via
+  // ``window.location.assign``. Use only when Next.js's client-side
+  // router resolves the target URL incorrectly under ``output: "export"``
+  // — e.g. ``/admin/traces/`` soft-navs sometimes mount the sibling
+  // ``[traceId]`` route component instead of the explicit list page.
+  // Follow-up: collide-free rename of the dynamic route (singular
+  // ``/admin/trace/[traceId]/``) would let us drop this workaround.
+  hardNav?: boolean;
 };
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -50,7 +58,7 @@ const NAV: NavGroup[] = [
     label: "Overview",
     items: [
       { href: "/admin/", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/admin/traces/", label: "Traces", icon: Activity },
+      { href: "/admin/traces/", label: "Traces", icon: Activity, hardNav: true },
     ],
   },
   {
@@ -170,6 +178,21 @@ export function AppSidebar() {
                             className="ml-auto h-3 w-3 opacity-60"
                             aria-hidden="true"
                           />
+                        </a>
+                      ) : item.hardNav ? (
+                        <a
+                          href={item.href}
+                          // Plain-click forces a hard nav. Cmd+Click /
+                          // middle-click bypass ``onClick`` and use the
+                          // ``href`` directly, which is the intended
+                          // behavior (new tab also gets a hard nav).
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.location.assign(item.href);
+                          }}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.label}</span>
                         </a>
                       ) : (
                         <Link href={item.href}>

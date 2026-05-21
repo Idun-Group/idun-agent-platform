@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ApiError, api } from "@/lib/api";
@@ -26,7 +26,6 @@ function pickPostLoginPath(raw: string): string {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -45,8 +44,9 @@ function LoginForm() {
   useEffect(() => {
     if (!authDisabled) return;
     const raw = params?.get("next") ?? "/";
-    router.replace(pickPostLoginPath(raw));
-  }, [authDisabled, params, router]);
+    // Same reason as the post-submit branch below — see comment there.
+    window.location.replace(pickPostLoginPath(raw));
+  }, [authDisabled, params]);
   if (authDisabled) return null;
 
   return (
@@ -73,7 +73,12 @@ function LoginForm() {
                 duration_ms: Math.round(performance.now() - startedAt),
               });
               const raw = params?.get("next") ?? "/";
-              router.replace(pickPostLoginPath(raw));
+              // Hard-navigate. router.replace doesn't reliably navigate
+              // cross-route in Next.js App Router static exports with
+              // trailingSlash:true; window.location.replace also forces
+              // the browser to re-issue the request with the freshly-set
+              // session cookie attached.
+              window.location.replace(pickPostLoginPath(raw));
             } catch (err) {
               const status = err instanceof ApiError ? err.status : 0;
               void capture(Events.AUTH_LOGIN_FAILURE, {
