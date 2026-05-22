@@ -1,0 +1,28 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: "sso-langgraph"
+    graph_definition: "./agent.py:graph"
+    checkpointer:
+      type: sqlite
+      db_url: "sqlite:///conversations.db"
+
+# Google Workspace OIDC. Every request to /agent/* requires a valid JWT
+# from this issuer; tokens are validated against the JWKS endpoint
+# discovered via {issuer}/.well-known/openid-configuration.
+#
+# Replace the issuer / client_id / audience with values from your own
+# OIDC provider (Microsoft Entra, Okta, Auth0, custom OIDC).
+sso:
+  enabled: true
+  issuer: "https://accounts.google.com"
+  client_id: "REPLACE_WITH_YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com"
+  audience: "REPLACE_WITH_YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com"
+  allowed_domains:
+    - "example.com"
+  allowed_emails:
+    - "auditor@partner.example"

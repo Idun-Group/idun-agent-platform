@@ -1,0 +1,15 @@
+[project]
+name = "idun-tutorial-deep-search"
+version = "0.1.0"
+description = "Multi-agent research assistant (plan, research, evaluate, refine, compose) based on the Google ADK samples, served by Idun Engine."
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "idun-agent-engine>=0.6.2",
+    "google-adk>=1.8.0",
+    "python-dotenv>=1.0",
+]
+
+[tool.uv]
+package = false

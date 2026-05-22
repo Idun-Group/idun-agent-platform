@@ -14,6 +14,16 @@ __pycache__/
 libs/idun_agent_standalone/src/idun_agent_standalone/static/*
 !libs/idun_agent_standalone/src/idun_agent_standalone/static/.gitkeep
 
+# Example runtime artifacts (per-example .env, SQLite dbs, lock files,
+# WAL/SHM journals, virtualenvs). Each example has its own pyproject.toml;
+# its lock file and venv are reproducible, no value in committing.
+examples/**/.env
+examples/**/.venv/
+examples/**/uv.lock
+examples/**/*.db
+examples/**/*.db-shm
+examples/**/*.db-wal
+
 
 
 .python-version
