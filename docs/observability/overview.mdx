@@ -91,6 +91,43 @@ When you attach an observability configuration to an agent, the platform automat
   </Tab>
 </Tabs>
 
+## Probing the connection programmatically
+
+The configured observability provider can be smoke-tested without going through the admin UI. `POST /admin/api/v1/observability/check-connection` runs the same probe the admin Test-connection button uses and returns a `StandaloneConnectionCheck`:
+
+```bash
+curl -sX POST http://localhost:8000/admin/api/v1/observability/check-connection \
+  --cookie "$IDUN_SESSION_COOKIE"
+```
+
+Langfuse, Phoenix, and LangSmith providers get an HTTP HEAD (falling back to GET on `>= 400`) against their configured endpoint; success means an HTTP status under 500:
+
+```json
+{
+  "ok": true,
+  "details": { "provider": "LANGFUSE", "host": "https://cloud.langfuse.com", "status": 200 },
+  "error": null
+}
+```
+
+GCP_TRACE and GCP_LOGGING return `ok: true` with a `details.note` flagging that the runtime auth check needs GCP credentials and was not attempted; the probe only validates that `project_id` is set:
+
+```json
+{
+  "ok": true,
+  "details": {
+    "provider": "GCP_TRACE",
+    "projectId": "my-project",
+    "note": "config valid; runtime auth check requires GCP credentials"
+  },
+  "error": null
+}
+```
+
+The probe returns HTTP 404 when no provider is configured. Otherwise every outcome is HTTP 200 with `ok` reflecting reachability, runs under a 5-second timeout, and never raises (`services/connection_checks.py`).
+
+The route is admin-authenticated: under `IDUN_ADMIN_AUTH_MODE=password` you need the session cookie minted by `POST /admin/api/v1/auth/login`. Use this in pre-deploy gates to confirm credentials still resolve before flipping traffic.
+
 ## Next steps
 
 <Card title="Local traces" icon="chart-line" horizontal href="/observability/traces">

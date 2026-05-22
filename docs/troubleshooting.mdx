@@ -115,6 +115,38 @@ This page covers the runtime errors and log messages you are most likely to hit,
     4. Open a trace from `/admin/traces/` and inspect the span tree. The root span name corresponds to your graph's entry node.
   </Accordion>
 
+  <Accordion title="`Could not load spec for module at <X>` from the ADK adapter">
+    **Symptom.** Engine startup fails with:
+
+    ```
+    ImportError: Could not load spec for module at <X>
+    ValueError: Failed to load agent from <X>:<variable>: ...
+    ```
+
+    **Cause.** The ADK adapter (`libs/idun_agent_engine/src/idun_agent_engine/agent/adk/adk.py`) resolves `agent.config.agent` with `importlib.util.spec_from_file_location`, so the value must be a path to a `.py` file. Unlike LangGraph's `graph_definition`, it does **not** fall back to dotted module imports. Values like `my_pkg.agent:root_agent` are interpreted as the literal file `my_pkg.agent`, which doesn't exist, so `spec_from_file_location` returns `None` and the loader raises.
+
+    **Fix.** Rewrite the path in file-path form:
+
+    ```yaml
+    agent:
+      type: ADK
+      config:
+        agent: "./agent.py:root_agent"   # not "agent:root_agent"
+    ```
+
+    Relative paths resolve against the working directory `idun serve` was launched from. Absolute paths also work.
+  </Accordion>
+
+  <Accordion title="`config.yaml` edits don't show up after restart">
+    **Symptom.** You edit `config.yaml` (change a model, add an MCP server, tweak a guardrail), restart with `idun serve` or `idun setup`, and nothing changes in the running agent.
+
+    **Cause.** `config.yaml` is a **one-shot bootstrap**, not a runtime config file. The seeder (`libs/idun_agent_standalone/src/idun_agent_standalone/infrastructure/scripts/seed.py`) runs each `_seed_<resource>_if_empty` helper, and every helper bails when the corresponding row already exists. After the first successful boot, the DB is the source of truth and `config.yaml` is effectively ignored.
+
+    **Fix.** Edit through the admin panel at `/admin/` instead. Saves there flow through the three-round validation + reload pipeline and apply immediately (subject to the `RESTART_REQUIRED` rules under "Reload pipeline outcomes" above).
+
+    If you really want to re-seed from YAML, you need to clear the relevant DB rows first. For a clean restart, stop the server, delete `idun_standalone.db` (or, on Postgres, truncate the seeded tables), then run `idun setup` followed by `idun serve`.
+  </Accordion>
+
   <Accordion title="CLI startup warnings">
     Three deprecation warnings appear on every CLI invocation today:
 

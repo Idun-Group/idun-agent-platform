@@ -36,11 +36,58 @@ The engine exposes these endpoints:
 
 | Endpoint | Method | Purpose |
 |---|---|---|
-| `/health` | GET | Health check |
+| `/health` | GET | Health check; see contract below |
 | `/_engine/info` | GET | Engine introspection (version, capabilities, mounted endpoints) |
+| `/reload` | POST | Engine-only hot-reload entry point. See [Hot reload (engine-only)](#hot-reload-engine-only) below. **Disabled in standalone**: returns HTTP 403; reloads go through `/admin/api/v1/*` instead. |
 | `/agent/run` | POST | AG-UI interaction (SSE streaming) |
+| `/agent/sessions` | GET | List sessions for the live agent |
+| `/agent/sessions/{session_id}` | GET | Inspect a single session |
+| `/agent/graph` | GET | Agent graph in framework-agnostic IR form |
+| `/agent/graph/mermaid` | GET | Same graph rendered as Mermaid source |
+| `/agent/graph/ascii` | GET | Same graph rendered as ASCII art |
 | `/agent/config` | GET | Current agent configuration |
 | `/agent/capabilities` | GET | Agent capability discovery |
+
+`POST /agent/stream` and `POST /agent/copilotkit/stream` are also exposed but deprecated; new clients should use `POST /agent/run`.
+
+#### `/health` response contract
+
+`/health` is meant for load balancers and Kubernetes liveness/readiness probes. The response shape is fixed (`libs/idun_agent_engine/src/idun_agent_engine/server/routers/base.py`):
+
+```json
+{
+  "status": "ok",
+  "service": "idun-agent-engine",
+  "version": "0.6.2",
+  "agent_ready": true,
+  "agent_name": "my-adk-agent"
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `status` | `"ok"` or `"degraded"` | `degraded` whenever no agent is registered: pre-onboarding state, standalone admin-only mode after an assembly error, or engine boot that bailed on a bad config. |
+| `service` | string | Always `idun-agent-engine`. |
+| `version` | string | Engine semver, useful for catching stale rollouts behind a load balancer. |
+| `agent_ready` | bool | `true` only when `/agent/*` will accept requests. |
+| `agent_name` | string or null | Pulled from the loaded agent's config; null when none is loaded. |
+| `reason` | string (optional) | Only present on `degraded` when the standalone's assembly handler captured a boot error; carries the short diagnostic. Field is absent (not `null`) on the happy path. |
+
+For probes, gate readiness on `status == "ok"` (or equivalently `agent_ready == true`). The endpoint is unauthenticated by design so external probes can reach it; this is intentional and called out in [Authentication](/auth/overview).
+
+#### Hot reload (engine-only)
+
+`POST /reload` rebuilds the agent in place from a YAML file the process can read:
+
+```bash
+curl -sX POST http://localhost:8000/reload \
+  -H 'Content-Type: application/json' \
+  -d '{"path": "/etc/idun/config.yaml"}'
+```
+
+Sequence (`server/routers/base.py`): parse the new config, then `cleanup_agent(app)`, then `configure_app(app, new_config)`. If config parsing fails the old agent is still alive (cleanup never ran), so the engine returns HTTP 500 with the upstream error and keeps serving. If `configure_app` fails after cleanup, the engine is left without an agent and `/agent/*` returns 503 `agent_not_ready` until a successful reload or process restart. There is no automatic rollback.
+
+`POST /reload` is **unauthenticated by default**. `create_app(reload_auth=...)` accepts a FastAPI-dependency callable that runs before the handler; raise `HTTPException` from it to reject a request. In the **standalone**, this hook is set to a built-in `reload_disabled` that returns HTTP 403, so `POST /reload` is unusable on the standalone surface. The standalone owns reloads through the validated `/admin/api/v1/*` pipeline (see [Reload pipeline outcomes](/troubleshooting#reload-pipeline-outcomes)). The endpoint is therefore a knob for engine-only deployments (`idun agent serve --source file`).
 
 [Learn more about supported frameworks](/frameworks/overview)
 

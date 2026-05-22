@@ -1,0 +1,83 @@
+---
+title: "Introduction"
+description: "HTTP API of every idun-agent-standalone deployment. 42 endpoints, rendered from a snapshot of the live FastAPI app's OpenAPI spec."
+keywords: ["api", "rest", "openapi", "standalone", "endpoints", "reference"]
+boost: 2
+---
+
+Every `idun-agent-standalone` deployment exposes the same HTTP API. This reference is rendered from a snapshot of the live FastAPI app's OpenAPI spec (refreshed manually on releases — see [Spec source](#spec-source) below), so every shape on every page matches what the server returns at that snapshot.
+
+## Authentication
+
+The auth model is pinned at boot via `IDUN_ADMIN_AUTH_MODE`. Pick the row that matches your deployment.
+
+<CardGroup cols={3}>
+  <Card title="None" icon="lock-open">
+    Default for local dev. Every endpoint is open. No header, no cookie, no token.
+  </Card>
+  <Card title="Password" icon="key-round">
+    Admin endpoints need a signed session cookie. Set it with `POST /admin/api/v1/auth/login`. Runtime stays open.
+  </Card>
+  <Card title="SSO" icon="shield-check">
+    Admin and runtime accept an OIDC Bearer token. Runtime falls back to `X-Idun-User-Id` for trace scoping.
+  </Card>
+</CardGroup>
+
+<Info>
+Full setup, claim mapping, and edge cases on the [auth overview](/auth/overview).
+</Info>
+
+## Surfaces
+
+The 42 endpoints group into seven surfaces. Pick one from the left sidebar.
+
+<CardGroup cols={2}>
+  <Card title="Runtime" icon="bolt">
+    The chat surface. `POST /agent/run` (AG-UI streaming), session listing, graph introspection, health.
+  </Card>
+  <Card title="Agent configuration" icon="settings">
+    CRUD on the live agent config: model, prompts, tools. Writes hot-reload the engine.
+  </Card>
+  <Card title="Auth & SSO" icon="user-cog">
+    Password login and logout, OIDC provider config, `GET /auth/me`.
+  </Card>
+  <Card title="Dashboard" icon="layout-dashboard">
+    Aggregated counters and traffic series sourced from the local trace store.
+  </Card>
+  <Card title="Integrations & tools" icon="plug">
+    MCP servers, prompts, guardrails, integrations. Everything a tool needs to be reachable from the agent.
+  </Card>
+  <Card title="Observability" icon="chart-line">
+    Wire and unwire external exporters: Phoenix, Langfuse, OTel collectors.
+  </Card>
+  <Card title="Traces" icon="activity">
+    Read, filter, and delete locally-captured traces and spans.
+  </Card>
+</CardGroup>
+
+## A first call
+
+The shortest "hello world": stream a single message through the AG-UI protocol.
+
+```bash
+curl -N -X POST http://localhost:8000/agent/run \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "threadId": "demo-thread",
+    "runId": "demo-run",
+    "messages": [
+      { "role": "user", "content": "Say hello in one sentence." }
+    ]
+  }'
+```
+
+Each event is a JSON line; pipe through `jq` to follow the run. Drill into [`POST /agent/run`](/api-reference/runtime/run) on the left for the full event vocabulary.
+
+## Spec source
+
+This reference reflects a snapshot of `GET /openapi.json` from a running standalone. To refresh the spec before a release, run `curl -sS http://localhost:8000/openapi.json > docs/standalone/openapi.json` and commit the result; the API pages regenerate automatically on the next deploy.
+
+<Card title="Standalone overview" icon="server" horizontal href="/standalone/overview">
+  How the standalone wraps the engine, what ships in the wheel, when to use it.
+</Card>
