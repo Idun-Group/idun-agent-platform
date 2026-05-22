@@ -18,43 +18,65 @@ boost: 3
 <Steps>
   <Step title="Install">
     ```bash
-    pip install idun-agent-engine
+    pip install idun-agent-engine langgraph langchain-google-genai
     ```
-    Installs the standalone package plus its dependencies (engine, FastAPI, Next.js static UI, AG-UI client).
   </Step>
 
-  <Step title="Initialize a new agent project">
+  <Step title="agent.py">
+    ```python agent.py
+    from typing import Annotated, TypedDict
+
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langgraph.graph import StateGraph, START, END
+    from langgraph.graph.message import add_messages
+
+
+    class State(TypedDict):
+        messages: Annotated[list, add_messages]
+
+
+    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+
+
+    def chatbot(state: State):
+        return {"messages": [llm.invoke(state["messages"])]}
+
+
+    graph = StateGraph(State)
+    graph.add_node("chatbot", chatbot)
+    graph.add_edge(START, "chatbot")
+    graph.add_edge("chatbot", END)
+    ```
+  </Step>
+
+  <Step title="config.yaml">
+    ```yaml config.yaml
+    server:
+      api:
+        port: 8000
+
+    agent:
+      type: LANGGRAPH
+      config:
+        name: "my-agent"
+        graph_definition: "./agent.py:graph"
+        checkpointer:
+          type: sqlite
+          db_url: "sqlite:///conversations.db"
+    ```
+  </Step>
+
+  <Step title="Run">
+    Put `GEMINI_API_KEY=...` in a `.env` next to the files above. Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+
     ```bash
-    mkdir my-agent && cd my-agent
     idun init
     ```
-    `idun init` runs DB migrations and opens your browser at `http://localhost:8000/`. The onboarding wizard scaffolds:
-    - `agent.py` (a minimal LangGraph agent template)
-    - `config.yaml` (engine + standalone config)
-    - `.env.example` (environment variables stub)
 
-    <Tip>
-      See the [supported agent frameworks](/frameworks/overview) to pick LangGraph, Google ADK, or Deep Agents.
-    </Tip>
-  </Step>
-
-  <Step title="Configure">
-    Copy the env stub and add your LLM key:
-    ```bash
-    cp .env.example .env
-    # Edit .env: set OPENAI_API_KEY (or your provider's key)
-    ```
-    Optionally review `config.yaml` to wire observability, guardrails, or MCP servers. The defaults work out of the box.
-  </Step>
-
-  <Step title="Serve">
-    ```bash
-    idun serve
-    ```
-    Runs Alembic migrations, seeds the database from `config.yaml`, and starts uvicorn at `http://localhost:8000`.
+    Runs Alembic migrations, seeds the database from `config.yaml`, and boots the server at `http://localhost:8000`. Use `idun init --port 8080` to bind a different port (overrides the `IDUN_PORT` env var; default is 8000).
 
     <Warning>
-      `config.yaml` is a **one-shot bootstrap**, not a runtime config file. Each resource (agent, MCP servers, guardrails, observability, …) is seeded into the DB only if the corresponding row is empty. After the first boot the admin panel at `/admin/` becomes the source of truth, and later edits to `config.yaml` are ignored. To re-seed from YAML, clear the relevant rows from the DB (or delete `idun_standalone.db` for a clean restart) and run `idun setup` again.
+      `config.yaml` is a **one-shot bootstrap**, not a runtime config file. Each resource (agent, MCP servers, guardrails, observability, …) is seeded into the DB only if the corresponding row is empty. After the first boot the admin panel at `/admin/` becomes the source of truth, and later edits to `config.yaml` are ignored. To re-seed from YAML, clear the relevant rows from the DB (or delete `idun_standalone.db` for a clean restart) and run `idun init` again.
     </Warning>
 
     <Frame>
@@ -71,7 +93,7 @@ boost: 3
   </Step>
 
   <Step title="Explore the admin">
-    Open [http://localhost:8000/admin](http://localhost:8000/admin). View your agent's config, attach guardrails, register MCP tools, and inspect traces, all without redeploying.
+    Open [http://localhost:8000/admin](http://localhost:8000/admin). Configure MCP servers, managed prompts, observability, messaging integrations, and SSO, all without redeploying.
 
     <Frame>
       <img alt="Agent detail" src="/images/readme/agent-detail.png" />
@@ -125,7 +147,7 @@ To switch:
   </Step>
   <Step title="Restart the standalone runtime">
     ```bash
-    idun serve
+    idun init
     ```
   </Step>
 </Steps>

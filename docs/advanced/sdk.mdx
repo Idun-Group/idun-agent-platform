@@ -1,0 +1,131 @@
+---
+title: "Engine SDK"
+description: "Drive Idun Engine directly from Python: boot the engine in-process, embed its FastAPI app into an existing service, or build configs programmatically with ConfigBuilder."
+keywords: ["SDK", "embed", "FastAPI", "run_server_from_config", "create_app", "ConfigBuilder", "programmatic", "Python", "advanced"]
+boost: 1
+---
+
+The standalone runtime is the recommended way to ship an Idun agent (chat UI, admin panel, traces viewer, hot reload, SSO, all in one process). When you already have a FastAPI service and just want the engine's agent routes inside it, or when you want to boot the engine from Python without `idun init`, drop down to the SDK below.
+
+## Public API
+
+`idun_agent_engine` exports its surface from the package root:
+
+```python
+from idun_agent_engine import (
+    create_app,                  # build a FastAPI app from config
+    run_server,                  # uvicorn wrapper for that app
+    run_server_from_config,      # load YAML, create_app, run_server
+    run_server_from_builder,     # same, from a ConfigBuilder
+    ConfigBuilder,               # fluent / programmatic config
+    BaseAgent,                   # protocol for custom adapters
+    get_prompt,                  # read managed prompts
+)
+```
+
+Source: [`libs/idun_agent_engine/src/idun_agent_engine/__init__.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/__init__.py).
+
+## Boot the engine from Python
+
+The lowest-friction path is `run_server_from_config`. It loads `config.yaml`, builds the FastAPI app, and starts uvicorn in one call. The port comes from `server.api.port` in the config unless you override.
+
+```python
+from idun_agent_engine import run_server_from_config
+
+run_server_from_config("config.yaml", reload=False, log_level="info")
+```
+
+`run_server_from_config` accepts every kwarg `run_server` does (`host`, `port`, `reload`, `log_level`, `workers`). It blocks until uvicorn exits.
+
+For programmatic configuration, swap the YAML for a `ConfigBuilder`:
+
+```python
+from idun_agent_engine import ConfigBuilder, run_server_from_builder
+
+builder = (
+    ConfigBuilder()
+    .with_langgraph_agent(name="my-agent", graph_definition="agent.py:graph")
+    .with_api_port(8080)
+)
+
+run_server_from_builder(builder, reload=False)
+```
+
+`ConfigBuilder` validates each section as it is added; `.build()` returns a fully validated `EngineConfig` you can also pass directly to `create_app(engine_config=...)`.
+
+## Embed the engine into an existing FastAPI app
+
+`create_app(...)` returns a regular FastAPI instance with the agent routers (`/agent/run`, `/agent/stream`, `/agent/sessions`, `/agent/capabilities`, the deprecated `/agent/invoke`) and the base routes (`/health`, `/reload`, `/_engine/info`, `/openapi.json`) already attached. Mount that into your existing app:
+
+```python
+from fastapi import FastAPI
+from idun_agent_engine import create_app
+
+my_service = FastAPI(title="My existing service")
+
+# Existing routes from your app
+@my_service.get("/billing/usage")
+async def billing_usage():
+    ...
+
+# Build the engine app from a config file (or pass engine_config=).
+idun_app = create_app(config_path="config.yaml")
+
+# Mount the engine under a prefix so its routes don't collide with yours.
+my_service.mount("/idun", idun_app)
+```
+
+After mounting, `POST /idun/agent/run` hits the engine's AG-UI streaming endpoint and `GET /idun/health` returns the engine's health payload. Your own routes at `/billing/*` keep working.
+
+Three things to know when embedding:
+
+1. **CORS.** `create_app` adds wide-open CORS middleware to the engine's app (`allow_origins=["*"]`). Mount it inside a parent that owns CORS for the rest of your surface, otherwise the engine's permissive middleware applies to every embedded route.
+2. **`POST /reload`.** Pass `reload_auth=...` to `create_app` to gate it behind a FastAPI dependency. Without that, the route is unauthenticated. The standalone runtime injects its own `reload_disabled` callable here. Reference: [Architecture / Reload auth](/architecture#reload-auth).
+3. **Lifespan.** The engine ships its own `lifespan` context manager. When you mount it into a parent FastAPI app, FastAPI runs the mounted app's lifespan automatically; you do not need to wire it manually.
+
+## Unconfigured boot
+
+`create_app()` with no config (no `config_path`, no `config_dict`, no `engine_config`, no `./config.yaml` in cwd) boots in unconfigured mode: every route is registered, but `/agent/*` returns `503 agent_not_ready` until you supply a config. Embedders use this to start the process before they know which agent to serve, then call the engine's reload pipeline once the config is ready.
+
+The standalone runtime uses this shape during the first-run wizard.
+
+## Run the server explicitly
+
+When you have an `engine_config` in hand and want full control over the uvicorn lifecycle, build the app first and call `run_server` separately:
+
+```python
+from idun_agent_engine import create_app, run_server, ConfigBuilder
+
+engine_config = ConfigBuilder.load_from_file("config.yaml")
+app = create_app(engine_config=engine_config)
+
+# ... add your own middleware, routes, or dependencies to `app` here ...
+
+run_server(app, host="0.0.0.0", port=8080, workers=4)
+```
+
+`run_server` is a thin wrapper around `uvicorn.run` with sensible defaults. Skip it entirely if you already run uvicorn (or Gunicorn, or Hypercorn) yourself; `create_app` returns a FastAPI you can hand to any ASGI server.
+
+## Source pointers
+
+| Concern | File |
+| --- | --- |
+| Public exports | [`libs/idun_agent_engine/src/idun_agent_engine/__init__.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/__init__.py) |
+| `create_app` | [`core/app_factory.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/core/app_factory.py) |
+| `run_server`, `run_server_from_config`, `run_server_from_builder` | [`core/server_runner.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/core/server_runner.py) |
+| `ConfigBuilder` | [`core/config_builder.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/core/config_builder.py) |
+| Lifespan | [`server/lifespan.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/server/lifespan.py) |
+
+## Next steps
+
+<Card title="Programmatic chat: /agent/run contract" icon="message-square" horizontal href="/guides/programmatic-chat">
+  The HTTP shape the chat UI uses, including AG-UI request body and SSE events.
+</Card>
+
+<Card title="Custom adapter" icon="puzzle" horizontal href="/frameworks/custom-adapter">
+  Implement `BaseAgent` for a framework Idun does not bundle yet.
+</Card>
+
+<Card title="Standalone admin and reload" icon="sliders" horizontal href="/standalone/admin">
+  How the standalone runtime hot-reloads on top of these same primitives.
+</Card>

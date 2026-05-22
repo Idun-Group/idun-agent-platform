@@ -1,0 +1,81 @@
+---
+title: Admin panel and reload pipeline
+description: How the standalone admin panel saves changes, validates them, and hot-reloads the running engine without a process restart.
+keywords: ["admin", "admin panel", "hot reload", "reload pipeline", "standalone admin", "engine reload", "structural change"]
+boost: 2
+---
+
+The admin panel at `/admin/` is the runtime source of truth for an Idun standalone deployment. After first boot, every change a user makes in the UI is staged as a DB write, validated, and applied to the running engine without restarting the process. This page explains that pipeline.
+
+## What lives at `/admin/`
+
+Each section maps to a row in the standalone DB. Saving from the UI hits `/admin/api/v1/*` and triggers the reload pipeline below.
+
+- **Agent**: framework, model, system prompt, graph definition, ADK app name, session/memory services.
+- **MCP servers**: stdio, HTTP, SSE, WebSocket transports and the tools each advertises.
+- **Managed prompts**: versioned prompt rows your agent code reads via `get_prompt(...)`.
+- **Guardrails**: input and output guards from the Guardrails AI hub, validators, or custom validators.
+- **Observability**: Langfuse, LangSmith, Phoenix, GCP Trace.
+- **Integrations**: Slack, Teams, and other messaging surfaces that route through the agent.
+- **SSO and admin users**: when `IDUN_ADMIN_AUTH_MODE=password`, manage the local admin roster and SSO providers.
+- **Theme**: branding for the embedded chat UI.
+
+## Save: the three-round pipeline
+
+When a user clicks **Save** in the admin panel, the standalone runs through three rounds. The pipeline lives in `services/reload.py` and is guarded by a single in-process `asyncio.Lock` so concurrent saves serialize cleanly.
+
+<Steps>
+  <Step title="Round 1: request validation">
+    FastAPI validates the request body against the admin REST schema. A bad shape returns 422 before the handler runs.
+  </Step>
+  <Step title="Round 2: assembly and cross-field validation">
+    The staged DB mutation is assembled into a full `EngineConfig` via `assemble_engine_config(session)`, then re-validated for cross-field rules (e.g. LangGraph requires a checkpointer at request time). On failure the DB is rolled back and the API returns 422 with field-level errors.
+  </Step>
+  <Step title="Round 3: engine reload">
+    The new `EngineConfig` is applied to the live engine via the engine's own lifecycle hooks: `cleanup_agent(app)` tears down the current agent, then `configure_app(app, config)` rebuilds it on the same FastAPI instance. No process restart, no port flap.
+
+    The active prompts snapshot is published just before this step so user code calling `get_prompt(...)` at module import time during `exec_module` sees the new value.
+
+    On failure: the DB mutation is rolled back, the prompts snapshot reverts to the prior value, the reload outcome is recorded as `RELOAD_FAILED` in `runtime_state`, and the API returns 500 with `code: reload_failed`.
+  </Step>
+</Steps>
+
+The reload callable itself lives in `services/engine_reload.py:build_engine_reload_callable`. It also catches the case where a new save introduces a guardrail that fails to install (typically a `hub://` 401 or a missing transitive dep) and surfaces that as a round-three failure rather than letting `configure_app` return success with a silently inactive guardrail.
+
+## When a process restart IS required
+
+Most config changes hot-reload. Two fields make up the "structural slice" that cannot be hot-swapped:
+
+- `agent.type` (framework: LangGraph, ADK, Deep Agents)
+- `agent.config.graph_definition` (LangGraph entry point path)
+
+A save that changes either is committed to the DB but NOT applied to the running engine. The API returns `status: restart_required`, and the admin UI shows a banner reminding the operator to restart. The structural slice is defined in `services/reload.py:_structural_slice`.
+
+Every other field hot-reloads in place: agent name, description, prompts, MCP servers, guardrails, observability providers, messaging integrations, theme.
+
+## Failure isolation
+
+Pre-existing failures from earlier saves do not block new ones. The reload callable tracks the set of currently-failing guardrails and only treats a new save as failed if it INTRODUCES a regression. This keeps the admin usable even when a previously-installed guardrail dep has gone stale.
+
+## Source pointers
+
+| Concern | File |
+| --- | --- |
+| Top-level pipeline | [`libs/idun_agent_standalone/services/reload.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_standalone/services/reload.py) |
+| Engine reload callable | [`libs/idun_agent_standalone/services/engine_reload.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_standalone/services/engine_reload.py) |
+| App composition and runtime gate | [`libs/idun_agent_standalone/src/idun_agent_standalone/app.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_standalone/src/idun_agent_standalone/app.py) |
+| Engine lifecycle hooks | [`libs/idun_agent_engine/src/idun_agent_engine/server/lifespan.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/server/lifespan.py) |
+
+## Next steps
+
+<Card title="CLI reference" icon="terminal" horizontal href="/cli/overview">
+  Every `idun` command, what it does, and its flags.
+</Card>
+
+<Card title="Cloud Run deployment" icon="cloud" horizontal href="/standalone/cloud-run">
+  Deploy the standalone to Google Cloud Run.
+</Card>
+
+<Card title="Customizing the UI" icon="layers" horizontal href="/standalone/customizing-ui">
+  Theme the chat UI and pick a layout variant.
+</Card>

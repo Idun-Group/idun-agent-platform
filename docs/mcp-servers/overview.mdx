@@ -39,26 +39,7 @@ MCP servers connect to the engine through one of four transport protocols:
 Define MCP servers in your `config.yaml` or through the admin panel:
 
 <Tabs>
-  <Tab title="Admin UI">
-    <Steps>
-      <Step title="Open the MCP admin page">
-        Navigate to `/admin/mcp/` in the running standalone. The catalog at the top groups MCP servers by transport: Streamable HTTP, SSE, WebSocket, and stdio. Existing servers are listed below with their transport, endpoint, and status.
-
-        <Frame><img alt="MCP admin page" src="/images/ui/mcp-overview.png" /></Frame>
-      </Step>
-      <Step title="Add an MCP server">
-        Click the transport card you want and fill in the form: a unique name, the URL (or command and args for stdio), optional headers. The **Enabled** toggle lets you keep a server configured but skipped at startup.
-      </Step>
-      <Step title="Save and verify">
-        Save; the reload pipeline re-instantiates the engine with the new MCP registry. Click the wrench icon next to a server to probe it and list the tools it advertises. The probe doubles as a connection check.
-
-        <Frame><img alt="Tools discovered for the atlassian MCP server" src="/images/ui/mcp-tools-discovery.png" /></Frame>
-      </Step>
-    </Steps>
-
-    Tools are discovered at engine boot and made available to your agent via `get_langchain_tools()` / `get_adk_tools()`.
-  </Tab>
-  <Tab title="YAML config">
+  <Tab title="Config file">
     ```yaml config.yaml
     mcp_servers:
       - name: fetch
@@ -79,6 +60,25 @@ Define MCP servers in your `config.yaml` or through the admin panel:
         headers:
           Authorization: "Bearer ${MCP_API_TOKEN}"
     ```
+
+    Tools are discovered at engine boot and made available to your agent via `get_langchain_tools()` / `get_adk_tools()`.
+  </Tab>
+  <Tab title="Admin UI">
+    <Steps>
+      <Step title="Open the MCP admin page">
+        Navigate to `/admin/mcp/` in the running standalone. The catalog at the top groups MCP servers by transport: Streamable HTTP, SSE, WebSocket, and stdio. Existing servers are listed below with their transport, endpoint, and status.
+
+        <Frame><img alt="MCP admin page" src="/images/ui/mcp-overview.png" /></Frame>
+      </Step>
+      <Step title="Add an MCP server">
+        Click the transport card you want and fill in the form: a unique name, the URL (or command and args for stdio), optional headers. The **Enabled** toggle lets you keep a server configured but skipped at startup.
+      </Step>
+      <Step title="Save and verify">
+        Save; the reload pipeline re-instantiates the engine with the new MCP registry. Click the wrench icon next to a server to probe it and list the tools it advertises. The probe doubles as a connection check.
+
+        <Frame><img alt="Tools discovered for the atlassian MCP server" src="/images/ui/mcp-tools-discovery.png" /></Frame>
+      </Step>
+    </Steps>
   </Tab>
 </Tabs>
 

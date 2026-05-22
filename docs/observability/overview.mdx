@@ -62,18 +62,6 @@ When you attach an observability configuration to an agent, the platform automat
 ## Configuration
 
 <Tabs>
-  <Tab title="Admin UI">
-    <Steps>
-      <Step title="Open the observability admin page">
-        Navigate to `/admin/observability/` in the running standalone. The catalog shows the supported providers: Langfuse, Arize Phoenix, LangSmith, GCP Trace, GCP Logging.
-
-        <Frame><img alt="Observability admin page with Langfuse selected" src="/images/ui/admin-observability-langfuse.png" /></Frame>
-      </Step>
-      <Step title="Add a provider">
-        Click the provider you want and fill in the credentials. The reload pipeline re-instantiates the engine with the new observability config when you save.
-      </Step>
-    </Steps>
-  </Tab>
   <Tab title="Config file">
     Add an `observability` section to your `config.yaml` with the provider and its credentials:
 
@@ -88,6 +76,18 @@ When you attach an observability configuration to an agent, the platform automat
     ```
 
     The `observability` key is a list, and you can attach more than one provider at a time; each entry is lazy-loaded and the engine fans spans out to every enabled provider. See the provider-specific pages for the full list of fields each provider requires.
+  </Tab>
+  <Tab title="Admin UI">
+    <Steps>
+      <Step title="Open the observability admin page">
+        Navigate to `/admin/observability/` in the running standalone. The catalog shows the supported providers: Langfuse, Arize Phoenix, LangSmith, GCP Trace, GCP Logging.
+
+        <Frame><img alt="Observability admin page with Langfuse selected" src="/images/ui/admin-observability-langfuse.png" /></Frame>
+      </Step>
+      <Step title="Add a provider">
+        Click the provider you want and fill in the credentials. The reload pipeline re-instantiates the engine with the new observability config when you save.
+      </Step>
+    </Steps>
   </Tab>
 </Tabs>
 

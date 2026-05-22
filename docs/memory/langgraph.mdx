@@ -6,6 +6,10 @@ keywords: ["LangGraph", "checkpointing", "memory", "SQLite", "PostgreSQL", "stat
 
 LangGraph agents use **checkpointing** to save state during execution. The platform saves a snapshot of the graph state at every super-step, so conversations survive failures and restarts.
 
+<Warning>
+  **A `checkpointer:` block is required** in every LangGraph `config.yaml`. Requests to a LangGraph agent without one fail at runtime with `No checkpointer set`. Pick `type: memory` for ephemeral state, `type: sqlite` for laptop / single-process persistence, or `type: postgres` for production.
+</Warning>
+
 For more details, see the [LangGraph checkpointing persistence documentation](https://docs.langchain.com/oss/python/langgraph/persistence).
 
 ## What checkpointing provides
