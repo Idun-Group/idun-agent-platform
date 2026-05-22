@@ -1,19 +1,20 @@
 ---
 title: "CLI"
-description: "The Idun CLI: one console script (idun) for serving the standalone, scaffolding a new project, and running engine-only mode."
-keywords: ["CLI", "command line", "idun", "idun init", "idun serve", "idun setup", "idun agent serve"]
+description: "The Idun CLI: one console script (idun) for serving the standalone, scaffolding a new project, hashing passwords, and running engine-only mode."
+keywords: ["CLI", "command line", "idun", "idun init", "idun serve", "idun setup", "idun agent serve", "idun hash-password"]
 ---
 
-`idun` is the single console script installed by `pip install idun-agent-engine`. It covers the full lifecycle: scaffold a project, serve the standalone, run engine-only, hash a password, pre-stage migrations.
+`idun` is the single console script installed by `pip install idun-agent-engine`. It covers the full lifecycle: scaffold a project, serve the standalone, run engine-only, hash a password, pre-stage migrations. All commands accept `--help`.
 
-## Verbs at a glance
+## Quick reference
 
 | Verb | Migrates schema | Seeds from `config.yaml` | Serves uvicorn | Notes |
 |---|---|---|---|---|
-| `idun init` | yes | yes (only if rows missing) | yes | First-run bootstrap. Opens the browser to the wizard if no agent row exists yet. Idempotent, so re-running is safe. |
-| `idun setup` | yes | yes (only if rows missing) | no | Use to pre-stage the DB during a deploy, or to re-run the seeder after wiping rows. |
-| `idun serve` | no | no | yes | Steady-state startup. DB is treated as source of truth; `config.yaml` is not consulted. |
-| `idun agent serve` | n/a | n/a | yes | Engine-only mode. No DB, no admin surface; just the engine routes. |
+| `idun init` | Yes | Yes (only if rows missing) | Yes | First-run bootstrap. Opens the browser to the wizard if no agent row exists yet. Idempotent. |
+| `idun setup` | Yes | Yes (only if rows missing) | No | Pre-stage the DB during a deploy, or re-run the seeder after wiping rows. |
+| `idun serve` | No | No | Yes | Steady-state startup. DB is the source of truth; `config.yaml` is not consulted. |
+| `idun agent serve` | No | No | Yes | Engine-only mode. No DB, no admin surface, just the engine routes. |
+| `idun hash-password` | No | No | No | Print a bcrypt hash for `IDUN_ADMIN_PASSWORD_HASH`. |
 
 The seeder writes a row only if the corresponding table is empty. To re-seed after `config.yaml` changes, clear the row first (or delete `idun_standalone.db` for a full reset) and re-run `idun setup`. See [Troubleshooting](/troubleshooting) for the full re-seed recipe.
 
@@ -46,9 +47,117 @@ idun serve
 ```
 </CodeGroup>
 
-## Full reference
+## Commands
 
-The standalone [CLI reference](/standalone/cli) documents every subcommand, every flag, and every environment variable, with verified defaults from source.
+### `idun init`
+
+Initialize Idun in the current folder and launch chat + admin in one step. Runs migrations, seeds from `config.yaml` if present, opens the browser, and boots the standalone server. Idempotent, so re-running on an already-initialized folder just re-launches.
+
+```bash
+idun init
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--port <int>` | `IDUN_PORT` env, then `8000` | Bind port. |
+| `--no-browser` | off | Skip the automatic browser open. Useful for headless / Cloud Run. |
+
+### `idun serve`
+
+Run the standalone server. The DB is the source of truth in steady state; on first boot, if the DB is empty and `IDUN_CONFIG_PATH` points to a YAML file, the file seeds the DB.
+
+```bash
+idun serve
+```
+
+No flags. All configuration is read from environment variables (see [Environment variables](#environment-variables)).
+
+### `idun setup`
+
+Create the DB schema and seed it from YAML if the DB is empty. Called automatically by `serve` and `init`, but operators can run it directly to pre-stage migrations during a deploy.
+
+```bash
+idun setup
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--config <path>` | `IDUN_CONFIG_PATH` env, then `./config.yaml` | Bootstrap YAML file. |
+
+### `idun agent serve`
+
+Run an engine-only server with no DB and no admin surface. Useful when you have your own admin stack and only want the runtime layer.
+
+```bash
+idun agent serve --source file --path ./config.yaml
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--source` | required | Must be `file` (load config from a local YAML). |
+| `--path <path>` | required when `--source=file` | Path to the YAML. |
+
+<Note>
+  `--source manager` is still present in `idun agent serve --help` as a leftover from the pre-0.6.0 manager-tier deployment model. It is deprecated and unsupported: the manager service no longer ships with the platform. Use `--source file` only.
+</Note>
+
+### `idun hash-password`
+
+Print a bcrypt hash suitable for `IDUN_ADMIN_PASSWORD_HASH`. Used once at deploy time when setting up `password` auth mode.
+
+```bash
+idun hash-password
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--password <plaintext>` | prompted (with confirmation) | Plaintext password to hash. Prompted if omitted. |
+
+## Environment variables
+
+`serve` (and the server side of `init`) reads every setting from the environment. The defaults below match what the standalone uses out of the box.
+
+### Server binding
+
+| Variable | Default | Description |
+|---|---|---|
+| `IDUN_HOST` | `127.0.0.1` | Bind address. Set `0.0.0.0` for containers (requires `IDUN_ADMIN_AUTH_MODE=password` or `IDUN_ALLOW_OPEN_ADMIN=1`). |
+| `IDUN_PORT` | `8000` | Bind port. |
+| `IDUN_UI_DIR` | bundled static export | Override the chat/admin UI directory. |
+
+### Database
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | `sqlite+aiosqlite:///./idun_standalone.db` | SQLAlchemy URL. Use `postgresql+asyncpg://…` for Postgres. |
+| `IDUN_CONFIG_PATH` | `./config.yaml` | Bootstrap YAML file used by `setup` / `init` on an empty DB. |
+
+### Admin auth
+
+| Variable | Default | Description |
+|---|---|---|
+| `IDUN_ADMIN_AUTH_MODE` | `none` | Admin gate. `none` for laptop dev; `password` for containers. |
+| `IDUN_ADMIN_PASSWORD_HASH` | empty | Bcrypt admin hash. Required on the first boot under `IDUN_ADMIN_AUTH_MODE=password` to seed the singleton admin row; subsequent boots ignore this variable and read the hash from the DB. Generate with `idun hash-password`. |
+| `IDUN_SESSION_SECRET` | empty | At least 32 characters. Signs the `idun_session` cookie. Required when `IDUN_ADMIN_AUTH_MODE=password`; startup fails fast if shorter. |
+| `IDUN_SESSION_TTL_HOURS` | `24` | Session cookie lifetime in hours (range `1..720`). |
+| `IDUN_ALLOW_OPEN_ADMIN` | `false` | Opt-in flag that lets `auth_mode=none` bind `0.0.0.0` / `::`. Containers and trusted networks only. |
+
+### Trace store
+
+| Variable | Default | Description |
+|---|---|---|
+| `IDUN_TRACE_RETENTION_DAYS` | `14` | Days of trace events the daily retention task keeps before dropping. |
+| `IDUN_TRACES_INPUT_VALUE_MAX_BYTES` | `65536` | Per-attribute byte cap before the exporter truncates trace input/output values. |
+| `IDUN_PRICES_REFRESH` | `false` | When `true`, fetch the LiteLLM model-prices snapshot at boot (5 s timeout, snapshot fallback). |
+
+### Telemetry
+
+| Variable | Default | Description |
+|---|---|---|
+| `IDUN_TELEMETRY_ENABLED` | `true` | Set to `false` to disable anonymous usage telemetry. |
+| `IDUN_DEPLOYMENT_TYPE` | `self-hosted` | Tag events with `cloud`, `self-hosted`, or `dev`. |
+| `IDUN_TELEMETRY_IDENTIFY_USERS` | `true` | Set to `false` to keep all browser events anonymous (no email-level `identify`). |
+| `IDUN_TELEMETRY_SESSION_REPLAY` | `true` | Set to `false` to ship browser analytics without recording sessions. |
 
 ## Verifying a running agent
 
@@ -83,14 +192,14 @@ start http://localhost:8000/docs
 
 ## Next steps
 
-<Card title="Standalone CLI reference" icon="book" horizontal href="/standalone/cli">
-  Every subcommand, flag, and env var, with verified defaults from source.
-</Card>
-
 <Card title="Programmatic chat" icon="terminal" horizontal href="/guides/programmatic-chat">
   Hit `/agent/run` directly with the request shape and SSE event stream.
 </Card>
 
-<Card title="Deployment overview" icon="cloud" horizontal href="/deployment/overview">
-  Run `idun serve` on Cloud Run, Docker, or any container host.
+<Card title="Customize the chat UI" icon="paintbrush" horizontal href="/standalone/customizing-ui">
+  Theme, layout, and full UI replacement.
+</Card>
+
+<Card title="Deploy to Cloud Run" icon="cloud-upload" horizontal href="/standalone/cloud-run">
+  Run `idun serve` on Google Cloud Run with a managed container.
 </Card>
