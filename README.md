@@ -45,11 +45,16 @@ Self-hosted. Open source. No vendor lock-in.
 
 > **Prerequisites**: Python 3.12 or 3.13.
 
+Create a new directory and install the engine:
+
 ```bash
+mkdir my-agent && cd my-agent
 pip install idun-agent-engine langgraph langchain-google-genai
 ```
 
-**`agent.py`**
+Save the three files below inside `my-agent/`.
+
+**`my-agent/agent.py`**
 
 ```python
 from typing import Annotated, TypedDict
@@ -81,7 +86,7 @@ graph.add_conditional_edges("chatbot", tools_condition)
 graph.add_edge("tools", "chatbot")
 ```
 
-**`config.yaml`**
+**`my-agent/config.yaml`**
 
 ```yaml
 server:
@@ -103,11 +108,19 @@ mcp_servers:
     url: https://docs.idun-group.com/mcp
 ```
 
-Put `GEMINI_API_KEY=...` in a `.env` next to the files above. Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+**`my-agent/.env`** — get a Gemini key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey):
+
+```
+GEMINI_API_KEY=your-key-here
+```
+
+From inside `my-agent/`, run:
 
 ```bash
 idun init
 ```
+
+> `graph_definition: "./agent.py:graph"` is resolved against the directory where you run `idun init`. Stay inside `my-agent/` when you launch it, or use an absolute path.
 
 A browser opens at [http://localhost:8000](http://localhost:8000) for the chat UI. The agent already has tools from the Idun docs MCP wired in. Visit [/admin](http://localhost:8000/admin) to configure more MCP servers, managed prompts, guardrails, observability, messaging integrations, and SSO. Visit [/admin/traces](http://localhost:8000/admin/traces) for the trace store.
 

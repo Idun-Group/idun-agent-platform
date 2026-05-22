@@ -16,13 +16,18 @@ boost: 3
 ## Steps
 
 <Steps>
-  <Step title="Install">
+  <Step title="Create a project directory and install">
     ```bash
+    mkdir my-agent && cd my-agent
     pip install idun-agent-engine langgraph langchain-google-genai
     ```
+
+    Save the next two files inside this `my-agent/` directory.
   </Step>
 
-  <Step title="agent.py">
+  <Step title="Save agent.py">
+    Save this as `my-agent/agent.py`:
+
     ```python agent.py
     from typing import Annotated, TypedDict
 
@@ -49,7 +54,9 @@ boost: 3
     ```
   </Step>
 
-  <Step title="config.yaml">
+  <Step title="Save config.yaml">
+    Save this as `my-agent/config.yaml` next to `agent.py`:
+
     ```yaml config.yaml
     server:
       api:
@@ -64,10 +71,16 @@ boost: 3
           type: sqlite
           db_url: "sqlite:///conversations.db"
     ```
+
+    <Note>
+      `graph_definition: "./agent.py:graph"` is resolved against the directory where you run `idun init` (the next step), so `agent.py` and `config.yaml` must live in the same directory you launch from. Use an absolute path if you want to invoke it from elsewhere.
+    </Note>
   </Step>
 
   <Step title="Run">
-    Put `GEMINI_API_KEY=...` in a `.env` next to the files above. Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+    Put `GEMINI_API_KEY=...` in a `my-agent/.env`. Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+
+    From inside `my-agent/`:
 
     ```bash
     idun init
