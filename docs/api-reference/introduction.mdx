@@ -1,11 +1,11 @@
 ---
 title: "Introduction"
-description: "HTTP API of every idun-agent-standalone deployment. 42 endpoints, generated from the live FastAPI app."
+description: "HTTP API of every idun-agent-standalone deployment. 42 endpoints, rendered from a snapshot of the live FastAPI app's OpenAPI spec."
 keywords: ["api", "rest", "openapi", "standalone", "endpoints", "reference"]
 boost: 2
 ---
 
-Every `idun-agent-standalone` deployment exposes the same HTTP API. This reference is generated from the live FastAPI app on every release, so every shape on every page matches what the server actually returns.
+Every `idun-agent-standalone` deployment exposes the same HTTP API. This reference is rendered from a snapshot of the live FastAPI app's OpenAPI spec (refreshed manually on releases — see [Spec source](#spec-source) below), so every shape on every page matches what the server returns at that snapshot.
 
 ## Authentication
 
@@ -35,7 +35,7 @@ The 42 endpoints group into seven surfaces. Pick one from the left sidebar.
   <Card title="Runtime" icon="bolt">
     The chat surface. `POST /agent/run` (AG-UI streaming), session listing, graph introspection, health.
   </Card>
-  <Card title="Agent Configuration" icon="settings">
+  <Card title="Agent configuration" icon="settings">
     CRUD on the live agent config: model, prompts, tools. Writes hot-reload the engine.
   </Card>
   <Card title="Auth & SSO" icon="user-cog">
@@ -44,7 +44,7 @@ The 42 endpoints group into seven surfaces. Pick one from the left sidebar.
   <Card title="Dashboard" icon="layout-dashboard">
     Aggregated counters and traffic series sourced from the local trace store.
   </Card>
-  <Card title="Integrations & Tools" icon="plug">
+  <Card title="Integrations & tools" icon="plug">
     MCP servers, prompts, guardrails, integrations. Everything a tool needs to be reachable from the agent.
   </Card>
   <Card title="Observability" icon="chart-line">

@@ -324,7 +324,6 @@
     { "source": "/sso-rbac/overview", "destination": "/auth/sso" },
     { "source": "/deployment/gcp", "destination": "/standalone/cloud-run" },
     { "source": "/deployment/gcp-self-hosted", "destination": "/standalone/cloud-run" },
-    { "source": "/api-reference/introduction", "destination": "/standalone/cli" },
     { "source": "/prompts/overview", "destination": "/prompts" },
     { "source": "/more/faq", "destination": "/faq" },
     { "source": "/concepts/overview", "destination": "/architecture" }
