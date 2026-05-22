@@ -11,14 +11,25 @@ Each adapter implements a common `BaseAgent` protocol. Your clients talk to the 
 
 ## Supported frameworks
 
-<Columns cols={2}>
-  <Card title="LangGraph" icon="diagram-project" href="/frameworks/langgraph">
+<Columns cols={3}>
+  <Card title="LangGraph" icon="layers" href="/frameworks/langgraph">
     Graph-based agents with full AG-UI streaming, checkpointing (in-memory, SQLite, PostgreSQL), and CopilotKit support. Has the most complete feature coverage of the supported frameworks.
   </Card>
   <Card title="Google ADK" icon="google" href="/frameworks/adk">
     Google's Agent Development Kit for Gemini-powered agents. Supports session and memory services through in-memory, Vertex AI, or database backends.
   </Card>
+  <Card title="Deep Agents" icon="boxes" href="/guides/deepagents-with-idun">
+    LangChain's framework for agents that plan, write to a virtual filesystem, and spawn subagents. Runs as a regular LangGraph agent in Idun (no separate adapter, no glue code).
+  </Card>
 </Columns>
+
+### Documentation and source code
+
+| Framework | Docs | Repo |
+|---|---|---|
+| LangGraph | [docs.langchain.com/oss/python/langgraph](https://docs.langchain.com/oss/python/langgraph) | [github.com/langchain-ai/langgraph](https://github.com/langchain-ai/langgraph) |
+| Google ADK | [google.github.io/adk-docs](https://google.github.io/adk-docs/) | [github.com/google/adk-python](https://github.com/google/adk-python) |
+| Deep Agents | [docs.langchain.com/oss/python/deepagents](https://docs.langchain.com/oss/python/deepagents/overview) | [github.com/langchain-ai/deepagents](https://github.com/langchain-ai/deepagents) |
 
 <Note>
   Haystack support was removed in 0.6.0. Existing Haystack agent configs need to be ported to LangGraph or ADK before upgrading.

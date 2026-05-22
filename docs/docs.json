@@ -88,7 +88,6 @@
             "pages": [
               "standalone/overview",
               "standalone/quickstart",
-              "standalone/cli",
               "standalone/customizing-ui"
             ]
           },
