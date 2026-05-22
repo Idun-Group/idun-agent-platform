@@ -30,6 +30,10 @@ MCP servers connect to the engine through one of four transport protocols:
 | `streamable_http` | Remote servers with HTTP streaming (default) | `url` |
 | `websocket` | Persistent bidirectional connections | `url` |
 
+<Note>
+  The transport is decided by the MCP server, not the client. Most hosted servers expose exactly one. For example, `https://mcp.data.gouv.fr/mcp` is `streamable_http` only, with no `sse` or `stdio` fallback. Check the server's documentation before picking a transport; mismatched values fail at the handshake, not the YAML schema.
+</Note>
+
 ## Configuration example
 
 Define MCP servers in your `config.yaml` or through the admin panel:
@@ -112,6 +116,32 @@ mcp_tools = asyncio.run(_load_tools())
 </CodeGroup>
 
 These functions discover all MCP servers attached to your agent and make their tools available. You do not need to configure individual tools.
+
+## Probing a server programmatically
+
+The wrench icon in the MCP admin page is backed by an admin REST endpoint, so the same probe runs from a script or a CI smoke check. `POST /admin/api/v1/mcp-servers/{mcp_id}/tools` connects to the registered server, lists every advertised tool, and returns a `StandaloneConnectionCheck`:
+
+```bash
+curl -sX POST "http://localhost:8000/admin/api/v1/mcp-servers/$MCP_ID/tools" \
+  --cookie "$IDUN_SESSION_COOKIE"
+```
+
+```json
+{
+  "ok": true,
+  "details": {
+    "name": "data_gouv",
+    "transport": "streamable_http",
+    "toolCount": 9,
+    "tools": ["get_dataset_info", "search_datasets", "..."]
+  },
+  "error": null
+}
+```
+
+On failure (unreachable URL, MCP handshake mismatch, malformed config, registry init error) the same shape returns with `ok: false`, the upstream message in `error`, and any partial detail still attached. The probe runs under a 5-second timeout (`services/connection_checks.py`) and converts every exception into the `ok: false` payload, so it is safe in a polling loop. The HTTP status stays 200 on every outcome except the auth check failing or the row id not existing.
+
+The route is admin-authenticated: under `IDUN_ADMIN_AUTH_MODE=password` you need the session cookie minted by `POST /admin/api/v1/auth/login`. Use this in CI to fail fast when a production MCP server has gone away, or in a release-time check before flipping traffic.
 
 <Note>
   `get_langchain_tools()` is async, so it must be awaited inside an `async` function. If you need to bind tools at module load, run it with `asyncio.run(...)` as shown above. A synchronous helper (`get_langchain_tools_sync`) is also available; see the [engine MCP reference](/mcp-servers/overview) for details.
