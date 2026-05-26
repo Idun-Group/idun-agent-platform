@@ -1,0 +1,19 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: ADK
+  config:
+    name: "mcp-adk"
+    agent: "./agent.py:root_agent"
+    app_name: "mcp_adk"
+
+mcp_servers:
+  - name: docs-idun
+    transport: streamable_http
+    url: https://docs.idun-group.com/mcp
+
+  - name: data-gouv
+    transport: streamable_http
+    url: https://mcp.data.gouv.fr/mcp

@@ -1,0 +1,20 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: ADK
+  config:
+    name: "guardrails-adk"
+    agent: "./agent.py:root_agent"
+    app_name: "guardrails_adk"
+
+guardrails:
+  input:
+    - config_id: "detect_pii"
+      pii_entities: ["EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD_NUMBER"]
+      reject_message: "Please remove personal information (email, phone, credit card) from your message before sending."
+  output:
+    - config_id: "toxic_language"
+      threshold: 0.7
+      reject_message: "I cannot return that response. Try rephrasing your question."

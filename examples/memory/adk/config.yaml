@@ -1,0 +1,24 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: ADK
+  config:
+    name: "memory-adk"
+    agent: "./agent.py:root_agent"
+    app_name: "memory_adk"
+    # ADK's DatabaseSessionService calls create_async_engine, so the URL
+    # must point at an ASYNC driver. For SQLite that means sqlite+aiosqlite
+    # (plain sqlite:/// resolves to the sync driver and fails at engine
+    # creation). For Postgres, use postgresql+asyncpg or postgresql+psycopg.
+    session_service:
+      type: database
+      db_url: "sqlite+aiosqlite:///conversations.db"
+    memory_service:
+      type: in_memory
+
+# Postgres alternative (uncomment to switch):
+# session_service:
+#   type: database
+#   db_url: "postgresql+asyncpg://user:pass@host:5432/dbname"

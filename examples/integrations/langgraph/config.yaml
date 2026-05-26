@@ -1,0 +1,27 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: "integrations-langgraph"
+    graph_definition: "./agent.py:graph"
+    checkpointer:
+      type: sqlite
+      db_url: "sqlite:///conversations.db"
+
+# Slack Events API integration. The engine registers a webhook endpoint
+# at /integrations/slack/events that Slack POSTs to on every message in
+# channels the bot is invited to. HMAC-SHA256 verification uses the
+# signing_secret.
+#
+# Replace the placeholders below with values from your Slack app
+# (https://api.slack.com/apps). Other providers: DISCORD, GOOGLE_CHAT,
+# TEAMS, WHATSAPP.
+integrations:
+  - provider: SLACK
+    enabled: true
+    config:
+      bot_token: SLACK_BOT_TOKEN
+      signing_secret: SLACK_SIGNING_SECRET

@@ -1,0 +1,22 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: ADK
+  config:
+    name: "prompts-adk"
+    agent: "./agent.py:root_agent"
+    app_name: "prompts_adk"
+
+prompts:
+  - prompt_id: "system-prompt"
+    version: 1
+    tags: ["latest"]
+    content: |
+      You are a {{ role }}. Be concise, polite, and direct.
+
+      Rules:
+      - If you don't know the answer, say so plainly.
+      - Cite specifics when you can.
+      - Decline to engage with topics outside your role.

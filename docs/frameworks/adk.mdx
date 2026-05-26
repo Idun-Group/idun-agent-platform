@@ -11,43 +11,7 @@ Google ADK (Agent Development Kit) is Google's framework for building Gemini-pow
   Want to start from working code? The [agent templates](/templates) include ADK examples for tool calling and structured I/O.
 </Tip>
 
-## Create an ADK agent
-
-Set `agent.type` to `ADK` and provide the agent definition path and `app_name`:
-
-```yaml config.yaml
-server:
-  api:
-    port: 8000
-
-agent:
-  type: ADK
-  config:
-    name: "my-adk-agent"
-    agent: "./agent.py:root_agent"
-    app_name: "myagent"
-```
-
-The `agent` field is a file path of the form `<path/to/file.py>:<variable_name>`. The ADK adapter resolves it with `importlib.util.spec_from_file_location`, so the value must point at a real `.py` file (relative or absolute). Module-dotted notation (`my_pkg.agent:root_agent`) is not supported.
-
-Install and run:
-
-```bash
-pip install idun-agent-engine google-adk
-idun serve
-```
-
-The first boot reads `config.yaml`, seeds the DB, and serves the chat UI at `http://localhost:8000/`. After that you can edit the agent through the admin panel at `/admin/agent/` and the running engine hot-reloads on save.
-
-<Warning>
-  `config.yaml` only seeds rows that are missing. Once an agent row exists in the DB, subsequent edits to the YAML are ignored. The admin panel at `/admin/agent/` is the runtime source of truth. To re-seed from YAML you must clear the relevant rows (or, for a fresh start, delete the SQLite DB) and re-run `idun setup`.
-</Warning>
-
-For engine-only mode (no DB, no admin), use `idun agent serve --source file --path config.yaml` instead.
-
-## Write your agent code
-
-Create an ADK agent at the file path you referenced in `config.yaml`:
+## Code
 
 ```python agent.py
 from google.adk.agents import Agent
@@ -64,14 +28,33 @@ root_agent = Agent(
   If you use Vertex AI models, authenticate with `gcloud auth application-default login` before running the agent.
 </Note>
 
-### The `agent` field
+## Config
 
-The value is `<path>:<variable>`:
+```yaml config.yaml
+server:
+  api:
+    port: 8000
 
-- **Path**: a file path to a Python file, relative to the working directory or absolute (e.g., `./agent.py`, `src/agents/weather.py`)
-- **Variable name**: the `Agent` instance exported from that file (e.g., `root_agent`)
+agent:
+  type: ADK
+  config:
+    name: "my-adk-agent"
+    agent: "./agent.py:root_agent"
+    app_name: "myagent"
+```
 
-LangGraph's `graph_definition` accepts both file paths *and* dotted module paths; the ADK adapter accepts file paths only.
+## How it works
+
+The ADK adapter wraps your raw `Agent` instance for production serving. Five stages, driven by `agent.config` in `config.yaml`:
+
+1. **Load.** `agent` is parsed as `<file_path>:<variable_name>`. The adapter resolves it via `importlib.util.spec_from_file_location`, so the value must point at a real `.py` file (relative or absolute). Unlike LangGraph, module-dotted notation (`my_pkg.agent:root_agent`) is rejected here.
+2. **Wrap.** The loaded agent goes into `google.adk.apps.App(root_agent=agent, name=app_name)`, then into `ADKAGUIAgent` from `ag_ui_adk` for AG-UI event streaming.
+3. **Sessions.** A `session_service` is initialized from `config.yaml` (`in_memory` by default, or `database`, or `vertex_ai`) and passed into the runner. Session state, including the AG-UI `thread_id` mapping, is kept in this service.
+4. **Memory.** A `memory_service` is initialized in parallel (`in_memory` by default, or `vertex_ai`) for long-term recall.
+5. **Observability.** When a Langfuse provider is enabled in `observability:`, the adapter installs `GoogleADKInstrumentor` from `openinference.instrumentation.google_adk` automatically. When LangSmith is enabled, it calls `langsmith.integrations.google_adk.configure_google_adk(name=...)`. No extra wiring needed in your agent code.
+6. **Serve.** Chat requests POST to `/agent/run` with the AG-UI streaming protocol, same as LangGraph.
+
+Source: [`libs/idun_agent_engine/src/idun_agent_engine/agent/adk/adk.py`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/src/idun_agent_engine/agent/adk/adk.py).
 
 ## Adding MCP tools
 

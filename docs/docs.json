@@ -87,7 +87,7 @@
             "icon": "box",
             "pages": [
               "standalone/overview",
-              "standalone/quickstart",
+              "standalone/admin",
               "standalone/customizing-ui"
             ]
           },
@@ -164,6 +164,11 @@
             "group": "Reference",
             "icon": "file-json",
             "pages": ["configuration", "cli/overview", "glossary", "roadmap"]
+          },
+          {
+            "group": "Advanced",
+            "icon": "code",
+            "pages": ["advanced/sdk"]
           },
           {
             "group": "Enterprise",
@@ -325,7 +330,8 @@
     { "source": "/deployment/gcp-self-hosted", "destination": "/standalone/cloud-run" },
     { "source": "/prompts/overview", "destination": "/prompts" },
     { "source": "/more/faq", "destination": "/faq" },
-    { "source": "/concepts/overview", "destination": "/architecture" }
+    { "source": "/concepts/overview", "destination": "/architecture" },
+    { "source": "/standalone/quickstart", "destination": "/quickstart" }
   ],
   "integrations": {
     "posthog": {

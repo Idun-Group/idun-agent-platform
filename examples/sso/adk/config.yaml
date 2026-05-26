@@ -1,0 +1,21 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: ADK
+  config:
+    name: "sso-adk"
+    agent: "./agent.py:root_agent"
+    app_name: "sso_adk"
+
+# Google Workspace OIDC. Same SSO block as the LangGraph variant.
+sso:
+  enabled: true
+  issuer: "https://accounts.google.com"
+  client_id: "REPLACE_WITH_YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com"
+  audience: "REPLACE_WITH_YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com"
+  allowed_domains:
+    - "example.com"
+  allowed_emails:
+    - "auditor@partner.example"

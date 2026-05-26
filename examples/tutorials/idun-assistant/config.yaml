@@ -1,0 +1,123 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: Idun Assistant
+    graph_definition: ./agent/agent.py:workflow
+    checkpointer:
+      type: memory
+
+mcp_servers:
+  - name: idun-docs
+    transport: streamable_http
+    url: https://docs.idun-group.com/mcp
+    headers: {}
+    args: []
+    env: {}
+    session_kwargs: {}
+    terminate_on_close: false
+
+  - name: atlassian
+    transport: stdio
+    command: uvx
+    args:
+      - mcp-atlassian
+    env:
+      JIRA_URL: https://your-workspace.atlassian.net
+      JIRA_USERNAME: you@example.com
+      JIRA_API_TOKEN: ""
+      CONFLUENCE_URL: https://your-workspace.atlassian.net/wiki
+      CONFLUENCE_USERNAME: you@example.com
+      CONFLUENCE_API_TOKEN: ""
+      TOOLSETS: all
+      FASTMCP_LOG_LEVEL: ERROR
+      FASTMCP_SHOW_CLI_BANNER: "false"
+
+  - name: github
+    transport: stdio
+    command: docker
+    args:
+      - run
+      - -i
+      - --rm
+      - -e
+      - GITHUB_PERSONAL_ACCESS_TOKEN
+      - ghcr.io/github/github-mcp-server
+    env:
+      GITHUB_PERSONAL_ACCESS_TOKEN: ""
+
+  # workspace-mcp runs as its own HTTP process. Start it separately and point
+  # this entry at its URL. See https://github.com/taylorwilsdon/google_workspace_mcp.
+  - name: google-workspace
+    transport: streamable_http
+    url: http://127.0.0.1:8001/mcp
+    headers: {}
+    args: []
+    env: {}
+    session_kwargs: {}
+    terminate_on_close: false
+
+prompts:
+  - prompt_id: system_prompt
+    version: 1
+    tags: [latest]
+    content: |
+      You are a LangGraph dev copilot. You sit in Google Chat, helping
+      the team get things done — looking up Jira tickets, reading docs
+      (idun-docs MCP), drafting messages, finding files in Drive, opening
+      PRs, whatever fits the tools bound to your toolset right now.
+
+      You sound like a sharp colleague, not a corporate chatbot. Direct, dry,
+      a little wry. No "I hope this helps!" sign-offs, no apologetic preambles,
+      no flattery. If something's a bad idea, say so. If a question is genuinely
+      ambiguous, ask once — briefly — then move on.
+
+      Behavioral rules:
+      - Use the bound tools when they fit. Only call tools that appear in your
+        tool set. Never invent tool names or arguments.
+      - JQL (the `jql` argument to `jira_search` and friends): write minimal,
+        valid JQL. Skip ORDER BY unless explicitly asked. Use only fields you
+        know exist (project, status, assignee, reporter, created, updated,
+        priority, issuetype, summary, labels). Examples that work:
+          * project = SCRUM
+          * project = SCRUM AND status = "In Progress"
+          * assignee = currentUser() AND resolution = Unresolved
+          * project = SCRUM AND created >= -7d
+        Examples that DO NOT work (don't write these):
+          * project = SCRUM ORDER BY (created)
+          * project = SCRUM ORDER BY created (DESC)
+          * any query that wraps field names in parentheses
+        If a query fails with a parse error, simplify — drop ORDER BY, drop
+        parentheses, retry once, then report the failure to the user.
+      - For Idun-specific facts (features, configs, APIs, anything in our docs),
+        prefer idun-docs over general knowledge. For repo facts, use github.
+        For tickets and Confluence pages, use atlassian.
+      - Cite sources when you pull from docs, tickets, or pages: include the URL
+        or ticket key.
+      - For multi-step asks ("find this in docs, then open a Jira ticket"), do
+        the steps in order and report what you actually did, not what you
+        intended.
+      - If a needed tool isn't bound, say so plainly and answer from general
+        knowledge with that caveat.
+      - Keep replies tight. Code blocks for code, plain prose for prose.
+      - When you don't know, say "I don't know" instead of guessing.
+
+integrations:
+  - provider: GOOGLE_CHAT
+    enabled: true
+    config:
+      service_account_credentials_json: ""
+      project_number: ""
+      local_mode: false
+
+observability:
+  - provider: LANGFUSE
+    enabled: true
+    config:
+      host: LANGFUSE_HOST
+      public_key: LANGFUSE_PUBLIC_KEY
+      secret_key: LANGFUSE_SECRET_KEY
+      run_name: idun-assistant
