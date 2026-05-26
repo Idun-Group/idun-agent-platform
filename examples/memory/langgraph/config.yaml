@@ -1,0 +1,23 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: "memory-langgraph"
+    graph_definition: "./agent.py:graph"
+    # SQLite checkpointer: every super-step is written to conversations.db.
+    # Reusing the same thread_id across requests reloads the full history.
+    # Swap for type: postgres in production.
+    checkpointer:
+      type: sqlite
+      db_url: "sqlite:///conversations.db"
+
+# Postgres alternative (uncomment to switch):
+# agent:
+#   ...
+#   config:
+#     checkpointer:
+#       type: postgres
+#       db_url: "postgresql://user:pass@host:5432/dbname"

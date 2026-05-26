@@ -19,7 +19,6 @@ import re
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 from idun_agent_standalone.core.settings import StandaloneSettings
 from idun_agent_standalone.runtime_config import router as runtime_config_router
 

@@ -19,27 +19,6 @@ You can configure multiple guardrails at each position. All guardrails at a give
 ## Configuration
 
 <Tabs>
-  <Tab title="Admin UI">
-    <Steps>
-      <Step title="Open the guardrails admin page">
-        Navigate to `/admin/guardrails/` in the running standalone. The catalog at the top groups guards by category; configured guards are listed below.
-
-        <Frame><img alt="Guardrails admin page" src="/images/ui/admin-guardrails.png" /></Frame>
-      </Step>
-      <Step title="Create a guardrail">
-        Click the guard type you want (e.g., Ban List, Detect PII, Toxic Language). Fill in the configuration form, including the **Guardrails AI API key** field on the first guard you create. Get a key from [hub.guardrailsai.com](https://hub.guardrailsai.com). The key is persisted in the guardrail row and re-hydrated into the process environment on every boot, so you only enter it once.
-
-        <Frame><img alt="Add a Ban List guardrail" src="/images/ui/admin-guardrails-add.png" /></Frame>
-      </Step>
-      <Step title="Save">
-        Save the form. The reload pipeline validates the new config, re-instantiates the engine, and the guard is live. A bad save rolls back without disturbing the running agent.
-      </Step>
-    </Steps>
-
-    <Note>
-      Some guards are marked "Soon" and not yet available: Code Scanner, Jailbreak, Prompt Injection, Model Armor, Custom LLM, and RAG Hallucination.
-    </Note>
-  </Tab>
   <Tab title="Config file">
     Add guardrails in the `guardrails` section of your `config.yaml`. Each guardrail has a `config_id` that identifies the type and parameters specific to that type.
 
@@ -60,6 +39,27 @@ You can configure multiple guardrails at each position. All guardrails at a give
     ```
 
     Infrastructure fields (`api_key`, `guard_url`, `reject_message`) are populated automatically. For YAML-based configs the `api_key` is read from the `GUARDRAILS_API_KEY` environment variable. You only need to specify the `config_id` and guard-specific parameters.
+  </Tab>
+  <Tab title="Admin UI">
+    <Steps>
+      <Step title="Open the guardrails admin page">
+        Navigate to `/admin/guardrails/` in the running standalone. The catalog at the top groups guards by category; configured guards are listed below.
+
+        <Frame><img alt="Guardrails admin page" src="/images/ui/admin-guardrails.png" /></Frame>
+      </Step>
+      <Step title="Create a guardrail">
+        Click the guard type you want (e.g., Ban List, Detect PII, Toxic Language). Fill in the configuration form, including the **Guardrails AI API key** field on the first guard you create. Get a key from [hub.guardrailsai.com](https://hub.guardrailsai.com). The key is persisted in the guardrail row and re-hydrated into the process environment on every boot, so you only enter it once.
+
+        <Frame><img alt="Add a Ban List guardrail" src="/images/ui/admin-guardrails-add.png" /></Frame>
+      </Step>
+      <Step title="Save">
+        Save the form. The reload pipeline validates the new config, re-instantiates the engine, and the guard is live. A bad save rolls back without disturbing the running agent.
+      </Step>
+    </Steps>
+
+    <Note>
+      Some guards are marked "Soon" and not yet available: Code Scanner, Jailbreak, Prompt Injection, Model Armor, Custom LLM, and RAG Hallucination.
+    </Note>
   </Tab>
 </Tabs>
 

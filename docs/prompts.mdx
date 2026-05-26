@@ -19,23 +19,6 @@ Prompt management lets you version, store, and render prompt templates without h
 ## Define prompts
 
 <Tabs>
-  <Tab title="Admin UI">
-    <Steps>
-      <Step title="Open the prompts admin page">
-        Navigate to `/admin/prompts/` in the running standalone. The Prompt library lists every version with its variables, version number, and a row of actions.
-
-        <Frame><img alt="Prompts admin page" src="/images/ui/admin-prompts.png" /></Frame>
-      </Step>
-      <Step title="Create a new prompt">
-        Click **New prompt**. Give it a unique `Name` (prompt ID), write the `Body` using `{{ name }}` syntax for variables, optionally add tags. The right panel surfaces detected variables as you type.
-
-        <Frame><img alt="New prompt drawer" src="/images/ui/admin-prompts-new.png" /></Frame>
-      </Step>
-      <Step title="Save">
-        Save. The reload pipeline re-instantiates the engine with the new prompt available to `get_prompt()`. Subsequent saves with the same name allocate the next version automatically.
-      </Step>
-    </Steps>
-  </Tab>
   <Tab title="Config file">
     ```yaml config.yaml
     prompts:
@@ -61,6 +44,23 @@ Prompt management lets you version, store, and render prompt templates without h
     | `version` | `integer` | Version number. Auto-incremented per `prompt_id` on admin-API writes. |
     | `content` | `string` | Prompt text, supports Jinja2 `{{ variables }}`. Immutable once created. |
     | `tags` | `list[string]` | Free-form labels. `latest` is server-managed. |
+  </Tab>
+  <Tab title="Admin UI">
+    <Steps>
+      <Step title="Open the prompts admin page">
+        Navigate to `/admin/prompts/` in the running standalone. The Prompt library lists every version with its variables, version number, and a row of actions.
+
+        <Frame><img alt="Prompts admin page" src="/images/ui/admin-prompts.png" /></Frame>
+      </Step>
+      <Step title="Create a new prompt">
+        Click **New prompt**. Give it a unique `Name` (prompt ID), write the `Body` using `{{ name }}` syntax for variables, optionally add tags. The right panel surfaces detected variables as you type.
+
+        <Frame><img alt="New prompt drawer" src="/images/ui/admin-prompts-new.png" /></Frame>
+      </Step>
+      <Step title="Save">
+        Save. The reload pipeline re-instantiates the engine with the new prompt available to `get_prompt()`. Subsequent saves with the same name allocate the next version automatically.
+      </Step>
+    </Steps>
   </Tab>
 </Tabs>
 

@@ -1,0 +1,21 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: "mcp-langgraph"
+    graph_definition: "./agent.py:graph"
+    checkpointer:
+      type: sqlite
+      db_url: "sqlite:///conversations.db"
+
+mcp_servers:
+  - name: docs-idun
+    transport: streamable_http
+    url: https://docs.idun-group.com/mcp
+
+  - name: data-gouv
+    transport: streamable_http
+    url: https://mcp.data.gouv.fr/mcp

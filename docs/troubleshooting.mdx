@@ -8,8 +8,8 @@ boost: 2
 This page covers the runtime errors and log messages you are most likely to hit, what each one means, and how to recover. The error strings below come directly from the engine and standalone source.
 
 <AccordionGroup>
-  <Accordion title="`agent_not_ready`: HTTP 503 from `/agent/*`">
-    **Symptom.** A POST to `/agent/invoke`, `/agent/stream`, or `/agent/copilotkit/stream` returns:
+  <Accordion title="Server returns HTTP 503 agent_not_ready">
+    **Symptom.** A POST to `/agent/run`, `/agent/stream`, or the deprecated `/agent/invoke` returns:
 
     ```json
     { "detail": "agent_not_ready" }
@@ -22,35 +22,42 @@ This page covers the runtime errors and log messages you are most likely to hit,
     If you expected an agent to be configured, check the admin panel at `/admin/agent/` to confirm the agent row exists.
   </Accordion>
 
-  <Accordion title="`boot engine layer skipped, admin only mode` log line">
+  <Accordion title="Boot log: engine layer skipped, admin-only mode">
     **Symptom.** At startup the log contains:
 
     ```
-    boot engine layer skipped, admin only mode reason=<AssemblyError ...>
-    ```
-
-    followed by:
-
-    ```
+    boot engine layer skipped, admin only mode reason=AssemblyError(...)
     boot engine app started unconfigured (no agent yet, wizard will materialize)
     ```
 
-    **Cause.** The standalone read the DB and could not assemble an `EngineConfig` from the stored rows. This usually happens because no agent row exists yet, or because the seeded YAML failed validation. The server still boots so you can reach `/admin/` and `/onboarding/`, but the `/agent/*` routes will return `agent_not_ready` until the agent is materialised.
+    **Cause.** The standalone read the DB and could not assemble an `EngineConfig` from the stored rows. This usually happens because no agent row exists yet, or because the seeded YAML failed validation. The server still boots so you can reach `/admin/` and `/onboarding/`, but the `/agent/*` routes return `agent_not_ready` until the agent is materialised.
 
-    **Fix.** Either complete the onboarding wizard, or check the `AssemblyError` reason printed in the log. If your `config.yaml` was supposed to seed an agent on first boot, the YAML failed schema validation; fix the validation error and rerun `idun setup`.
+    **Fix.** Either complete the onboarding wizard, or read the `AssemblyError` reason printed in the log. If your `config.yaml` was supposed to seed an agent on first boot, the YAML failed schema validation; fix the validation error and rerun `idun init`.
   </Accordion>
 
   <Accordion title="Reload pipeline outcomes">
-    Every admin-panel save flows through the three-round validation and reload pipeline in `libs/idun_agent_standalone/src/idun_agent_standalone/services/reload.py`. The response includes one of three outcomes:
+    Every admin-panel save flows through the three-round validation and reload pipeline in `libs/idun_agent_standalone/services/reload.py`. The response carries one of three statuses, each with a different effect on the running engine.
 
-    | Outcome | Meaning | What you see |
-    |---|---|---|
-    | `RELOADED` | Validation and engine reload both succeeded. | Toast: "Saved and reloaded." |
-    | `RESTART_REQUIRED` | The change touched `agent.type` or `agent.config.graph_definition`, which requires a full process restart. | Toast: "Saved. Restart required to apply." |
-    | `RELOAD_FAILED` | The engine refused to re-initialise with the new config. The DB write was rolled back. | Toast: "Engine reload failed; config not saved." Error detail attached. |
+    <CardGroup cols={3}>
+      <Card title="RELOADED" icon="circle-check">
+        Validated and applied live. DB committed, engine rebuilt.
+
+        UI toast: *Saved and reloaded.*
+      </Card>
+      <Card title="RESTART_REQUIRED" icon="rotate-right">
+        DB committed, engine NOT rebuilt. Triggered by a structural change (`agent.type` or `agent.config.graph_definition`).
+
+        UI toast: *Saved. Restart required to apply.*
+      </Card>
+      <Card title="RELOAD_FAILED" icon="circle-xmark">
+        Engine refused the new config. DB write rolled back, prior config still active.
+
+        UI toast: *Engine reload failed; config not saved.* Error detail attached.
+      </Card>
+    </CardGroup>
   </Accordion>
 
-  <Accordion title="`RELOAD_FAILED`: the engine refused to reload">
+  <Accordion title="Engine reload failed (RELOAD_FAILED)">
     **Cause.** One of:
 
     - The new `graph_definition` path is wrong or the variable does not export a `StateGraph`.
@@ -87,9 +94,9 @@ This page covers the runtime errors and log messages you are most likely to hit,
     **Symptom.** At startup or after a `RESTART_REQUIRED` reboot, the engine fails to initialise with an exception like:
 
     ```
-    FileNotFoundError: graph_definition path does not exist: <path>
-    ModuleNotFoundError: No module named '<module>'
-    ImportError: cannot import name '<variable>' from '<module>'
+    FileNotFoundError: graph_definition path does not exist
+    ModuleNotFoundError: No module named <module>
+    ImportError: cannot import name <variable> from <module>
     TypeError: graph_definition must resolve to a StateGraph or CompiledStateGraph
     ```
 
@@ -115,12 +122,12 @@ This page covers the runtime errors and log messages you are most likely to hit,
     4. Open a trace from `/admin/traces/` and inspect the span tree. The root span name corresponds to your graph's entry node.
   </Accordion>
 
-  <Accordion title="`Could not load spec for module at <X>` from the ADK adapter">
+  <Accordion title="ADK adapter: could not load spec for module">
     **Symptom.** Engine startup fails with:
 
     ```
-    ImportError: Could not load spec for module at <X>
-    ValueError: Failed to load agent from <X>:<variable>: ...
+    ImportError: Could not load spec for module at <path>
+    ValueError: Failed to load agent from <path>:<variable>: ...
     ```
 
     **Cause.** The ADK adapter (`libs/idun_agent_engine/src/idun_agent_engine/agent/adk/adk.py`) resolves `agent.config.agent` with `importlib.util.spec_from_file_location`, so the value must be a path to a `.py` file. Unlike LangGraph's `graph_definition`, it does **not** fall back to dotted module imports. Values like `my_pkg.agent:root_agent` are interpreted as the literal file `my_pkg.agent`, which doesn't exist, so `spec_from_file_location` returns `None` and the loader raises.
@@ -134,17 +141,17 @@ This page covers the runtime errors and log messages you are most likely to hit,
         agent: "./agent.py:root_agent"   # not "agent:root_agent"
     ```
 
-    Relative paths resolve against the working directory `idun serve` was launched from. Absolute paths also work.
+    Relative paths resolve against the working directory you launched the server from. Absolute paths also work.
   </Accordion>
 
-  <Accordion title="`config.yaml` edits don't show up after restart">
-    **Symptom.** You edit `config.yaml` (change a model, add an MCP server, tweak a guardrail), restart with `idun serve` or `idun setup`, and nothing changes in the running agent.
+  <Accordion title="Edits to config.yaml don't apply after restart">
+    **Symptom.** You edit `config.yaml` (change a model, add an MCP server, tweak a guardrail), run `idun init` again, and nothing changes in the running agent.
 
     **Cause.** `config.yaml` is a **one-shot bootstrap**, not a runtime config file. The seeder (`libs/idun_agent_standalone/src/idun_agent_standalone/infrastructure/scripts/seed.py`) runs each `_seed_<resource>_if_empty` helper, and every helper bails when the corresponding row already exists. After the first successful boot, the DB is the source of truth and `config.yaml` is effectively ignored.
 
     **Fix.** Edit through the admin panel at `/admin/` instead. Saves there flow through the three-round validation + reload pipeline and apply immediately (subject to the `RESTART_REQUIRED` rules under "Reload pipeline outcomes" above).
 
-    If you really want to re-seed from YAML, you need to clear the relevant DB rows first. For a clean restart, stop the server, delete `idun_standalone.db` (or, on Postgres, truncate the seeded tables), then run `idun setup` followed by `idun serve`.
+    If you really want to re-seed from YAML, clear the relevant DB rows first. For a clean restart, stop the server, delete `idun_standalone.db` (on Postgres, truncate the seeded tables), then run `idun init` again.
   </Accordion>
 
   <Accordion title="CLI startup warnings">
@@ -156,7 +163,7 @@ This page covers the runtime errors and log messages you are most likely to hit,
     LiteLLM SageMaker missing
     ```
 
-    These are noise from upstream packages and do not affect functionality. They will be filtered in a future release.
+    Noise from upstream packages, no effect on functionality. Will be filtered in a future release.
   </Accordion>
 </AccordionGroup>
 

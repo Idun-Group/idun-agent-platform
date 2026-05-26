@@ -11,14 +11,7 @@ Health and metadata routes (`/health`, `/_engine/info`) stay open. SSO does not 
 ## Configuration
 
 <Tabs>
-  <Tab title="Admin UI">
-    Open the running standalone at `/admin/sso/`. Pick a provider preset (Google, Microsoft Entra ID, Okta, or Custom OIDC), paste the issuer URL, client ID, audience, and any domain or email allowlists, then save. The reload pipeline validates the config and re-instantiates the engine with the new SSO settings.
-
-    <Frame>
-      ![SSO admin page](/images/ui/admin-sso.png)
-    </Frame>
-  </Tab>
-  <Tab title="YAML">
+  <Tab title="Config file">
     Add an `sso` block to your engine `config.yaml`:
 
     ```yaml config.yaml
@@ -32,6 +25,13 @@ Health and metadata routes (`/health`, `/_engine/info`) stay open. SSO does not 
       allowed_emails:
         - "auditor@partner.example"
     ```
+  </Tab>
+  <Tab title="Admin UI">
+    Open the running standalone at `/admin/sso/`. Pick a provider preset (Google, Microsoft Entra ID, Okta, or Custom OIDC), paste the issuer URL, client ID, audience, and any domain or email allowlists, then save. The reload pipeline validates the config and re-instantiates the engine with the new SSO settings.
+
+    <Frame>
+      ![SSO admin page](/images/ui/admin-sso.png)
+    </Frame>
   </Tab>
 </Tabs>
 

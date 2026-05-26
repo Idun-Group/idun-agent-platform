@@ -1,0 +1,14 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: ADK
+  config:
+    name: "deep-search-agent"
+    agent: "./app/agent.py:root_agent"
+    app_name: "deep_search"
+    session_service:
+      type: in_memory
+    memory_service:
+      type: in_memory

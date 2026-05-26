@@ -43,15 +43,94 @@ Self-hosted. Open source. No vendor lock-in.
 
 ## Quick start
 
-> **Prerequisites**: Python 3.12+ and pip.
+> **Prerequisites**: Python 3.12 or 3.13.
+
+Create a new directory and install the engine:
 
 ```bash
-pip install idun-agent-engine
-idun init my-agent
-cd my-agent && idun serve
+mkdir my-agent && cd my-agent
+pip install idun-agent-engine langgraph langchain-google-genai
 ```
 
-Open [http://localhost:8000](http://localhost:8000). Chat with your agent, then explore the admin at [/admin](http://localhost:8000/admin) and traces at [/admin/traces](http://localhost:8000/admin/traces).
+Save the three files below inside `my-agent/`.
+
+**`my-agent/agent.py`**
+
+```python
+from typing import Annotated, TypedDict
+
+from idun_agent_engine.mcp import get_langchain_tools_sync
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.graph import StateGraph, START
+from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode, tools_condition
+
+
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+
+
+tools = get_langchain_tools_sync()
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash").bind_tools(tools)
+
+
+def chatbot(state: State):
+    return {"messages": [llm.invoke(state["messages"])]}
+
+
+graph = StateGraph(State)
+graph.add_node("chatbot", chatbot)
+graph.add_node("tools", ToolNode(tools))
+graph.add_edge(START, "chatbot")
+graph.add_conditional_edges("chatbot", tools_condition)
+graph.add_edge("tools", "chatbot")
+```
+
+**`my-agent/config.yaml`**
+
+```yaml
+server:
+  api:
+    port: 8000
+
+agent:
+  type: LANGGRAPH
+  config:
+    name: "my-agent"
+    graph_definition: "./agent.py:graph"
+    checkpointer:
+      type: sqlite
+      db_url: "sqlite:///conversations.db"
+
+mcp_servers:
+  - name: idun-docs
+    transport: streamable_http
+    url: https://docs.idun-group.com/mcp
+```
+
+**`my-agent/.env`** — get a Gemini key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey):
+
+```
+GEMINI_API_KEY=your-key-here
+```
+
+From inside `my-agent/`, run:
+
+```bash
+idun init
+```
+
+> `graph_definition: "./agent.py:graph"` is resolved against the directory where you run `idun init`. Stay inside `my-agent/` when you launch it, or use an absolute path.
+
+A browser opens at [http://localhost:8000](http://localhost:8000) for the chat UI. The agent already has tools from the Idun docs MCP wired in. Visit [/admin](http://localhost:8000/admin) to configure more MCP servers, managed prompts, guardrails, observability, messaging integrations, and SSO. Visit [/admin/traces](http://localhost:8000/admin/traces) for the trace store.
+
+<p align="center">
+  <img src="docs/images/readme/welcome-ui.png" alt="Idun Agent chat UI welcome screen" width="100%"/>
+</p>
+
+<p align="center">
+  <img src="docs/images/readme/chat-mcp.png" alt="Chat answering an MCP-backed question with tool-call reasoning" width="100%"/>
+</p>
 
 > **What `pip install idun-agent-engine` delivers**
 >

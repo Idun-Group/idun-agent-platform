@@ -1,0 +1,19 @@
+server:
+  api:
+    port: 8000
+
+agent:
+  type: ADK
+  config:
+    name: "observability-adk"
+    agent: "./agent.py:root_agent"
+    app_name: "observability_adk"
+
+observability:
+  - provider: LANGFUSE
+    enabled: true
+    config:
+      host: LANGFUSE_HOST
+      public_key: LANGFUSE_PUBLIC_KEY
+      secret_key: LANGFUSE_SECRET_KEY
+      run_name: "observability-adk"
