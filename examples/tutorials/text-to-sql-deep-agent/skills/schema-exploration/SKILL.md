@@ -129,4 +129,3 @@ This requires the query-writing skill to execute.
 - Map the JOIN path
 - Explain the relationship chain
 - Suggest next steps (use query-writing skill)
-
