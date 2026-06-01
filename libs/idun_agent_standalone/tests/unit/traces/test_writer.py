@@ -7,6 +7,7 @@ import json
 from datetime import UTC, datetime
 from typing import Any
 
+import httpx
 import pytest
 from idun_agent_standalone.infrastructure.db.models.span import StandaloneSpanRow
 from idun_agent_standalone.infrastructure.db.models.trace import StandaloneTraceRow
@@ -15,6 +16,7 @@ from idun_agent_standalone.infrastructure.traces import writer as writer_module
 from idun_agent_standalone.infrastructure.traces.exporter import (
     StandaloneSpanExporter,
 )
+from idun_agent_standalone.infrastructure.traces.sinks import HttpSink
 from idun_agent_standalone.infrastructure.traces.writer import TraceWriter
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -492,3 +494,34 @@ async def test_pg_writer_calls_copy_records_to_table_with_correct_columns():
     # Each tuple has the right arity.
     for tup in captured["records"]:
         assert len(tup) == len(SPAN_COPY_COLUMNS)
+
+
+@pytest.mark.asyncio
+async def test_writer_posts_to_http_sink_when_configured():
+    """With an http_sink set, the drained batch is POSTed and the local
+    insert path is bypassed (no session factory provided)."""
+    posted: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        posted["body"] = json.loads(request.content)
+        return httpx.Response(202)
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    sink = HttpSink("https://mgr.test/collect", "k", client=client)
+    exporter = StandaloneSpanExporter(max_queue_size=10)
+    writer = TraceWriter(
+        exporter=exporter,
+        http_sink=sink,
+        max_export_batch_size=10,
+        schedule_delay_millis=50,
+    )
+
+    exporter.export(
+        [_fake_span("agent.run", span_id=0x1, trace_id=0xABC, parent_span_id=None)]
+    )
+    await writer._drain_once()
+    await client.aclose()
+
+    assert len(posted["body"]["spans"]) == 1
+    # Root span present → a trace row is finalized and POSTed too.
+    assert len(posted["body"]["traces"]) == 1
