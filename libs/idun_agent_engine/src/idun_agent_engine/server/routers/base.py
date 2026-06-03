@@ -153,7 +153,7 @@ async def reload_config(
                 )
 
             # Fetch new config
-            config_builder = ConfigBuilder().with_config_from_api(
+            config_builder = await ConfigBuilder().with_config_from_api(
                 agent_api_key=agent_api_key, url=manager_host
             )
             new_config = config_builder.build()
