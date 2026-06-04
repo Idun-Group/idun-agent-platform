@@ -10,7 +10,12 @@ from pydantic import BaseModel
 
 from ..._version import __version__
 from ...core.config_builder import ConfigBuilder
-from ..lifespan import cleanup_agent, configure_app
+from ..lifespan import (
+    cleanup_agent,
+    configure_app,
+    drain_inflight_runs,
+    ensure_reload_state,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -132,51 +137,71 @@ async def reload_config(
 ):
     """Reload the agent configuration from the manager or a file.
 
-    The optional ``_auth`` dependency consults
-    ``app.state.reload_auth`` (configured via ``create_app(reload_auth=...)``)
-    and, if set, invokes it. The configured callable is responsible for
-    raising :class:`fastapi.HTTPException` to deny the request.
+    The optional ``_auth`` dependency consults ``app.state.reload_auth``
+    (configured via ``create_app(reload_auth=...)``) and, if set, invokes it.
+    The configured callable raises :class:`fastapi.HTTPException` to deny.
+
+    Reloads serialize on a per-app lock and build the new agent before tearing
+    down the old one. ``app.state.agent`` is swapped in one assignment and the
+    previous agent is closed only after its in-flight runs drain, so a reload
+    never corrupts the shared route table or hands a request a closed agent.
     """
-    try:
-        if body and body.path:
-            logger.info(f"🔄 Reloading configuration from file: {body.path}...")
-            new_config = ConfigBuilder.load_from_file(body.path)
-        else:
-            logger.info("🔄 Reloading configuration from manager...")
-            agent_api_key = os.getenv("IDUN_AGENT_API_KEY")
-            manager_host = os.getenv("IDUN_MANAGER_HOST")
+    app = request.app
+    async with ensure_reload_state(app):
+        try:
+            if body and body.path:
+                logger.info(f"🔄 Reloading configuration from file: {body.path}...")
+                new_config = ConfigBuilder.load_from_file(body.path)
+            else:
+                logger.info("🔄 Reloading configuration from manager...")
+                agent_api_key = os.getenv("IDUN_AGENT_API_KEY")
+                manager_host = os.getenv("IDUN_MANAGER_HOST")
 
-            if not agent_api_key or not manager_host:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Cannot reload from manager: IDUN_AGENT_API_KEY or IDUN_MANAGER_HOST environment variables are missing.",
+                if not agent_api_key or not manager_host:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Cannot reload from manager: IDUN_AGENT_API_KEY or IDUN_MANAGER_HOST environment variables are missing.",
+                    )
+
+                config_builder = await ConfigBuilder().with_config_from_api(
+                    agent_api_key=agent_api_key, url=manager_host
                 )
+                new_config = config_builder.build()
 
-            # Fetch new config
-            config_builder = await ConfigBuilder().with_config_from_api(
-                agent_api_key=agent_api_key, url=manager_host
+            old_agent = getattr(app.state, "agent", None)
+
+            # Tear down the old agent's integrations, routes, and OTel, but keep
+            # the old agent object alive so its in-flight runs keep working.
+            await cleanup_agent(app, close_agent=False)
+
+            # Build and publish the new agent (configure_app swaps app.state.agent).
+            await configure_app(app, new_config)
+
+            # Drain runs that captured the old agent, then close it. Skipped when
+            # configure_app left the same object in place (no real swap).
+            if old_agent is not None and old_agent is not getattr(
+                app.state, "agent", None
+            ):
+                await drain_inflight_runs(app)
+                close_fn = getattr(old_agent, "close", None)
+                if callable(close_fn):
+                    result = close_fn()
+                    if inspect.isawaitable(result):
+                        await result
+
+            return {
+                "status": "success",
+                "message": "Agent configuration reloaded successfully",
+            }
+
+        except HTTPException:
+            raise
+
+        except Exception as e:
+            logger.exception(f"❌ Error reloading configuration: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"Failed to reload configuration: {str(e)}"
             )
-            new_config = config_builder.build()
-
-        # Cleanup old agent
-        await cleanup_agent(request.app)
-
-        # Initialize new agent
-        await configure_app(request.app, new_config)
-
-        return {
-            "status": "success",
-            "message": "Agent configuration reloaded successfully",
-        }
-
-    except HTTPException:
-        raise
-
-    except Exception as e:
-        logger.exception(f"❌ Error reloading configuration: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to reload configuration: {str(e)}"
-        )
 
 
 # Engine info — always served at /_engine/info. The bare `/` route is

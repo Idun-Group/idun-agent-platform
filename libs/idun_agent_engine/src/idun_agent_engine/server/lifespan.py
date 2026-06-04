@@ -3,6 +3,7 @@
 Initializes the agent at startup and cleans up resources on shutdown.
 """
 
+import asyncio
 import inspect
 import logging
 import warnings
@@ -108,16 +109,75 @@ def _parse_guardrails(
     return guards, failures
 
 
-async def cleanup_agent(app: FastAPI):
-    """Clean up agent resources."""
+def ensure_reload_state(app: FastAPI) -> asyncio.Lock:
+    """Get-or-create the reload lock and the in-flight run counter.
+
+    A reload holds the lock for its whole teardown+build so two reloads
+    cannot interleave changes to the route table, the OTel provider, or the
+    agent. ``inflight_runs`` tracks how many agent runs are mid-stream so a
+    reload can drain them before closing the agent they are using. Created
+    lazily here because an embedder may call ``configure_app`` directly,
+    without going through the engine lifespan.
+    """
+    lock = getattr(app.state, "reload_lock", None)
+    if lock is None:
+        lock = asyncio.Lock()
+        app.state.reload_lock = lock
+    if not hasattr(app.state, "inflight_runs"):
+        app.state.inflight_runs = 0
+    return lock
+
+
+async def counted_run_stream(app: FastAPI, source):
+    """Re-yield a run's SSE stream while counting it as in-flight.
+
+    A StreamingResponse generator stays alive until the client finishes
+    reading it, and it keeps using the agent it started with the whole time.
+    Counting that span lets a concurrent reload wait for the run to finish on
+    the old agent instead of closing the agent out from under it mid-stream.
+    """
+    ensure_reload_state(app)
+    app.state.inflight_runs += 1
+    try:
+        async for chunk in source:
+            yield chunk
+    finally:
+        app.state.inflight_runs -= 1
+
+
+async def drain_inflight_runs(app: FastAPI, *, timeout: float = 30.0) -> None:
+    """Wait for in-flight runs to finish, up to ``timeout`` seconds.
+
+    Reload calls this after swapping in the new agent and before closing the
+    old one, so runs that started on the old agent get to finish on it. The
+    timeout caps how long one stuck run can hold up a reload; past it we close
+    anyway and that run may error.
+    """
+    ensure_reload_state(app)
+    waited = 0.0
+    step = 0.05
+    while app.state.inflight_runs > 0 and waited < timeout:
+        await asyncio.sleep(step)
+        waited += step
+
+
+async def cleanup_agent(app: FastAPI, *, close_agent: bool = True):
+    """Tear down integrations, routes, and OTel, and close the agent.
+
+    Reload passes ``close_agent=False`` so the old agent keeps serving its
+    in-flight runs while the new one is built and swapped in; reload closes
+    the old agent itself once those runs drain. Boot and shutdown close it
+    here.
+    """
     set_active_registry(None)
-    agent = getattr(app.state, "agent", None)
-    if agent is not None:
-        close_fn = getattr(agent, "close", None)
-        if callable(close_fn):
-            result = close_fn()
-            if inspect.isawaitable(result):
-                await result
+    if close_agent:
+        agent = getattr(app.state, "agent", None)
+        if agent is not None:
+            close_fn = getattr(agent, "close", None)
+            if callable(close_fn):
+                result = close_fn()
+                if inspect.isawaitable(result):
+                    await result
 
     integrations = getattr(app.state, "integrations", [])
     if integrations:
@@ -314,6 +374,7 @@ async def lifespan(app: FastAPI):
 
     # Load config and initialize agent on startup
     logger.info("🚀 Server starting up...")
+    ensure_reload_state(app)
     if app.state.engine_config is not None:
         await configure_app(app, app.state.engine_config)
     else:
