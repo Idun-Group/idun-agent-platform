@@ -92,3 +92,42 @@ def test_bind_all_with_password_auth_is_allowed(monkeypatch):
     settings = StandaloneSettings()
     assert settings.host == "0.0.0.0"
     assert settings.auth_mode == AuthMode.PASSWORD
+
+
+def test_manager_telemetry_requires_both_vars(monkeypatch):
+    monkeypatch.setenv("IDUN_MANAGER_HOST", "http://127.0.0.1:8900")
+    monkeypatch.delenv("IDUN_AGENT_API_KEY", raising=False)
+    with pytest.raises(ValidationError) as exc_info:
+        StandaloneSettings()
+    assert "IDUN_AGENT_API_KEY" in str(exc_info.value)
+
+
+def test_manager_telemetry_rejects_key_without_host(monkeypatch):
+    monkeypatch.delenv("IDUN_MANAGER_HOST", raising=False)
+    monkeypatch.setenv("IDUN_AGENT_API_KEY", "k")
+    with pytest.raises(ValidationError):
+        StandaloneSettings()
+
+
+def test_manager_host_requires_scheme(monkeypatch):
+    monkeypatch.setenv("IDUN_MANAGER_HOST", "mgr.internal:8080")
+    monkeypatch.setenv("IDUN_AGENT_API_KEY", "k")
+    with pytest.raises(ValidationError) as exc_info:
+        StandaloneSettings()
+    assert "scheme" in str(exc_info.value)
+
+
+def test_manager_telemetry_accepts_both_with_scheme(monkeypatch):
+    monkeypatch.setenv("IDUN_MANAGER_HOST", "http://127.0.0.1:8900")
+    monkeypatch.setenv("IDUN_AGENT_API_KEY", "k")
+    settings = StandaloneSettings()
+    assert settings.manager_host == "http://127.0.0.1:8900"
+    assert settings.agent_api_key == "k"
+
+
+def test_manager_telemetry_neither_set_is_local(monkeypatch):
+    monkeypatch.delenv("IDUN_MANAGER_HOST", raising=False)
+    monkeypatch.delenv("IDUN_AGENT_API_KEY", raising=False)
+    settings = StandaloneSettings()
+    assert settings.manager_host == ""
+    assert settings.agent_api_key == ""

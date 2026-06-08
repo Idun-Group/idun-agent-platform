@@ -82,6 +82,10 @@ class StandaloneSettings(BaseSettings):
         alias="IDUN_ALLOW_OPEN_ADMIN",
     )
 
+    # When both are set, traces are shipped to the manager.
+    manager_host: str = Field(default="", alias="IDUN_MANAGER_HOST")
+    agent_api_key: str = Field(default="", alias="IDUN_AGENT_API_KEY")
+
     @field_validator("admin_password_hash", "session_secret", mode="before")
     @classmethod
     def _strip_secret(cls, v: str) -> str:
@@ -107,6 +111,21 @@ class StandaloneSettings(BaseSettings):
                 "IDUN_ADMIN_AUTH_MODE=password requires "
                 f"IDUN_SESSION_SECRET to be at least {_MIN_SESSION_SECRET_LEN} "
                 "characters."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_manager_telemetry(self) -> Self:
+        """Manager telemetry is all-or-nothing, and the host needs a scheme."""
+        if bool(self.manager_host) != bool(self.agent_api_key):
+            raise SettingsValidationError(
+                "IDUN_MANAGER_HOST and IDUN_AGENT_API_KEY must be set together."
+            )
+        if self.manager_host and not self.manager_host.startswith(
+            ("http://", "https://")
+        ):
+            raise SettingsValidationError(
+                "IDUN_MANAGER_HOST must include a scheme (http:// or https://)."
             )
         return self
 

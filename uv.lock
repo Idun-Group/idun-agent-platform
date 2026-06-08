@@ -1525,7 +1525,7 @@ wheels = [
 [[package]]
 name = "guardrails-ai"
 version = "0.9.2"
-source = { git = "https://github.com/guardrails-ai/guardrails?rev=ee6999d84d3becdb3dbf5862ae7b893130ddacb8#ee6999d84d3becdb3dbf5862ae7b893130ddacb8" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "diff-match-patch" },
@@ -1554,6 +1554,10 @@ dependencies = [
     { name = "tiktoken" },
     { name = "typer" },
     { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1c/62/2b28a8f7f9fbea06cdb76885a44ec0a5e0bad758b53d317c7039a5dfd164/guardrails_ai-0.9.2.tar.gz", hash = "sha256:4c136b7ef9ef1562098cbe91338f71fe91824cbf1393f3e5b3a0d8a393f55851", size = 170657, upload-time = "2026-03-16T18:22:00.903Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cf/67/b1db74bf7bd6cbbdd5e6f37880ece08e9d6a785cf955c8ba652ed43ec880/guardrails_ai-0.9.2-py3-none-any.whl", hash = "sha256:530758c544383c23f6a755670673988a5446c90596102d629cc89311a3616fb7", size = 237653, upload-time = "2026-03-16T18:22:02.116Z" },
 ]
 
 [[package]]
@@ -1709,7 +1713,7 @@ wheels = [
 
 [[package]]
 name = "idun-agent-engine"
-version = "0.6.2"
+version = "0.6.3"
 source = { editable = "libs/idun_agent_engine" }
 dependencies = [
     { name = "ag-ui-adk" },
@@ -1813,7 +1817,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0,<=0.134.0" },
     { name = "google-adk", specifier = ">=1.19.0,<2.0.0" },
     { name = "google-cloud-logging", specifier = ">=3.10.0,<4.0.0" },
-    { name = "guardrails-ai", marker = "extra == 'guardrails'", git = "https://github.com/guardrails-ai/guardrails?rev=ee6999d84d3becdb3dbf5862ae7b893130ddacb8" },
+    { name = "guardrails-ai", marker = "extra == 'guardrails'", specifier = "==0.9.2" },
     { name = "httpx", specifier = ">=0.28.1,<0.29.0" },
     { name = "httpx-sse", specifier = ">=0.4.0,<1.0.0" },
     { name = "idun-agent-schema", editable = "libs/idun_agent_schema" },
@@ -1873,7 +1877,7 @@ dev = [
 
 [[package]]
 name = "idun-agent-schema"
-version = "0.6.2"
+version = "0.6.3"
 source = { editable = "libs/idun_agent_schema" }
 dependencies = [
     { name = "jinja2" },
@@ -1890,7 +1894,7 @@ requires-dist = [
 
 [[package]]
 name = "idun-agent-standalone"
-version = "0.6.2"
+version = "0.6.3"
 source = { editable = "libs/idun_agent_standalone" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1941,12 +1945,17 @@ requires-dist = [
 
 [[package]]
 name = "idun-engine"
-version = "0.6.2"
+version = "0.6.3"
 source = { virtual = "." }
 dependencies = [
     { name = "idun-agent-engine" },
     { name = "idun-agent-schema" },
     { name = "idun-agent-standalone" },
+]
+
+[package.optional-dependencies]
+guardrails = [
+    { name = "idun-agent-engine", extra = ["guardrails"] },
 ]
 
 [package.dev-dependencies]
@@ -1966,9 +1975,11 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "idun-agent-engine", editable = "libs/idun_agent_engine" },
+    { name = "idun-agent-engine", extras = ["guardrails"], marker = "extra == 'guardrails'", editable = "libs/idun_agent_engine" },
     { name = "idun-agent-schema", editable = "libs/idun_agent_schema" },
     { name = "idun-agent-standalone", editable = "libs/idun_agent_standalone" },
 ]
+provides-extras = ["guardrails"]
 
 [package.metadata.requires-dev]
 dev = [

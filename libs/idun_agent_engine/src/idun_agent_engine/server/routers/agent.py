@@ -29,6 +29,7 @@ from idun_agent_engine.server.dependencies import (
     get_capabilities,
     get_copilotkit_agent,
 )
+from idun_agent_engine.server.lifespan import counted_run_stream
 
 logger = logging.getLogger(__name__)
 agent_router = APIRouter(tags=["Runtime"])
@@ -267,7 +268,10 @@ async def run(
                 except Exception:
                     yield 'event: error\ndata: {"error": "Agent execution failed"}\n\n'
 
-    return StreamingResponse(event_generator(), media_type=encoder.get_content_type())
+    return StreamingResponse(
+        counted_run_stream(request.app, event_generator()),
+        media_type=encoder.get_content_type(),
+    )
 
 
 @agent_router.get("/graph", response_model=AgentGraph)
@@ -354,6 +358,7 @@ async def get_config(request: Request):
 @agent_router.post("/stream", deprecated=True)
 async def stream(
     request: ChatRequest,
+    http_request: Request,
     agent: Annotated[BaseAgent, Depends(get_agent)],
     _user: Annotated[dict | None, Depends(get_verified_user)],
 ):
@@ -369,7 +374,10 @@ async def stream(
             async for event in agent.stream(message):
                 yield f"data: {event.model_dump_json()}\n\n"
 
-        return StreamingResponse(event_stream(), media_type="text/event-stream")
+        return StreamingResponse(
+            counted_run_stream(http_request.app, event_stream()),
+            media_type="text/event-stream",
+        )
     except Exception as e:  # noqa: BLE001
         logger.error(
             f"Stream failed — session_id={request.session_id}, error={e}",
@@ -419,7 +427,7 @@ async def copilotkit_stream(
                     yield encoder.encode(event)  # type: ignore[arg-type]
 
             return StreamingResponse(
-                event_generator(),  # type: ignore[arg-type]
+                counted_run_stream(request.app, event_generator()),  # type: ignore[arg-type]
                 media_type=encoder.get_content_type(),
             )
         except Exception as e:  # noqa: BLE001
@@ -487,7 +495,8 @@ async def copilotkit_stream(
                         yield 'event: error\ndata: {"error": "Agent execution failed"}\n\n'
 
             return StreamingResponse(
-                event_generator(), media_type=encoder.get_content_type()
+                counted_run_stream(request.app, event_generator()),
+                media_type=encoder.get_content_type(),
             )
         except Exception as e:  # noqa: BLE001
             raise HTTPException(status_code=500, detail=str(e)) from e

@@ -55,8 +55,14 @@ jobs:
           enable-cache: false
 
       - name: Install workspace dependencies
+        # --all-extras pulls in idun-agent-engine's opt-in [guardrails] extra
+        # (guardrails-ai + the `guardrails` CLI) so the guardrails tests run for
+        # real instead of erroring on a missing CLI. guardrails is the only
+        # extra in the workspace, so this stays lean. The conftest's
+        # pytest_sessionstart configures the Hub and installs validators when the
+        # CLI is present and GUARDRAILS_API_KEY is set.
         run: |
-          uv sync --group dev
+          uv sync --group dev --all-extras
 
       - name: Run engine tests
         env:

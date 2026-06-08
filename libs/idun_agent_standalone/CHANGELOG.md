@@ -6,6 +6,14 @@ All notable changes to `idun-agent-standalone` are documented here. This package
 
 _No unreleased changes yet._
 
+## 0.6.3 — 2026-06-08
+
+Patch release. Adds a central telemetry sink for enrolled-mode deployments (#698).
+
+### Added
+
+- **HTTP telemetry sink.** When `IDUN_MANAGER_HOST` and `IDUN_AGENT_API_KEY` are both set, the trace writer ships span/trace batches to the manager's `/collect` endpoint (Bearer auth) instead of the local DB, so enrolled agents report telemetry centrally. Bootstrap selects between local-DB and manager-HTTP modes from settings, and the retention scheduler is skipped in manager mode (#698).
+
 ## 0.6.2 — 2026-05-21
 
 Patch release. Fixes a cluster of SPA-navigation bugs in the standalone admin UI under Next.js 15 `output: "export"` + FastAPI SPA-rewrite, where soft client-side navigation and cookie handling do not behave as they would in a standard server-rendered Next.js app.

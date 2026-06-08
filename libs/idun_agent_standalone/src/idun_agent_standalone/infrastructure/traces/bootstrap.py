@@ -22,10 +22,6 @@ catches its own failures and logs instead of propagating, matching the
 fail-open contract of ``otel_lifecycle.attach_*`` and the writer's
 ``_drain_once`` loop.
 
-Locked design:
-``~/Documents/GitHub/idun-dev/tasks/standalone-traces-trace-pr-09-05-2026/PLAN.md``
-    § Phase T7
-``~/Documents/GitHub/idun-dev/tasks/trace-feature-08-05-2026/08-otel-pipeline-integration.md``
 """
 
 from __future__ import annotations
@@ -33,6 +29,7 @@ from __future__ import annotations
 import inspect
 import logging
 
+import httpx
 from fastapi import FastAPI
 from idun_agent_engine.observability import otel_lifecycle
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -40,6 +37,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from . import costs
 from .exporter import StandaloneSpanExporter
 from .retention import RetentionScheduler
+from .sinks import HttpSink
 from .writer import TraceWriter
 
 logger = logging.getLogger(__name__)
@@ -118,6 +116,8 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
     max_attribute_bytes = getattr(settings, "traces_input_value_max_bytes", 65536)
     prices_refresh_enabled = getattr(settings, "prices_refresh_enabled", False)
     costs.set_refresh_enabled(bool(prices_refresh_enabled))
+    manager_host = getattr(settings, "manager_host", "") or ""
+    agent_api_key = getattr(settings, "agent_api_key", "") or ""
 
     # 2. Resolve the active observability config so we know whether
     #    to self-install LangChainInstrumentor.
@@ -309,17 +309,25 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
         otel_lifecycle.attach_span_processor(processor)
     except Exception:
         logger.exception(
-            "trace pipeline: BatchSpanProcessor attach failed; "
-            "trace capture disabled"
+            "trace pipeline: BatchSpanProcessor attach failed; trace capture disabled"
         )
         return
 
-    # 7. Spawn writer + retention. Both require app.state.sessionmaker.
+    # 7. Build the span sink: manager host + agent key configured → ship
+    #    to the manager; otherwise persist locally via the session factory.
     session_factory = getattr(app.state, "sessionmaker", None)
-    if session_factory is None:
+    http_sink = None
+    if manager_host and agent_api_key:
+        http_client = httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=2.0))
+        collect_url = f"{manager_host.rstrip('/')}/api/v1/telemetry/collect"
+        http_sink = HttpSink(collect_url, agent_api_key, client=http_client)
+        app.state.trace_http_client = http_client
+        logger.info("trace pipeline: shipping spans to %s", collect_url)
+
+    if http_sink is None and session_factory is None:
         logger.warning(
-            "trace pipeline: app.state.sessionmaker missing; writer + "
-            "retention not spawned (spans will queue but never persist)"
+            "trace pipeline: no manager host and no app.state.sessionmaker; "
+            "writer not spawned (spans will queue but never persist)"
         )
         return
 
@@ -327,6 +335,7 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
         writer = TraceWriter(
             exporter=exporter,
             session_factory=session_factory,
+            http_sink=http_sink,
             max_export_batch_size=_MAX_EXPORT_BATCH_SIZE,
             schedule_delay_millis=_SCHEDULE_DELAY_MILLIS,
         )
@@ -335,17 +344,24 @@ async def attach_trace_pipeline(app: FastAPI) -> None:
     except Exception:
         logger.exception("trace pipeline: writer task failed to start")
 
-    try:
-        retention = RetentionScheduler(
-            session_factory=session_factory,
-            retention_days=int(retention_days),
-        )
-        await retention.start()
-        app.state.trace_retention_task = retention
-    except Exception:
-        logger.exception("trace pipeline: retention scheduler failed to start")
+    # Retention prunes local trace tables; skip it when shipping to the manager.
+    if http_sink is None and session_factory is not None:
+        try:
+            retention = RetentionScheduler(
+                session_factory=session_factory,
+                retention_days=int(retention_days),
+            )
+            await retention.start()
+            app.state.trace_retention_task = retention
+        except Exception:
+            logger.exception("trace pipeline: retention scheduler failed to start")
+    elif http_sink is not None:
+        logger.warning("trace pipeline: local retention disabled (manager mode)")
 
-    logger.info("trace pipeline attached")
+    logger.info(
+        "trace pipeline attached (%s mode)",
+        "manager" if http_sink is not None else "local",
+    )
 
 
 async def _stop_previous_tasks(app: FastAPI) -> None:
@@ -372,3 +388,13 @@ async def _stop_previous_tasks(app: FastAPI) -> None:
                 "trace pipeline: prior retention.stop() raised; continuing"
             )
         app.state.trace_retention_task = None
+
+    prior_client = getattr(app.state, "trace_http_client", None)
+    if prior_client is not None:
+        try:
+            await prior_client.aclose()
+        except Exception:
+            logger.exception(
+                "trace pipeline: prior http client aclose() raised; continuing"
+            )
+        app.state.trace_http_client = None

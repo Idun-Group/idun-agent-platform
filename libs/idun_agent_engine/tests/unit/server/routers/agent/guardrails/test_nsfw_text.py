@@ -1,10 +1,20 @@
 import os
+import shutil
 
 import pytest
 from fastapi.testclient import TestClient
 
 from idun_agent_engine.core.app_factory import create_app
 from idun_agent_engine.core.config_builder import ConfigBuilder
+
+# guardrails-ai is an opt-in extra; without it the `guardrails` CLI is absent
+# and the guard cannot be built. Skip (rather than fail) so the suite degrades
+# gracefully when the extra isn't installed. CI installs it via
+# `uv sync --all-extras`, so these run there. Mirrors tests/conftest.py.
+pytestmark = pytest.mark.skipif(
+    shutil.which("guardrails") is None,
+    reason="guardrails-ai optional extra not installed (no `guardrails` CLI on PATH)",
+)
 
 
 @pytest.mark.unit

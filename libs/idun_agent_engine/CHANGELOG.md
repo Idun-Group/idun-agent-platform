@@ -6,6 +6,18 @@ All notable changes to `idun-agent-engine` are documented here. This project fol
 
 _No unreleased changes yet._
 
+## 0.6.3 — 2026-06-08
+
+Patch release. Hardens the `/reload` pipeline under concurrency and makes config-from-API async (#698).
+
+### Fixed
+
+- **Reload concurrency.** Reloads now serialize on a per-app `asyncio.Lock`, build the new agent before tearing down the old one, and swap `app.state.agent` atomically — fixing a deadlock when reloads overlapped and a mid-run `'NoneType' object is not a mapping` crash when a run was in flight during a swap. In-flight streaming runs are drained before the old agent is closed, and the in-flight count is now taken at stream construction rather than the body generator's first iteration, so a concurrent reload can no longer close an agent out from under a run whose stream has not started yet (#698).
+
+### Changed
+
+- **`with_config_from_api` is now async** and built on `httpx`, with trailing-slash normalisation and consistent `ValueError` wrapping, to support the enrolled-mode boot flow (#698).
+
 ## 0.6.2 — 2026-05-21
 
 Patch release. No engine code changes. Ships the bundled `idun-agent-standalone` UI at 0.6.2, which fixes a cluster of SPA-navigation bugs in the admin surface under Next.js 15 `output: "export"` (AuthGuard `?next=` preservation, post-login hard-nav, trace detail soft-nav resolution, sidebar Traces + post-delete hard-nav). See `libs/idun_agent_standalone/CHANGELOG.md` for the full list (#682).
