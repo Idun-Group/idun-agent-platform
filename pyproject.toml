@@ -12,6 +12,15 @@ dependencies = [
     "idun-agent-standalone",
 ]
 
+[project.optional-dependencies]
+# Re-export idun-agent-engine's opt-in [guardrails] extra at the workspace root.
+# uv's `--extra` / `--all-extras` apply to the ROOT project's extras, not to
+# workspace members', so without this a root-level `uv sync` cannot reach the
+# engine's guardrails extra and the `guardrails` CLI never lands in .venv/bin
+# (the cause of the e2e "Failed to spawn: guardrails" step). Kept opt-in so a
+# plain `uv sync` stays lean.
+guardrails = ["idun-agent-engine[guardrails]"]
+
 [dependency-groups]
 dev = [
     "ruff>=0.6.5,<0.7",

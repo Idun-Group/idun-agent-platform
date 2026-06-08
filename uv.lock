@@ -1953,6 +1953,11 @@ dependencies = [
     { name = "idun-agent-standalone" },
 ]
 
+[package.optional-dependencies]
+guardrails = [
+    { name = "idun-agent-engine", extra = ["guardrails"] },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "langchain-openai" },
@@ -1970,9 +1975,11 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "idun-agent-engine", editable = "libs/idun_agent_engine" },
+    { name = "idun-agent-engine", extras = ["guardrails"], marker = "extra == 'guardrails'", editable = "libs/idun_agent_engine" },
     { name = "idun-agent-schema", editable = "libs/idun_agent_schema" },
     { name = "idun-agent-standalone", editable = "libs/idun_agent_standalone" },
 ]
+provides-extras = ["guardrails"]
 
 [package.metadata.requires-dev]
 dev = [
