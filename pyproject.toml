@@ -12,6 +12,15 @@ dependencies = [
     "idun-agent-standalone",
 ]
 
+[project.optional-dependencies]
+# Re-export idun-agent-engine's opt-in [guardrails] extra at the workspace root.
+# uv's `--extra` / `--all-extras` apply to the ROOT project's extras, not to
+# workspace members', so without this a root-level `uv sync` cannot reach the
+# engine's guardrails extra and the `guardrails` CLI never lands in .venv/bin
+# (the cause of the e2e "Failed to spawn: guardrails" step). Kept opt-in so a
+# plain `uv sync` stays lean.
+guardrails = ["idun-agent-engine[guardrails]"]
+
 [dependency-groups]
 dev = [
     "ruff>=0.6.5,<0.7",
@@ -43,20 +52,12 @@ members = [
 idun-agent-engine = { workspace = true }
 idun-agent-schema = { workspace = true }
 idun-agent-standalone = { workspace = true }
-# Temporary workaround: the PyPI ``guardrails-ai`` project was quarantined for
-# a security incident, so the published 0.9.2 wheel is no longer resolvable.
-# Point uv at the upstream git commit so ``uv lock`` / ``uv sync`` succeed for
-# the optional ``[guardrails]`` extra of idun-agent-engine. Source overrides
-# apply only to local resolution — published engine wheels still reference
-# ``guardrails-ai==0.9.2`` on PyPI, so end-users are unaffected once upstream
-# restores the project. Remove this entry when that happens.
-#
-# ``rev`` is the peeled commit object of the annotated ``v0.9.2`` tag, pinned
-# rather than the tag name itself — tags can be moved or rewritten upstream,
-# commit SHAs cannot, so this keeps resolution reproducible and reduces
-# supply-chain risk. To refresh: ``git ls-remote --tags
-# https://github.com/guardrails-ai/guardrails | grep 'v0.9.2\^{}'``.
-guardrails-ai = { git = "https://github.com/guardrails-ai/guardrails", rev = "ee6999d84d3becdb3dbf5862ae7b893130ddacb8" }
+# NOTE: the temporary ``guardrails-ai`` git-source override (added in #642 while
+# the PyPI project was quarantined for a security incident) has been removed now
+# that PyPI restored the project — ``guardrails-ai==0.9.2`` resolves from PyPI
+# again, and its wheel ships the ``guardrails`` console script the git build
+# omitted. ``guardrails-ai`` stays in the optional ``[guardrails]`` extra of
+# idun-agent-engine. Closes #643.
 
 [build-system]
 requires = ["hatchling"]

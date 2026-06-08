@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+import httpx
 import yaml
 from idun_agent_schema.engine.adk import AdkAgentConfig
 from idun_agent_schema.engine.agent_framework import AgentFramework
@@ -28,6 +29,11 @@ from ..agent.base import BaseAgent
 from .engine_config import AgentConfig, EngineConfig, ServerConfig
 
 logger = logging.getLogger(__name__)
+
+
+async def _fetch_config(url: str, headers: dict[str, str]) -> httpx.Response:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=5.0)) as client:
+        return await client.get(url, headers=headers)
 
 
 class ConfigBuilder:
@@ -95,18 +101,16 @@ class ConfigBuilder:
         self._server_config = ServerConfig(api=api_config)
         return self
 
-    def with_config_from_api(self, agent_api_key: str, url: str) -> "ConfigBuilder":
+    async def with_config_from_api(self, agent_api_key: str, url: str) -> "ConfigBuilder":
         """Fetch config from the idun agent manager API and populate the builder.
 
         Requires the agent api key to pass in the headers.
         """
-        import requests  # TODO: replace with httpx
-        import yaml
-
         headers = {"auth": f"Bearer {agent_api_key}"}
         try:
-            logger.info(f"Fetching config from {url}/api/v1/agents/config")
-            response = requests.get(url=url + "/api/v1/agents/config", headers=headers)
+            base = url.rstrip("/")
+            logger.info(f"Fetching config from {base}/api/v1/agents/config")
+            response = await _fetch_config(f"{base}/api/v1/agents/config", headers)
             if response.status_code != 200:
                 raise ValueError(
                     f"Error retrieving config from url. response: {response.text}"

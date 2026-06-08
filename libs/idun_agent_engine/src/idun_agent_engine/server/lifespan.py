@@ -3,6 +3,7 @@
 Initializes the agent at startup and cleans up resources on shutdown.
 """
 
+import asyncio
 import inspect
 import logging
 import warnings
@@ -108,16 +109,104 @@ def _parse_guardrails(
     return guards, failures
 
 
-async def cleanup_agent(app: FastAPI):
-    """Clean up agent resources."""
+def ensure_reload_state(app: FastAPI) -> asyncio.Lock:
+    """Get-or-create the reload lock and the in-flight run counter.
+
+    A reload holds the lock for its whole teardown+build so two reloads
+    cannot interleave changes to the route table, the OTel provider, or the
+    agent. ``inflight_runs`` tracks how many agent runs are mid-stream so a
+    reload can drain them before closing the agent they are using. Created
+    lazily here because an embedder may call ``configure_app`` directly,
+    without going through the engine lifespan.
+    """
+    lock = getattr(app.state, "reload_lock", None)
+    if lock is None:
+        lock = asyncio.Lock()
+        app.state.reload_lock = lock
+    if not hasattr(app.state, "inflight_runs"):
+        app.state.inflight_runs = 0
+    return lock
+
+
+def counted_run_stream(app: FastAPI, source):
+    """Re-yield a run's SSE stream while counting it as in-flight.
+
+    A StreamingResponse generator stays alive until the client finishes
+    reading it, and it keeps using the agent it started with the whole time.
+    Counting that span lets a concurrent reload wait for the run to finish on
+    the old agent instead of closing the agent out from under it mid-stream.
+
+    The count is taken *here*, synchronously when the route handler constructs
+    the wrapper, not on the body generator's first iteration. Starlette does
+    not start a StreamingResponse body until after it has sent the response
+    headers (an ``await`` that yields control to the loop), so an increment
+    deferred to first iteration would leave a window between the route
+    returning ``StreamingResponse`` and the body starting in which a concurrent
+    reload observes ``inflight_runs == 0``, drains, and closes the very agent
+    this stream is about to call ``run`` on. Counting at construction collapses
+    that window to zero; the matching decrement runs in the body's ``finally``,
+    which Starlette always reaches because it iterates (and, on client
+    disconnect, ``aclose``s) the body iterator.
+    """
+    ensure_reload_state(app)
+    app.state.inflight_runs += 1
+    return _counted_run_stream_body(app, source)
+
+
+async def _counted_run_stream_body(app: FastAPI, source):
+    """Body half of :func:`counted_run_stream`; see its docstring for why the
+    increment lives in the synchronous wrapper and only the decrement here."""
+    try:
+        async for chunk in source:
+            yield chunk
+    finally:
+        app.state.inflight_runs -= 1
+
+
+async def drain_inflight_runs(app: FastAPI, *, timeout: float = 30.0) -> None:
+    """Wait for in-flight runs to finish, up to ``timeout`` seconds.
+
+    Reload calls this after swapping in the new agent and before closing the
+    old one, so runs that started on the old agent get to finish on it. The
+    timeout caps how long one stuck run can hold up a reload; past it we close
+    anyway and that run may error.
+
+    ``inflight_runs`` is a single process-wide counter, not partitioned by
+    agent generation. Runs that start on the *new* agent after the swap also
+    bump it, so under continuous traffic this can wait the full ``timeout``
+    before the old agent closes even though the old agent's own runs drained
+    much earlier. That is an accepted, bounded cost: correctness never depends
+    on it (the old agent's runs hold their own reference and finish regardless;
+    the only penalty is delayed cleanup of the old agent, capped at ``timeout``).
+    A precise drain would require keying the counter by the agent object each
+    run captured; deferred as it touches every streaming call site, including
+    the deprecated copilotkit paths that resolve a separate agent.
+    """
+    ensure_reload_state(app)
+    waited = 0.0
+    step = 0.05
+    while app.state.inflight_runs > 0 and waited < timeout:
+        await asyncio.sleep(step)
+        waited += step
+
+
+async def cleanup_agent(app: FastAPI, *, close_agent: bool = True):
+    """Tear down integrations, routes, and OTel, and close the agent.
+
+    Reload passes ``close_agent=False`` so the old agent keeps serving its
+    in-flight runs while the new one is built and swapped in; reload closes
+    the old agent itself once those runs drain. Boot and shutdown close it
+    here.
+    """
     set_active_registry(None)
-    agent = getattr(app.state, "agent", None)
-    if agent is not None:
-        close_fn = getattr(agent, "close", None)
-        if callable(close_fn):
-            result = close_fn()
-            if inspect.isawaitable(result):
-                await result
+    if close_agent:
+        agent = getattr(app.state, "agent", None)
+        if agent is not None:
+            close_fn = getattr(agent, "close", None)
+            if callable(close_fn):
+                result = close_fn()
+                if inspect.isawaitable(result):
+                    await result
 
     integrations = getattr(app.state, "integrations", [])
     if integrations:
@@ -314,6 +403,7 @@ async def lifespan(app: FastAPI):
 
     # Load config and initialize agent on startup
     logger.info("🚀 Server starting up...")
+    ensure_reload_state(app)
     if app.state.engine_config is not None:
         await configure_app(app, app.state.engine_config)
     else:

@@ -1,7 +1,7 @@
 """Tests for the configuration builder API."""
 
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import yaml
@@ -290,9 +290,8 @@ class TestConfigBuilderValidateAgentConfig:
 class TestConfigBuilderWithConfigFromAPI:
     """Test fetching configuration from remote API."""
 
-    @patch("requests.get")
-    def test_with_config_from_api_success(self, mock_get: Mock, tmp_path: Path) -> None:
-        """with_config_from_api fetches and parses config successfully."""
+    async def test_with_config_from_api_success(self) -> None:
+        """with_config_from_api fetches and parses config, sending auth + URL."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.text = yaml.dump(
@@ -309,24 +308,21 @@ class TestConfigBuilderWithConfigFromAPI:
                 }
             }
         )
-        mock_get.return_value = mock_response
+        mock_fetch = AsyncMock(return_value=mock_response)
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config", mock_fetch
+        ):
+            builder = await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000"
+            )
 
-        builder = ConfigBuilder().with_config_from_api(
-            agent_api_key="test-key", url="http://localhost:8000"
+        mock_fetch.assert_awaited_once_with(
+            "http://localhost:8000/api/v1/agents/config", {"auth": "Bearer test-key"}
         )
-
-        # Verify request was made with correct headers
-        mock_get.assert_called_once_with(
-            url="http://localhost:8000/api/v1/agents/config",
-            headers={"auth": "Bearer test-key"},
-        )
-
-        # Verify config was parsed
         engine_config = builder.build()
         assert engine_config.agent.config.name == "API Agent"
 
-    @patch("requests.get")
-    def test_with_config_from_api_with_observability(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_with_observability(self) -> None:
         """with_config_from_api parses observability config."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -355,42 +351,126 @@ class TestConfigBuilderWithConfigFromAPI:
                 }
             }
         )
-        mock_get.return_value = mock_response
-
-        builder = ConfigBuilder().with_config_from_api(
-            agent_api_key="test-key", url="http://localhost:8000"
-        )
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            builder = await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000"
+            )
 
         engine_config = builder.build()
         assert engine_config.observability is not None
         assert len(engine_config.observability) == 1
         assert engine_config.observability[0].provider.value == "LANGFUSE"
 
-    @patch("requests.get")
-    def test_with_config_from_api_http_error(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_http_error(self) -> None:
         """with_config_from_api raises error on HTTP failure."""
         mock_response = Mock()
         mock_response.status_code = 401
-        mock_response.json.return_value = {"error": "Unauthorized"}
-        mock_get.return_value = mock_response
+        mock_response.text = "Unauthorized"
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            with pytest.raises(ValueError, match="Error retrieving config from url"):
+                await ConfigBuilder().with_config_from_api(
+                    agent_api_key="invalid-key", url="http://localhost:8000"
+                )
 
-        with pytest.raises(ValueError, match="Error retrieving config from url"):
-            ConfigBuilder().with_config_from_api(
-                agent_api_key="invalid-key", url="http://localhost:8000"
-            )
-
-    @patch("requests.get")
-    def test_with_config_from_api_invalid_yaml(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_invalid_yaml(self) -> None:
         """with_config_from_api handles invalid YAML."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.text = "invalid: yaml: content:"
-        mock_get.return_value = mock_response
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            with pytest.raises(Exception):  # YAML parsing error  # noqa: B017
+                await ConfigBuilder().with_config_from_api(
+                    agent_api_key="test-key", url="http://localhost:8000"
+                )
 
-        with pytest.raises(Exception):  # YAML parsing error  # noqa: B017
-            ConfigBuilder().with_config_from_api(
-                agent_api_key="test-key", url="http://localhost:8000"
-            ).build()
+    async def test_with_config_from_api_wraps_transport_error(self) -> None:
+        """A transport failure surfaces as ValueError, not the raw error."""
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(side_effect=RuntimeError("connection refused")),
+        ):
+            with pytest.raises(ValueError, match="Error occurred while getting config"):
+                await ConfigBuilder().with_config_from_api(
+                    agent_api_key="test-key", url="http://localhost:8000"
+                )
+
+    async def test_with_config_from_api_missing_engine_config(self) -> None:
+        """A response without an engine_config payload raises ValueError."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = yaml.dump({"not_engine_config": {}})
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            with pytest.raises(ValueError):
+                await ConfigBuilder().with_config_from_api(
+                    agent_api_key="test-key", url="http://localhost:8000"
+                )
+
+    async def test_with_config_from_api_empty_body_raises(self) -> None:
+        """An empty 200 body parses to None; it must surface as a wrapped
+        ValueError, not a bare AttributeError from ``None.get``."""
+        mock_response = Mock(status_code=200)
+        mock_response.text = ""
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            with pytest.raises(ValueError, match="Error occurred while getting config"):
+                await ConfigBuilder().with_config_from_api(
+                    agent_api_key="test-key", url="http://localhost:8000"
+                )
+
+    async def test_with_config_from_api_non_mapping_body_raises(self) -> None:
+        """A scalar 200 body parses to a str; it must surface as a wrapped
+        ValueError, not a bare AttributeError from ``str.get``."""
+        mock_response = Mock(status_code=200)
+        mock_response.text = "just-a-string"
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            with pytest.raises(ValueError, match="Error occurred while getting config"):
+                await ConfigBuilder().with_config_from_api(
+                    agent_api_key="test-key", url="http://localhost:8000"
+                )
+
+    async def test_with_config_from_api_strips_trailing_slash(self) -> None:
+        """A trailing slash on the manager host must not yield a //double-slash
+        request path. The trace sink already rstrips the host; the config fetch
+        has to match or a host with a trailing slash 404s on the manager."""
+        mock_response = Mock(status_code=200)
+        mock_response.text = yaml.dump(
+            {
+                "engine_config": {
+                    "server": {"api": {"port": 8000}},
+                    "agent": {
+                        "type": "LANGGRAPH",
+                        "config": {
+                            "name": "Slash Agent",
+                            "graph_definition": "./agent.py:graph",
+                        },
+                    },
+                }
+            }
+        )
+        mock_fetch = AsyncMock(return_value=mock_response)
+        with patch("idun_agent_engine.core.config_builder._fetch_config", mock_fetch):
+            await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000/"
+            )
+        called_url = mock_fetch.await_args.args[0]
+        assert called_url == "http://localhost:8000/api/v1/agents/config"
 
 
 @pytest.mark.unit
@@ -478,8 +558,7 @@ class TestConfigBuilderSSO:
         assert new_builder._sso is not None
         assert new_builder._sso.issuer == "https://accounts.google.com"
 
-    @patch("requests.get")
-    def test_with_config_from_api_parses_sso(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_parses_sso(self) -> None:
         """with_config_from_api parses SSO config from API response."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -502,11 +581,13 @@ class TestConfigBuilderSSO:
                 }
             }
         )
-        mock_get.return_value = mock_response
-
-        builder = ConfigBuilder().with_config_from_api(
-            agent_api_key="test-key", url="http://localhost:8000"
-        )
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            builder = await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000"
+            )
 
         engine_config = builder.build()
         assert engine_config.sso is not None
@@ -514,8 +595,7 @@ class TestConfigBuilderSSO:
         assert engine_config.sso.client_id == "okta-client-id"
         assert engine_config.sso.audience == "api://default"
 
-    @patch("requests.get")
-    def test_with_config_from_api_without_sso(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_without_sso(self) -> None:
         """with_config_from_api sets SSO to None when not in response."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -533,11 +613,13 @@ class TestConfigBuilderSSO:
                 }
             }
         )
-        mock_get.return_value = mock_response
-
-        builder = ConfigBuilder().with_config_from_api(
-            agent_api_key="test-key", url="http://localhost:8000"
-        )
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            builder = await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000"
+            )
 
         engine_config = builder.build()
         assert engine_config.sso is None
@@ -639,8 +721,7 @@ class TestConfigBuilderIntegrations:
         assert new_builder._integrations is not None
         assert len(new_builder._integrations) == 1
 
-    @patch("requests.get")
-    def test_with_config_from_api_parses_integrations(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_parses_integrations(self) -> None:
         """with_config_from_api parses integrations config from API response."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -669,19 +750,20 @@ class TestConfigBuilderIntegrations:
                 }
             }
         )
-        mock_get.return_value = mock_response
-
-        builder = ConfigBuilder().with_config_from_api(
-            agent_api_key="test-key", url="http://localhost:8000"
-        )
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            builder = await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000"
+            )
 
         engine_config = builder.build()
         assert engine_config.integrations is not None
         assert len(engine_config.integrations) == 1
         assert engine_config.integrations[0].config.phone_number_id == "456"
 
-    @patch("requests.get")
-    def test_with_config_from_api_without_integrations(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_without_integrations(self) -> None:
         """with_config_from_api sets integrations to None when not in response."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -699,11 +781,13 @@ class TestConfigBuilderIntegrations:
                 }
             }
         )
-        mock_get.return_value = mock_response
-
-        builder = ConfigBuilder().with_config_from_api(
-            agent_api_key="test-key", url="http://localhost:8000"
-        )
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            builder = await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000"
+            )
 
         engine_config = builder.build()
         assert engine_config.integrations is None
@@ -792,8 +876,7 @@ class TestConfigBuilderPrompts:
         assert len(new_builder._prompts) == 1
         assert new_builder._prompts[0].prompt_id == "sys"
 
-    @patch("requests.get")
-    def test_with_config_from_api_parses_prompts(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_parses_prompts(self) -> None:
         """with_config_from_api parses prompts config from API response."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -819,11 +902,13 @@ class TestConfigBuilderPrompts:
                 }
             }
         )
-        mock_get.return_value = mock_response
-
-        builder = ConfigBuilder().with_config_from_api(
-            agent_api_key="test-key", url="http://localhost:8000"
-        )
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            builder = await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000"
+            )
 
         engine_config = builder.build()
         assert engine_config.prompts is not None
@@ -832,8 +917,7 @@ class TestConfigBuilderPrompts:
         assert engine_config.prompts[0].version == 3
         assert engine_config.prompts[0].content == "You are {{ role }}."
 
-    @patch("requests.get")
-    def test_with_config_from_api_without_prompts(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_without_prompts(self) -> None:
         """with_config_from_api sets prompts to None when not in response."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -851,11 +935,13 @@ class TestConfigBuilderPrompts:
                 }
             }
         )
-        mock_get.return_value = mock_response
-
-        builder = ConfigBuilder().with_config_from_api(
-            agent_api_key="test-key", url="http://localhost:8000"
-        )
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            builder = await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000"
+            )
 
         engine_config = builder.build()
         assert engine_config.prompts is None
@@ -952,8 +1038,7 @@ class TestConfigBuilderMCPServers:
         assert engine_config.mcp_servers is not None
         assert len(engine_config.mcp_servers) == 0
 
-    @patch("requests.get")
-    def test_with_config_from_api_parses_mcp_servers(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_parses_mcp_servers(self) -> None:
         """with_config_from_api parses MCP servers from API response."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -966,11 +1051,13 @@ class TestConfigBuilderMCPServers:
                 }
             }
         )
-        mock_get.return_value = mock_response
-
-        builder = ConfigBuilder().with_config_from_api(
-            agent_api_key="test-key", url="http://localhost:8000"
-        )
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            builder = await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000"
+            )
 
         engine_config = builder.build()
         assert engine_config.mcp_servers is not None
@@ -982,8 +1069,7 @@ class TestConfigBuilderMCPServers:
         assert engine_config.mcp_servers[1].transport == "streamable_http"
         assert engine_config.mcp_servers[1].url == "https://docs.example.com/mcp"
 
-    @patch("requests.get")
-    def test_with_config_from_api_without_mcp_servers(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_without_mcp_servers(self) -> None:
         """with_config_from_api sets mcp_servers to None when not in response."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -995,17 +1081,18 @@ class TestConfigBuilderMCPServers:
                 }
             }
         )
-        mock_get.return_value = mock_response
-
-        builder = ConfigBuilder().with_config_from_api(
-            agent_api_key="test-key", url="http://localhost:8000"
-        )
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            builder = await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000"
+            )
 
         engine_config = builder.build()
         assert engine_config.mcp_servers is None
 
-    @patch("requests.get")
-    def test_with_config_from_api_full_config(self, mock_get: Mock) -> None:
+    async def test_with_config_from_api_full_config(self) -> None:
         """with_config_from_api parses all sections together."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -1033,11 +1120,13 @@ class TestConfigBuilderMCPServers:
                 }
             }
         )
-        mock_get.return_value = mock_response
-
-        builder = ConfigBuilder().with_config_from_api(
-            agent_api_key="test-key", url="http://localhost:8000"
-        )
+        with patch(
+            "idun_agent_engine.core.config_builder._fetch_config",
+            AsyncMock(return_value=mock_response),
+        ):
+            builder = await ConfigBuilder().with_config_from_api(
+                agent_api_key="test-key", url="http://localhost:8000"
+            )
 
         engine_config = builder.build()
         assert engine_config.server.api.port == 9000

@@ -1,8 +1,18 @@
 import os
+import shutil
 from pathlib import Path
 
 import pytest
 from fastapi import HTTPException
+
+# guardrails-ai is an opt-in extra; without it the `guardrails` CLI is absent
+# and the guard cannot be built. Skip (rather than fail) so the suite degrades
+# gracefully when the extra isn't installed. CI installs it via
+# `uv sync --all-extras`, so these run there. Mirrors tests/conftest.py.
+pytestmark = pytest.mark.skipif(
+    shutil.which("guardrails") is None,
+    reason="guardrails-ai optional extra not installed (no `guardrails` CLI on PATH)",
+)
 
 
 @pytest.fixture

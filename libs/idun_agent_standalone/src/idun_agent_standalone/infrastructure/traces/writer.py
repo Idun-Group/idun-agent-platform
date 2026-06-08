@@ -24,10 +24,6 @@ We use ``ON CONFLICT DO NOTHING`` (PG) / ``INSERT OR IGNORE`` (SQLite)
 so a duplicate root-span flush does not raise — the first finalise wins,
 later attempts are no-ops.
 
-Locked design:
-``~/Documents/GitHub/idun-dev/tasks/trace-feature-08-05-2026/08-otel-pipeline-integration.md``
-``~/Documents/GitHub/idun-dev/tasks/trace-feature-08-05-2026/13-sizing-perf.md``
-``~/Documents/GitHub/idun-dev/tasks/trace-feature-08-05-2026/18-postgres-throughput-probe.md``
 
 Fail-open: a failed batch insert is logged via ``logger.exception`` and
 the writer keeps draining. The agent route must never block on a trace
@@ -53,6 +49,7 @@ from idun_agent_standalone.infrastructure.db.models.trace import StandaloneTrace
 
 from ._finalizer import build_trace_rows
 from .exporter import StandaloneSpanExporter
+from .sinks import HttpSink
 
 logger = logging.getLogger(__name__)
 
@@ -121,12 +118,14 @@ class TraceWriter:
         self,
         *,
         exporter: StandaloneSpanExporter,
-        session_factory: async_sessionmaker[Any],
+        session_factory: async_sessionmaker[Any] | None = None,
+        http_sink: HttpSink | None = None,
         max_export_batch_size: int = 512,
         schedule_delay_millis: int = 2000,
     ) -> None:
         self._exporter = exporter
         self._session_factory = session_factory
+        self._http_sink = http_sink
         self._max_batch = max_export_batch_size
         self._schedule_delay = schedule_delay_millis / 1000.0
         self._stop_event: asyncio.Event | None = None
@@ -159,9 +158,7 @@ class TraceWriter:
             except asyncio.CancelledError:
                 pass  # clean cancel — expected shape after .cancel()
             except Exception:
-                logger.exception(
-                    "trace writer task raised during cancel; continuing"
-                )
+                logger.exception("trace writer task raised during cancel; continuing")
         except asyncio.CancelledError:
             pass
         finally:
@@ -215,6 +212,17 @@ class TraceWriter:
             span_rows.append(row)
 
         try:
+            if self._http_sink is not None:
+                await self._http_sink.write(span_rows, trace_rows)
+                return
+            if self._session_factory is None:
+                logger.error(
+                    "trace writer: no http_sink and no session_factory; "
+                    "dropping batch (spans=%d, traces=%d)",
+                    len(span_rows),
+                    len(trace_rows),
+                )
+                return
             async with self._session_factory() as session:
                 bind = session.get_bind()
                 if bind.dialect.name == "postgresql":
