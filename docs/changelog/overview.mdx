@@ -6,6 +6,49 @@ keywords: ["changelog", "release notes", "Idun Engine", "versions"]
 
 Track the latest changes, improvements, and bug fixes. The canonical per-package changelogs live in the repo: [`idun-agent-engine`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/CHANGELOG.md), [`idun-agent-standalone`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_standalone/CHANGELOG.md).
 
+<Update label="v0.6.3" description="2026-06-08">
+  Patch release. Hardens the standalone reload path under concurrency, makes config-from-API async for enrolled-mode boot, and adds a central telemetry sink so enrolled agents report traces to the manager instead of a local DB.
+
+  ### Added
+
+  - **Central telemetry sink (enrolled mode).** When `IDUN_MANAGER_HOST` and `IDUN_AGENT_API_KEY` are both set, the standalone trace writer ships span/trace batches over HTTP to the manager's `/collect` endpoint instead of writing to the local database. Bootstrap selects between local-DB and manager-HTTP modes from settings, and the local retention scheduler is skipped in manager mode.
+
+  ### Fixed
+
+  - **Reload concurrency.** `POST /reload` now serializes on a per-app lock, builds the new agent **before** tearing down the old one, and swaps it in atomically. Two HIGH-severity bugs are resolved: a deadlock when reloads overlapped, and a mid-run `'NoneType' object is not a mapping` crash when a run was in flight during a swap. In-flight streaming runs are now drained before the old agent is closed — and counted at stream construction rather than first iteration, closing the residual window where a fast reload could shut an agent down out from under a run whose stream hadn't started yet.
+
+  ### Changed
+
+  - **`with_config_from_api` is now async**, built on `httpx`, with trailing-slash normalization and consistent error handling — supporting the enrolled-mode boot flow.
+
+  ### Maintenance
+
+  - The optional `idun-agent-engine[guardrails]` extra installs cleanly from PyPI again now that the upstream `guardrails-ai` project was restored from quarantine. The published engine wheel is unchanged; only the dev/CI install path was affected.
+</Update>
+
+<Update label="v0.6.2" description="2026-05-21">
+  Patch release. No engine code changes — the engine wheel just bundles the standalone UI at 0.6.2, which fixes a cluster of SPA-navigation bugs in the admin surface under Next.js 15 `output: "export"` + FastAPI SPA-rewrite.
+
+  ### Fixed
+
+  - **AuthGuard `?next=` preservation.** Login now round-trips back to the admin page the operator tried to reach instead of defaulting to chat.
+  - **Hard-nav after login.** The success path forces a full navigation so the next request reissues with the freshly-set session cookie.
+  - **Trace detail on soft nav.** Switched trace-id resolution to the reactive `usePathname()` hook so `<Link>` clicks load the right trace instead of rendering "No spans recorded" until refresh.
+  - **Sidebar Traces & post-delete hard-nav.** Avoids a Next.js router-cache collision that could mount the trace-detail component at the list URL.
+</Update>
+
+<Update label="v0.6.1" description="2026-05-20">
+  Patch release. Opens the password-mode chat surface that the v0.6.0 hardening accidentally locked behind `/login`, and propagates a stable per-session user identity end-to-end.
+
+  ### Added
+
+  - **Per-user scoping under password auth.** The engine accepts a per-request `X-Idun-User-Id` header and binds it to a `current_user_id` ContextVar that adapters and the standalone trace writer read at the start of every `/agent/*` invocation, so chat history and traces can be scoped per user without a full OIDC ladder.
+
+  ### Fixed
+
+  - **Password-mode chat.** The chat shell is reachable again under password mode instead of being gated behind `/login`.
+</Update>
+
 <Update label="v0.6.0" description="2026-05-17">
   The release where Idun Engine becomes **the third path between LangGraph Cloud and DIY**. One `pip install` ships your LangGraph or Google ADK agent as a production-ready FastAPI service with a bundled Next.js chat / admin / traces UI, 15+ guardrails, multi-provider observability via OpenTelemetry, MCP tool governance, 5 memory backends, and OIDC. Self-hosted, open source, no vendor lock-in.
 
