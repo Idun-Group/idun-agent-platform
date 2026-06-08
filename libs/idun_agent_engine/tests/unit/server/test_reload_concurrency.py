@@ -270,3 +270,38 @@ async def test_counted_run_stream_decrements_on_error():
             pass
 
     assert app.state.inflight_runs == 0, "counter leaked when the stream errored"
+
+
+async def test_counted_run_stream_counts_before_first_iteration():
+    """The counter must register at construction time, not on first yield.
+
+    Starlette only starts a StreamingResponse body after sending the response
+    headers (an ``await`` that hands control back to the loop). If the in-flight
+    count waited until the body generator's first iteration, a reload firing in
+    the window between the route returning ``StreamingResponse`` and Starlette
+    starting the body would observe ``inflight_runs == 0``, drain immediately,
+    and close the very agent the stream is about to call ``run`` on -- the same
+    crash this reload work exists to prevent. Counting eagerly at construction
+    collapses that window to zero.
+    """
+    app = FastAPI()
+
+    started = asyncio.Event()
+
+    async def source():
+        started.set()
+        yield "a"
+
+    stream = counted_run_stream(app, source())
+    # The body generator has NOT started yet ...
+    assert not started.is_set()
+    # ... but the run must already be counted as in-flight.
+    assert app.state.inflight_runs == 1, (
+        "counter must increment when the stream is constructed, before the "
+        "body generator starts, to close the reload race window"
+    )
+
+    out = [chunk async for chunk in stream]
+    assert out == ["a"]
+    assert started.is_set()
+    assert app.state.inflight_runs == 0, "counter not released after the stream ended"

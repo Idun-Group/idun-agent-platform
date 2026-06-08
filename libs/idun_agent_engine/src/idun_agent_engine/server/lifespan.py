@@ -128,16 +128,34 @@ def ensure_reload_state(app: FastAPI) -> asyncio.Lock:
     return lock
 
 
-async def counted_run_stream(app: FastAPI, source):
+def counted_run_stream(app: FastAPI, source):
     """Re-yield a run's SSE stream while counting it as in-flight.
 
     A StreamingResponse generator stays alive until the client finishes
     reading it, and it keeps using the agent it started with the whole time.
     Counting that span lets a concurrent reload wait for the run to finish on
     the old agent instead of closing the agent out from under it mid-stream.
+
+    The count is taken *here*, synchronously when the route handler constructs
+    the wrapper, not on the body generator's first iteration. Starlette does
+    not start a StreamingResponse body until after it has sent the response
+    headers (an ``await`` that yields control to the loop), so an increment
+    deferred to first iteration would leave a window between the route
+    returning ``StreamingResponse`` and the body starting in which a concurrent
+    reload observes ``inflight_runs == 0``, drains, and closes the very agent
+    this stream is about to call ``run`` on. Counting at construction collapses
+    that window to zero; the matching decrement runs in the body's ``finally``,
+    which Starlette always reaches because it iterates (and, on client
+    disconnect, ``aclose``s) the body iterator.
     """
     ensure_reload_state(app)
     app.state.inflight_runs += 1
+    return _counted_run_stream_body(app, source)
+
+
+async def _counted_run_stream_body(app: FastAPI, source):
+    """Body half of :func:`counted_run_stream`; see its docstring for why the
+    increment lives in the synchronous wrapper and only the decrement here."""
     try:
         async for chunk in source:
             yield chunk
@@ -152,6 +170,17 @@ async def drain_inflight_runs(app: FastAPI, *, timeout: float = 30.0) -> None:
     old one, so runs that started on the old agent get to finish on it. The
     timeout caps how long one stuck run can hold up a reload; past it we close
     anyway and that run may error.
+
+    ``inflight_runs`` is a single process-wide counter, not partitioned by
+    agent generation. Runs that start on the *new* agent after the swap also
+    bump it, so under continuous traffic this can wait the full ``timeout``
+    before the old agent closes even though the old agent's own runs drained
+    much earlier. That is an accepted, bounded cost: correctness never depends
+    on it (the old agent's runs hold their own reference and finish regardless;
+    the only penalty is delayed cleanup of the old agent, capped at ``timeout``).
+    A precise drain would require keying the counter by the agent object each
+    run captured; deferred as it touches every streaming call site, including
+    the deprecated copilotkit paths that resolve a separate agent.
     """
     ensure_reload_state(app)
     waited = 0.0
