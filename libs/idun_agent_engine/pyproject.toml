@@ -45,25 +45,26 @@ dependencies = [
     # Agent frameworks and orchestration
     "deepagents>=0.2.8,<1.0.0",
     "langgraph>=1.0.0,<2.0.0",
-    "langgraph-prebuilt==1.0.8",
+    "langgraph-prebuilt==1.1.0",
     "langgraph-checkpoint-sqlite>=3.0.0,<4.0.0",
     "langgraph-checkpoint-postgres>=3.0.0,<4.0.0",
     "google-adk>=1.19.0,<2.0.0",
     "langchain>=1.0.0,<2.0.0",
-    # Cap below 1.4 — openinference-instrumentation-langchain declares
-    # ``langchain_core >= 0.1.0`` in its package metadata, and pip's
-    # ``--pre`` flag (used on TestPyPI installs) propagates to ALL
-    # packages, so the resolver picks up 1.4.0aN alphas which the
-    # instrumentor's pre-release-rejecting constraint refuses,
-    # silently disabling the entire trace pipeline. Bump this cap once
-    # langchain-core 1.4.0 final ships.
-    "langchain-core>=1.0.0,<1.4",
+    # Historical cap below 1.4 (lifted 2026-05-12). The cap was a
+    # TestPyPI ``--pre`` safeguard against ``langchain-core 1.4.0aN``
+    # alphas being picked up while ``openinference-instrumentation-
+    # langchain`` rejected pre-releases. ``langchain-core 1.4.0`` final
+    # has now shipped on PyPI, so the cap is lifted to the standard
+    # next-major bound. Required to unblock ``langgraph-prebuilt==1.1.0``
+    # which transitively pulls ``langgraph 1.2.x`` (pins
+    # ``langchain-core>=1.4.0``).
+    "langchain-core>=1.0.0,<2.0",
     "langchain-google-vertexai>=2.0.27,<4.0.0",
     # AG-UI and interactive interfaces
-    "ag-ui-protocol==0.1.13",
-    "ag-ui-langgraph==0.0.25",
-    "ag-ui-adk>=0.3.4,<0.6.0",
-    "copilotkit==0.1.78",
+    "ag-ui-protocol==0.1.18",
+    "ag-ui-langgraph==0.0.35",
+    "ag-ui-adk>=0.6.1,<0.7.0",
+    "copilotkit==0.1.88",
     # Security
     # guardrails-ai + openinference-instrumentation-guardrails moved to the
     # ``guardrails`` optional extra below. The PyPI ``guardrails-ai`` project
