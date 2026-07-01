@@ -138,7 +138,7 @@ Issues = "https://github.com/Idun-Group/idun-agent-platform/issues"
 
 [dependency-groups]
 dev = [
-    "ruff>=0.6.5,<0.13",
+    "ruff>=0.15.20,<0.16",
     "pre-commit>=3.8.0,<5",
     "mypy>=1.10.0,<2",
     "pytest>=8.3.3,<9",
