@@ -19,6 +19,7 @@ idun_agent_engine/
 │   └── server_runner   # run_server() → uvicorn wrapper
 ├── agent/              # Framework adapters (all implement BaseAgent ABC)
 │   ├── base            # BaseAgent protocol: initialize(), invoke(), stream(), copilotkit_agent_instance
+│   ├── loader_utils    # ensure_import_root(): puts a file-path agent's package root on sys.path before exec (shared by both loaders)
 │   ├── langgraph/      # Primary adapter. Full streaming (AG-UI events). Expects uncompiled StateGraph.
 │   └── adk/            # Google ADK adapter. Mature. Session + memory services. AG-UI streaming via /agent/run (ADKAGUIAgent).
 ├── server/             # FastAPI layer
@@ -192,7 +193,7 @@ All adapters implement `discover_capabilities()` (returns `AgentCapabilities`) a
 
 ### LangGraph: Key Details
 
-- **`graph_definition`**: Format `path/to/file.py:variable_name`. Tries file path first, falls back to Python module import.
+- **`graph_definition`**: Format `path/to/file.py:variable_name`. Tries file path first, falls back to Python module import. When loaded by file path, the agent file's package/project root is placed on `sys.path` first (via `agent/loader_utils.py`), so absolute package-relative imports like `from app.config import config` resolve.
 - **Checkpointers**: `InMemorySaver`, `AsyncSqliteSaver`, `AsyncPostgresSaver` — configured via YAML.
 - **Streaming**: Maps LangGraph `astream_events(v2)` to AG-UI events (RunStarted, StepStarted, TextMessageStart/Content/End, ToolCallStart/Args/End, ThinkingStart/End, RunFinished).
 - **Capability discovery (input/output schemas)**: the adapter reads `graph.input_schema` and `graph.output_schema` from the compiled `StateGraph` to populate `AgentCapabilities.input.mode` / `output.mode`. Operators are encouraged to declare these explicitly:
