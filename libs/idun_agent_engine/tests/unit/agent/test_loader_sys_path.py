@@ -98,6 +98,56 @@ def test_ensure_import_root_is_idempotent(tmp_path, clean_import_state):
     assert sys.path.count(str(tmp_path.resolve())) == 1
 
 
+def test_ensure_import_root_moves_existing_root_to_front(tmp_path, clean_import_state):
+    """A root already on sys.path but behind another entry is moved to index 0.
+
+    Regression for the precedence gap: without moving it, an earlier same-named
+    package would shadow the agent's own project.
+    """
+    from idun_agent_engine.agent.loader_utils import ensure_import_root
+
+    pkg_dir = _write_package_project(tmp_path, "myapp")
+    agent_file = pkg_dir / "agent.py"
+    agent_file.write_text("x = 1\n")
+
+    # Simulate the root sitting behind a decoy entry at index 0.
+    root_str = str(tmp_path.resolve())
+    sys.path.insert(0, "/decoy/earlier/entry")
+    sys.path.append(root_str)
+
+    ensure_import_root(agent_file.resolve())
+
+    assert sys.path[0] == root_str
+    assert sys.path.count(root_str) == 1
+
+
+def test_ensure_import_root_namespace_package_uses_marker_root(
+    tmp_path, clean_import_state
+):
+    """An implicit namespace package (no __init__.py) resolves via a project marker.
+
+    Regression for the namespace-package gap: the package's parent (the project
+    root holding pyproject.toml) must land on sys.path so `from app.config
+    import ...` resolves.
+    """
+    import importlib
+
+    from idun_agent_engine.agent.loader_utils import ensure_import_root
+
+    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'demo'\n")
+    ns_pkg = tmp_path / "app"  # NOTE: no __init__.py -> namespace package
+    ns_pkg.mkdir()
+    (ns_pkg / "config.py").write_text("SETTING = 'namespace-ok'\n")
+    agent_file = ns_pkg / "agent.py"
+    agent_file.write_text("x = 1\n")
+
+    ensure_import_root(agent_file.resolve())
+
+    assert str(tmp_path.resolve()) in sys.path
+    # The parent-on-path is what makes the package-relative import resolve.
+    mod = importlib.import_module("app.config")
+    assert mod.SETTING == "namespace-ok"
+
 
 # LangGraph loader — the reported regression
 
@@ -145,9 +195,7 @@ def test_langgraph_loader_raises_clear_error_without_fix(tmp_path, clean_import_
         loader._load_graph_builder(f"{agent_file.resolve()}:graph")
 
 
-
 # ADK loader
-
 
 
 def test_adk_loader_resolves_package_relative_import(tmp_path, clean_import_state):
@@ -175,9 +223,7 @@ def test_adk_loader_resolves_package_relative_import(tmp_path, clean_import_stat
     assert agent_instance.name == "mock"
 
 
-
 # Full-boot reproduction of issue #686
-
 
 
 @pytest.mark.asyncio
