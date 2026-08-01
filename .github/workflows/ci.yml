@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
@@ -42,7 +42,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
@@ -78,7 +78,7 @@ jobs:
     timeout-minutes: 15
     continue-on-error: true
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Clone idun-dev plugin
         env:
@@ -142,7 +142,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0      # full history for the diff
 
@@ -168,7 +168,7 @@ jobs:
         # NOTE: anthropics/claude-code-action@v1 has no `system_prompt_file`
         # input; the agent prompt is concatenated into `prompt` instead, and
         # the action posts its own sticky PR comment via `use_sticky_comment`.
-        uses: anthropics/claude-code-action@dde2242db6af13460b916652159b6ba19a598f30 # v1.0.120
+        uses: anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1.0.183
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           use_sticky_comment: "true"
@@ -197,7 +197,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
@@ -225,7 +225,7 @@ jobs:
           echo "::warning::See pip-audit-report.txt for Python dependency findings."
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
         with:
           version: 9
 
