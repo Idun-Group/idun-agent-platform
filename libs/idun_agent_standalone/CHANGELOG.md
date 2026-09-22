@@ -6,6 +6,14 @@ All notable changes to `idun-agent-standalone` are documented here. This package
 
 _No unreleased changes yet._
 
+## 0.6.4 — 2026-09-22
+
+Patch release. Telemetry now reports to PostHog EU (#735).
+
+### Changed
+
+- **Telemetry now reports to PostHog EU.** `runtime_config.py` serves `https://eu.i.posthog.com` and the EU project's write key to browsers through `/runtime-config.js`, and the UI's SSR/dev fallback in `lib/runtime-config.ts` is kept in sync with it. `_telemetry.py` has no constants of its own — it delegates to the engine singleton, so it follows. Telemetry stays on by default and `IDUN_TELEMETRY_ENABLED=false` is unchanged (#735).
+
 ## 0.6.3 — 2026-06-08
 
 Patch release. Adds a central telemetry sink for enrolled-mode deployments (#698).

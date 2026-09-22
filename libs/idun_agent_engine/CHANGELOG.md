@@ -6,6 +6,14 @@ All notable changes to `idun-agent-engine` are documented here. This project fol
 
 _No unreleased changes yet._
 
+## 0.6.4 — 2026-09-22
+
+Patch release. Telemetry now reports to PostHog EU (#735).
+
+### Changed
+
+- **Telemetry now reports to PostHog EU.** `telemetry/telemetry.py` sends to `https://eu.i.posthog.com` with the EU project's write key, instead of the US host and project. Data from the engine, the bundled standalone backend, and the bundled UI now lands in the EU region. Nothing else about telemetry changes: it stays on by default, `IDUN_TELEMETRY_ENABLED=false` is still the off-switch, and the event set and masking rules are untouched. Installs older than this release keep reporting to the US project until they upgrade (#735).
+
 ## 0.6.3 — 2026-06-08
 
 Patch release. Hardens the `/reload` pipeline under concurrency and makes config-from-API async (#698).
