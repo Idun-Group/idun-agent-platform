@@ -5,6 +5,12 @@ on:
     branches:
       - '**'  # Trigger on all branches and all commits
 
+# Uniform with the other publish workflows: product code must never emit
+# telemetry from CI. idun-agent-schema carries no telemetry client today, so
+# this is defence in depth for the wheel/sdist smoke steps below.
+env:
+  IDUN_TELEMETRY_ENABLED: "false"
+
 jobs:
   socket-scan:
     name: Socket security gate

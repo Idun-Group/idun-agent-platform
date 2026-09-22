@@ -17,6 +17,9 @@ on:
 
 env:
   PYTHON_VERSION: "3.12"
+  # The engine wheel smoke step below runs `idun`, whose telemetry is ON by
+  # default. A release pipeline is not real usage — opt out everywhere.
+  IDUN_TELEMETRY_ENABLED: "false"
 
 jobs:
   # ============================================================================

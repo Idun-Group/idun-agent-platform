@@ -9,6 +9,15 @@ concurrency:
   group: e2e-real-llm-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+# Product telemetry is ON by default in the engine, the standalone CLI and the
+# bundled UI (see libs/idun_agent_engine/.../telemetry/config.py). CI runs are
+# not real usage, so every job in this workflow opts out. `telemetry_enabled()`
+# and StandaloneSettings both parse "false" as off. The Playwright job needs no
+# separate browser switch: the UI reads its on/off flag from the backend's
+# /runtime-config.js, which is derived from this same variable.
+env:
+  IDUN_TELEMETRY_ENABLED: "false"
+
 jobs:
   preflight:
     name: Check secrets availability
@@ -66,7 +75,6 @@ jobs:
       GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GUARDRAILS_API_KEY: ${{ secrets.GUARDRAILS_API_KEY }}
-      IDUN_TELEMETRY_ENABLED: "false"
       # Force AI Studio auth (bypasses any host Vertex env that might
       # leak through — defense in depth; CI runner shouldn't have it,
       # but matches the conftest's explicit override).
@@ -127,7 +135,6 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LLM_PROVIDER: openai
       LLM_MODEL: gpt-5.4-mini
-      IDUN_TELEMETRY_ENABLED: "false"
       GOOGLE_GENAI_USE_VERTEXAI: "false"
       # Admin REST guardrail-add scenario also needs Guardrails Hub.
       GUARDRAILS_API_KEY: ${{ secrets.GUARDRAILS_API_KEY }}

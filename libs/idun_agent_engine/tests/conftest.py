@@ -85,6 +85,22 @@ def pytest_sessionstart(session):
             print(f"Failed to install {guard_url}: {e.stderr}")
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _disable_telemetry() -> Generator[None, None, None]:
+    """Keep the test suite out of the product telemetry stream.
+
+    Engine telemetry is opt-out (ON by default) and the server lifespan
+    fires ``engine started`` / ``engine stopped`` on every TestClient
+    boot, so an unguarded ``pytest`` run — locally or in CI — lands in
+    PostHog as real self-hosted usage. ``telemetry_enabled()`` reads
+    ``IDUN_TELEMETRY_ENABLED`` and treats "false" as off.
+    """
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setenv("IDUN_TELEMETRY_ENABLED", "false")
+    yield
+    monkeypatch.undo()
+
+
 @pytest.fixture
 def sample_langgraph_config() -> dict[str, Any]:
     """Provide a minimal LangGraph agent configuration dictionary.

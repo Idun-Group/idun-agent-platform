@@ -5,6 +5,13 @@ on:
     branches:
       - '**'  # Trigger on all branches and all commits
 
+# Product telemetry is ON by default in the engine and the standalone CLI (see
+# libs/idun_agent_engine/.../telemetry/config.py). The wheel smoke steps below
+# install and run `idun`, so every job in this workflow opts out —
+# `telemetry_enabled()` parses "false" as off.
+env:
+  IDUN_TELEMETRY_ENABLED: "false"
+
 jobs:
   socket-scan:
     name: Socket security gate

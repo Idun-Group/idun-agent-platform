@@ -23,6 +23,30 @@ def _parse_runtime_config(body: str) -> dict:
 
 
 @pytest.fixture
+async def standalone_telemetry_enabled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> AsyncIterator[FastAPI]:
+    """Boot the app with telemetry explicitly ON.
+
+    The suite-wide ``_disable_telemetry`` fixture (tests/conftest.py)
+    keeps ``IDUN_TELEMETRY_ENABLED=false`` for every test so the suite
+    never posts to PostHog, so the on-path has to opt back in here
+    rather than lean on the ambient default.
+    """
+    db_path = tmp_path / "standalone.db"
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_path}")
+    await asyncio.to_thread(upgrade_head)
+    monkeypatch.setenv("IDUN_ADMIN_AUTH_MODE", AuthMode.NONE.value)
+    monkeypatch.setenv("IDUN_TELEMETRY_ENABLED", "true")
+    settings = StandaloneSettings()
+    app = await create_standalone_app(settings)
+    try:
+        yield app
+    finally:
+        await app.state.db_engine.dispose()
+
+
+@pytest.fixture
 async def standalone_telemetry_disabled(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> AsyncIterator[FastAPI]:
@@ -82,8 +106,8 @@ async def test_runtime_config_theme_has_color_schemes(standalone):
     assert {"light", "dark"}.issubset(theme["colors"])
 
 
-async def test_runtime_config_includes_telemetry_block(standalone):
-    transport = ASGITransport(app=standalone)
+async def test_runtime_config_includes_telemetry_block(standalone_telemetry_enabled):
+    transport = ASGITransport(app=standalone_telemetry_enabled)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/runtime-config.js")
     config = _parse_runtime_config(response.text)
