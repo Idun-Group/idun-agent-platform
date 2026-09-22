@@ -91,7 +91,7 @@ jobs:
         run: uvx twine check libs/idun_agent_schema/dist/*
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           packages-dir: libs/idun_agent_schema/dist/
           verbose: true
@@ -214,7 +214,7 @@ jobs:
           idun hash-password --help
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           packages-dir: libs/idun_agent_engine/dist/
           verbose: true
