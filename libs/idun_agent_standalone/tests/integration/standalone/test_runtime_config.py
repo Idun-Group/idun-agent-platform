@@ -89,7 +89,7 @@ async def test_runtime_config_includes_telemetry_block(standalone):
     config = _parse_runtime_config(response.text)
     telemetry = config["telemetry"]
     assert telemetry["enabled"] is True
-    assert telemetry["host"] == "https://us.i.posthog.com"
+    assert telemetry["host"] == "https://eu.i.posthog.com"
     assert telemetry["projectKey"].startswith("phc_")
     assert telemetry["deploymentType"] == "self-hosted"
     assert telemetry["identifyUsers"] is True

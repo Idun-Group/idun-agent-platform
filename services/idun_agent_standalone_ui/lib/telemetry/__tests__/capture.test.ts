@@ -26,7 +26,7 @@ describe("capture()", () => {
     window.__IDUN_CONFIG__ = makeRuntimeConfig({
       telemetry: {
         enabled: false,
-        host: "https://us.i.posthog.com",
+        host: "https://eu.i.posthog.com",
         projectKey: "phc_t",
         deploymentType: "dev",
         identifyUsers: false,
@@ -42,7 +42,7 @@ describe("capture()", () => {
     window.__IDUN_CONFIG__ = makeRuntimeConfig({
       telemetry: {
         enabled: true,
-        host: "https://us.i.posthog.com",
+        host: "https://eu.i.posthog.com",
         projectKey: "phc_t",
         deploymentType: "self-hosted",
         identifyUsers: true,
@@ -70,7 +70,7 @@ describe("identify() / reset()", () => {
     window.__IDUN_CONFIG__ = makeRuntimeConfig({
       telemetry: {
         enabled: true,
-        host: "https://us.i.posthog.com",
+        host: "https://eu.i.posthog.com",
         projectKey: "phc_t",
         deploymentType: "self-hosted",
         identifyUsers: true,
@@ -90,7 +90,7 @@ describe("identify() / reset()", () => {
     window.__IDUN_CONFIG__ = makeRuntimeConfig({
       telemetry: {
         enabled: true,
-        host: "https://us.i.posthog.com",
+        host: "https://eu.i.posthog.com",
         projectKey: "phc_t",
         deploymentType: "self-hosted",
         identifyUsers: false,

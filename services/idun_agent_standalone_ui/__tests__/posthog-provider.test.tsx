@@ -37,7 +37,7 @@ describe("PostHogProvider", () => {
     window.__IDUN_CONFIG__ = makeRuntimeConfig({
       telemetry: {
         enabled: true,
-        host: "https://us.i.posthog.com",
+        host: "https://eu.i.posthog.com",
         projectKey: "phc_t",
         deploymentType: "dev",
         identifyUsers: true,
@@ -56,7 +56,7 @@ describe("PostHogProvider", () => {
     window.__IDUN_CONFIG__ = makeRuntimeConfig({
       telemetry: {
         enabled: true,
-        host: "https://us.i.posthog.com",
+        host: "https://eu.i.posthog.com",
         projectKey: "phc_t",
         deploymentType: "dev",
         identifyUsers: true,

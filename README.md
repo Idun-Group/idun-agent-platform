@@ -378,7 +378,7 @@ Maintained by [Idun Group](https://idun-group.com). We help with platform archit
 
 ## Telemetry
 
-Minimal, anonymous usage metrics + masked session replay via PostHog. No message content, no PII beyond email after sign-in (set `IDUN_TELEMETRY_IDENTIFY_USERS=false` to disable). [View source](libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Off: `IDUN_TELEMETRY_ENABLED=false`. Replay-only off: `IDUN_TELEMETRY_SESSION_REPLAY=false`.
+Minimal, anonymous usage metrics + masked session replay via PostHog, hosted in the EU (`eu.i.posthog.com`). No message content, no PII beyond email after sign-in (set `IDUN_TELEMETRY_IDENTIFY_USERS=false` to disable). [View source](libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Off: `IDUN_TELEMETRY_ENABLED=false`. Replay-only off: `IDUN_TELEMETRY_SESSION_REPLAY=false`.
 
 ## License
 
