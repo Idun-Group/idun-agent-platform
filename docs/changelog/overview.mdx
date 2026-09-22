@@ -6,6 +6,14 @@ keywords: ["changelog", "release notes", "Idun Engine", "versions"]
 
 Track the latest changes, improvements, and bug fixes. The canonical per-package changelogs live in the repo: [`idun-agent-engine`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_engine/CHANGELOG.md), [`idun-agent-standalone`](https://github.com/Idun-Group/idun-agent-platform/blob/main/libs/idun_agent_standalone/CHANGELOG.md).
 
+<Update label="v0.6.4" description="2026-09-22">
+  Patch release. Telemetry now reports to PostHog EU.
+
+  ### Changed
+
+  - **Telemetry now reports to PostHog EU.** Product telemetry from the engine, the standalone backend, and the bundled UI is sent to PostHog Cloud EU (`eu.i.posthog.com`) instead of the US project, so the data lands in the EU region. Telemetry stays on by default and the off-switch is unchanged: `IDUN_TELEMETRY_ENABLED=false`. The event set and the masking rules are untouched — only the destination moved. Upgrade to this release to report to the EU project; older installs keep reporting to the US one.
+</Update>
+
 <Update label="v0.6.3" description="2026-06-08">
   Patch release. Hardens the standalone reload path under concurrency, makes config-from-API async for enrolled-mode boot, and adds a central telemetry sink so enrolled agents report traces to the manager instead of a local DB.
 
