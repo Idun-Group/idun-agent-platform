@@ -24,6 +24,24 @@ from sqlalchemy.ext.asyncio import (
 )
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _disable_telemetry() -> Iterator[None]:
+    """Keep the test suite out of the product telemetry stream.
+
+    Telemetry is opt-out (ON by default) and ``track_command`` fires a
+    real ``cli.<name>`` event for every CliRunner invocation, so an
+    unguarded ``pytest`` run — locally or in CI — lands in PostHog as
+    real self-hosted usage. ``StandaloneSettings`` and the engine's
+    ``telemetry_enabled()`` both read ``IDUN_TELEMETRY_ENABLED`` and
+    treat "false" as off. Tests that need the flag on set it
+    explicitly (see ``standalone_telemetry_enabled``).
+    """
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setenv("IDUN_TELEMETRY_ENABLED", "false")
+    yield
+    monkeypatch.undo()
+
+
 @pytest.fixture(autouse=True)
 def _reset_reload_mutex() -> Iterator[None]:
     """Replace ``_reload_mutex`` with a fresh ``asyncio.Lock`` per test.

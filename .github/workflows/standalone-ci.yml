@@ -25,6 +25,14 @@ on:
 permissions:
   contents: read
 
+# Product telemetry is ON by default in the engine, the standalone CLI and the
+# bundled UI (see libs/idun_agent_engine/.../telemetry/config.py). CI runs are
+# not real usage, so every job in this workflow opts out. `telemetry_enabled()`
+# and StandaloneSettings both parse "false" as off. Note: `docker run` does not
+# inherit the runner env — the docker-smoke job passes -e explicitly.
+env:
+  IDUN_TELEMETRY_ENABLED: "false"
+
 jobs:
   python:
     runs-on: ubuntu-latest
@@ -107,10 +115,11 @@ jobs:
               checkpointer:
                 type: memory
           EOF
-          HASH=$(docker run --rm --entrypoint idun standalone:ci hash-password --password ci-smoke-pass | tail -1)
+          HASH=$(docker run --rm -e IDUN_TELEMETRY_ENABLED=false --entrypoint idun standalone:ci hash-password --password ci-smoke-pass | tail -1)
           SECRET=$(openssl rand -hex 32)
           docker run --rm -d --name standalone-smoke -p 8000:8000 \
             -v /tmp/standalone-smoke:/app/agent:ro \
+            -e IDUN_TELEMETRY_ENABLED=false \
             -e IDUN_ADMIN_AUTH_MODE=password \
             -e IDUN_ADMIN_PASSWORD_HASH="$HASH" \
             -e IDUN_SESSION_SECRET="$SECRET" \

@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Product telemetry is ON by default in the engine, the standalone CLI and the
+# bundled UI (see libs/idun_agent_engine/.../telemetry/config.py). CI runs are
+# not real usage, so every job in this workflow opts out. `telemetry_enabled()`
+# and StandaloneSettings both parse "false" as off.
+env:
+  IDUN_TELEMETRY_ENABLED: "false"
+
 jobs:
   lint:
     name: Lint, type-check, and secrets scan
