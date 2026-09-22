@@ -335,8 +335,8 @@
   ],
   "integrations": {
     "posthog": {
-      "apiKey": "phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw",
-      "apiHost": "https://us.i.posthog.com"
+      "apiKey": "phc_B249T7i924b2T6UNG4fN4zwBFaB2TzJTa5RWjnLNMw2p",
+      "apiHost": "https://eu.i.posthog.com"
     },
     "ga4": {
       "measurementId": "G-ECVQKEEWCG"
