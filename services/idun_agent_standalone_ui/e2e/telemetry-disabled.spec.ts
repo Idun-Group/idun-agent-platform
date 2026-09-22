@@ -72,7 +72,7 @@ test.describe("telemetry off-switch", () => {
           layout: "branded",
           telemetry: {
             enabled: false,
-            host: "https://us.i.posthog.com",
+            host: "https://eu.i.posthog.com",
             projectKey: "phc_off",
             deploymentType: "dev",
             identifyUsers: false,

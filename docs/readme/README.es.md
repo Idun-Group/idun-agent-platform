@@ -270,7 +270,7 @@ Mantenido por [Idun Group](https://idun-group.com). Ayudamos con la arquitectura
 
 ## Telemetría
 
-Métricas de uso mínimas y anónimas + repetición de sesión enmascarada a través de PostHog. Sin contenido de mensajes, sin PII más allá del correo electrónico tras iniciar sesión (establece `IDUN_TELEMETRY_IDENTIFY_USERS=false` para desactivarlo). [Ver código fuente](https://github.com/Idun-Group/idun-agent-platform/blob/develop/libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Desactivar: `IDUN_TELEMETRY_ENABLED=false`. Desactivar solo la repetición: `IDUN_TELEMETRY_SESSION_REPLAY=false`.
+Métricas de uso mínimas y anónimas + repetición de sesión enmascarada a través de PostHog, alojado en la UE (`eu.i.posthog.com`). Sin contenido de mensajes, sin PII más allá del correo electrónico tras iniciar sesión (establece `IDUN_TELEMETRY_IDENTIFY_USERS=false` para desactivarlo). [Ver código fuente](https://github.com/Idun-Group/idun-agent-platform/blob/develop/libs/idun_agent_engine/src/idun_agent_engine/telemetry/telemetry.py). Desactivar: `IDUN_TELEMETRY_ENABLED=false`. Desactivar solo la repetición: `IDUN_TELEMETRY_SESSION_REPLAY=false`.
 
 ## Licencia
 

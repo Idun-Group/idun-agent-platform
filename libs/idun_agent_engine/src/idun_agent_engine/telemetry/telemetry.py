@@ -23,8 +23,9 @@ from platformdirs import user_cache_dir
 
 from .config import get_deployment_type, telemetry_enabled
 
-_POSTHOG_HOST = "https://us.i.posthog.com"
-_POSTHOG_PROJECT_API_KEY = "phc_mpAplkH6w5zK1aSkkG0IL5Ys55m6X34BFvGozB2NqPw"
+_POSTHOG_HOST = "https://eu.i.posthog.com"
+# Public PostHog project write key — ships inside the published wheel.
+_POSTHOG_PROJECT_API_KEY = "phc_ueo54eCqFZD3GrfCLTG7EXzbYU8PZ9g8vNu46BRngcmw"  # gitleaks:allow
 _DISTINCT_ID_ENV = "IDUN_TELEMETRY_DISTINCT_ID"
 _CACHE_APP_NAME = "idun"
 _CACHE_DISTINCT_ID_FILE = "telemetry_user_id"
