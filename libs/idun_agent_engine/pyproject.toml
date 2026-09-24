@@ -74,7 +74,7 @@ dependencies = [
     # ``pip install 'idun-agent-engine[guardrails]'`` to opt in.
     "openinference-instrumentation>=0.1.0,<2.0.0",
     "PyJWT[crypto]>=2.9.0,<3.0.0",
-    "cryptography>=46.0.3,<48.0.0",
+    "cryptography>=50.0.0,<51.0.0",
     # Observability and telemetry
     "langsmith>=0.3.0,<1.0.0",
     "langfuse>=2.60.8,<4.0.0",
