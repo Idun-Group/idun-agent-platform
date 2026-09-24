@@ -470,11 +470,14 @@ class LanggraphAgent(agent_base.BaseAgent):
         try:
             from pathlib import Path
 
+            from idun_agent_engine.agent.loader_utils import ensure_import_root
+
             resolved_path = Path(module_path).resolve()
             # If the file doesn't exist, it might be a python module path
             if not resolved_path.exists():
                 raise FileNotFoundError
 
+            ensure_import_root(resolved_path)
             spec = importlib.util.spec_from_file_location(
                 graph_variable_name, str(resolved_path)
             )
