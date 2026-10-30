@@ -52,9 +52,15 @@
   "seo": {
     "metatags": {
       "og:site_name": "Idun Engine Documentation",
-      "og:locale": "en_US"
+      "og:locale": "en_US",
+      "robots": "noindex"
     },
     "indexing": "navigable"
+  },
+  "banner": {
+    "content": "Idun Agent Platform is no longer maintained. These docs stay online for reference, and the code stays open source on [GitHub](https://github.com/Idun-Group/idun-agent-platform).",
+    "dismissible": false,
+    "type": "warning"
   },
   "metadata": {
     "timestamp": true
