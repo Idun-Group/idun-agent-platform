@@ -46,7 +46,7 @@ dependencies = [
     "deepagents>=0.2.8,<1.0.0",
     "langgraph>=1.0.0,<2.0.0",
     "langgraph-prebuilt==1.0.8",
-    "langgraph-checkpoint-sqlite>=3.0.0,<4.0.0",
+    "langgraph-checkpoint-sqlite>=3.1.1,<4.0.0",
     "langgraph-checkpoint-postgres>=3.0.0,<4.0.0",
     "google-adk>=1.19.0,<2.0.0",
     "langchain>=1.0.0,<2.0.0",
