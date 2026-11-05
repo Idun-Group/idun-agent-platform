@@ -444,7 +444,10 @@ class AdkAgent(agent_base.BaseAgent):
         try:
             from pathlib import Path
 
+            from idun_agent_engine.agent.loader_utils import ensure_import_root
+
             resolved_path = Path(module_path).resolve()
+            ensure_import_root(resolved_path)
             spec = importlib.util.spec_from_file_location(
                 agent_variable_name, str(resolved_path)
             )
