@@ -281,11 +281,6 @@ async def configure_app(app: FastAPI, engine_config):
         _parse_guardrails(guardrails_obj) if guardrails_obj else ([], [])
     )
     logger.debug(f"Guardrails: {guardrails}")
-    # Mirror the failed_mcp_servers pattern — surface install failures
-    # so embedders (e.g. the standalone reload pipeline) can roll back
-    # the DB write instead of letting the request flow through with
-    # the guardrail silently inactive.
-    app.state.failed_guardrails = failed_guardrails
 
     # Use ConfigBuilder's centralized agent initialization, passing the registry
     try:
@@ -315,6 +310,13 @@ async def configure_app(app: FastAPI, engine_config):
     app.state.engine_config = engine_config
 
     app.state.guardrails = guardrails
+    # Mirror the failed_mcp_servers pattern — surface install failures
+    # so embedders (e.g. the standalone reload pipeline) can roll back
+    # the DB write instead of letting the request flow through with
+    # the guardrail silently inactive. Publish failures with the active
+    # guardrails so a rejected reload cannot leave /health describing
+    # guardrails that are not serving requests.
+    app.state.failed_guardrails = failed_guardrails
     mcp_servers = engine_config.mcp_servers
     if mcp_servers:
         try:

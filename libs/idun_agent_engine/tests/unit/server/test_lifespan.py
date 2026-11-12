@@ -8,6 +8,7 @@ from idun_agent_engine.core.engine_config import EngineConfig
 from idun_agent_engine.server.lifespan import (
     FailedGuardrail,
     _parse_guardrails,
+    configure_app,
     lifespan,
 )
 
@@ -124,3 +125,51 @@ class TestParseGuardrailsFailures:
         guards, failures = _parse_guardrails(None)
         assert guards == []
         assert failures == []
+
+
+@pytest.mark.unit
+class TestFailedGuardrailsPublishedWithAgent:
+    """Failed guardrail state stays paired with the agent it describes."""
+
+    async def test_failed_agent_build_preserves_previous_guardrail_state(self):
+        previous_agent = MagicMock()
+        previous_guardrails = [MagicMock()]
+        previous_failures = [
+            FailedGuardrail(
+                config_id="PREVIOUS_GUARD",
+                position="input",
+                error="previous failure",
+            )
+        ]
+        app = MagicMock()
+        app.state.agent = previous_agent
+        app.state.guardrails = previous_guardrails
+        app.state.failed_guardrails = previous_failures
+        app.state.post_configure_callbacks = []
+
+        engine_config = MagicMock()
+        engine_config.mcp_servers = []
+        engine_config.guardrails = MagicMock()
+        rejected_failure = FailedGuardrail(
+            config_id="REJECTED_GUARD",
+            position="output",
+            error="rejected failure",
+        )
+
+        with (
+            patch(
+                "idun_agent_engine.server.lifespan._parse_guardrails",
+                return_value=([], [rejected_failure]),
+            ),
+            patch("idun_agent_engine.server.lifespan.set_active_registry"),
+            patch(
+                "idun_agent_engine.server.lifespan.ConfigBuilder.initialize_agent_from_config",
+                side_effect=RuntimeError("agent build failed"),
+            ),
+        ):
+            with pytest.raises(ValueError, match="agent build failed"):
+                await configure_app(app, engine_config)
+
+        assert app.state.agent is previous_agent
+        assert app.state.guardrails is previous_guardrails
+        assert app.state.failed_guardrails is previous_failures
