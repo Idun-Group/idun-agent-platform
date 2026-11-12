@@ -235,3 +235,4 @@ poetry.lock
 # Remotion video project
 video/
 .guardrails/
+my-agent/
