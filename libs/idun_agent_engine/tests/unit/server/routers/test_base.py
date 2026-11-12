@@ -13,6 +13,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from idun_agent_engine.server.lifespan import FailedGuardrail
 from idun_agent_engine.server.routers.base import base_router
 
 
@@ -20,12 +21,15 @@ def _build_app(
     *,
     agent: object | None = None,
     boot_error: str | None = None,
+    failed_guardrails: list[FailedGuardrail] | None = None,
 ) -> FastAPI:
     app = FastAPI()
     app.include_router(base_router)
     app.state.agent = agent
     if boot_error is not None:
         app.state.boot_error = boot_error
+    if failed_guardrails is not None:
+        app.state.failed_guardrails = failed_guardrails
     return app
 
 
@@ -89,6 +93,77 @@ def test_health_reports_ok_when_agent_configured(
     assert body["agent_name"] == "demo-agent"
     # `reason` is only present in degraded responses.
     assert "reason" not in body
+    assert "failed_guardrails" not in body
+
+
+def test_health_reports_degraded_when_guardrails_failed() -> None:
+    """Failed guardrail initialization degrades health without losing the agent."""
+    app = _build_app(
+        agent=_Agent(name="demo-agent"),
+        failed_guardrails=[
+            FailedGuardrail(
+                config_id="DETECT_PII",
+                position="input",
+                error="installation failed",
+            ),
+            FailedGuardrail(
+                config_id="TOXIC_LANGUAGE",
+                position="output",
+                error="installation failed",
+            ),
+        ],
+    )
+
+    resp = TestClient(app).get("/health")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "degraded"
+    assert body["agent_ready"] is True
+    assert body["failed_guardrails"] == [
+        "DETECT_PII (input)",
+        "TOXIC_LANGUAGE (output)",
+    ]
+    assert "guardrails inactive" in body["reason"]
+
+
+def test_health_omits_guardrail_and_reason_fields_when_no_failures() -> None:
+    """An empty failure list keeps optional health fields absent."""
+    app = _build_app(
+        agent=_Agent(name="demo-agent"),
+        failed_guardrails=[],
+    )
+
+    body = TestClient(app).get("/health").json()
+
+    assert body["status"] == "ok"
+    assert "failed_guardrails" not in body
+    assert "reason" not in body
+
+
+def test_health_combines_boot_error_and_guardrail_failures() -> None:
+    """Boot and guardrail diagnostics are both preserved in the health reason."""
+    app = _build_app(
+        agent=_Agent(name="demo-agent"),
+        boot_error="Agent assembly failed",
+        failed_guardrails=[
+            FailedGuardrail(
+                config_id="DETECT_PII",
+                position="input",
+                error="installation failed",
+            )
+        ],
+    )
+
+    resp = TestClient(app).get("/health")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "degraded"
+    assert body["reason"] == (
+        "Agent assembly failed; guardrails inactive: DETECT_PII (input)"
+    )
+    assert body["failed_guardrails"] == ["DETECT_PII (input)"]
 
 
 def test_health_surfaces_boot_error_as_reason(app_with_boot_error: FastAPI) -> None:

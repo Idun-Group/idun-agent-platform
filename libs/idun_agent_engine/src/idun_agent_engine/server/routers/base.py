@@ -31,9 +31,10 @@ class ReloadRequest(BaseModel):
 class HealthResponse(BaseModel):
     """Response shape for ``/health``.
 
-    ``reason`` is only emitted when an assembly failure handler set
-    ``app.state.boot_error``; the route uses ``response_model_exclude_unset``
-    so the field stays absent (not ``null``) on the happy path.
+    ``reason`` and ``failed_guardrails`` are emitted only when startup reported
+    an error or one or more guardrails failed to initialize. The route uses
+    ``response_model_exclude_unset`` so these fields stay absent (not
+    ``null``) on the healthy path.
     """
 
     status: Literal["ok", "degraded"]
@@ -42,6 +43,7 @@ class HealthResponse(BaseModel):
     agent_ready: bool
     agent_name: str | None
     reason: str | None = None
+    failed_guardrails: list[str] | None = None
 
 
 async def _reload_auth_dep(request: Request) -> None:
@@ -102,31 +104,41 @@ async def _reload_auth_dep(request: Request) -> None:
 def health_check(request: Request) -> HealthResponse:
     """Health check endpoint for monitoring and load balancers.
 
-    Returns ``status: "ok"`` only when an agent is registered and
-    ``/agent/*`` will accept requests. Returns ``status: "degraded"`` with
-    ``agent_ready: false`` when no agent is configured — e.g. standalone
-    admin-only mode after an ``assemble_engine_config`` error, or the
-    pre-onboarding wizard state. When ``app.state.boot_error`` is set by
-    the standalone's assembly failure handler, it is surfaced as ``reason``
-    so operators can diagnose without grepping logs.
+    Returns ``status: "degraded"`` when no agent is registered or one or more
+    guardrails failed to initialize. ``agent_ready`` reflects only whether an
+    agent exists, so it remains true when only guardrails failed. Startup
+    errors and inactive guardrails are surfaced in ``reason``; failed
+    guardrails are also listed by config ID and position.
     """
     agent = getattr(request.app.state, "agent", None)
     configuration = getattr(agent, "configuration", None)
     agent_name = getattr(configuration, "name", None)
     agent_ready = agent is not None
     boot_error = getattr(request.app.state, "boot_error", None)
+    failed_guardrail_items = getattr(request.app.state, "failed_guardrails", None) or []
+    failed_guardrails = [
+        f"{getattr(guardrail, 'config_id', '<unknown>')} "
+        f"({getattr(guardrail, 'position', '<unknown>')})"
+        for guardrail in failed_guardrail_items
+    ]
     # TODO: return managed agent UUID (from manager API response) for stronger
     # identity validation. Currently agent_name is the only shared identifier.
-    fields: dict[str, object] = {
-        "status": "ok" if agent_ready else "degraded",
-        "service": "idun-agent-engine",
-        "version": __version__,
-        "agent_ready": agent_ready,
-        "agent_name": agent_name,
-    }
+    response = HealthResponse(
+        status="ok" if agent_ready and not failed_guardrails else "degraded",
+        service="idun-agent-engine",
+        version=__version__,
+        agent_ready=agent_ready,
+        agent_name=agent_name,
+    )
+    reasons = []
     if boot_error:
-        fields["reason"] = str(boot_error)
-    return HealthResponse(**fields)
+        reasons.append(str(boot_error))
+    if failed_guardrails:
+        response.failed_guardrails = failed_guardrails
+        reasons.append(f"guardrails inactive: {', '.join(failed_guardrails)}")
+    if reasons:
+        response.reason = "; ".join(reasons)
+    return response
 
 
 @base_router.post("/reload")

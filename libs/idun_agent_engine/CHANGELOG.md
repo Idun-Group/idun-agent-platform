@@ -4,7 +4,9 @@ All notable changes to `idun-agent-engine` are documented here. This project fol
 
 ## [Unreleased]
 
-_No unreleased changes yet._
+### Fixed
+
+- **Guardrail initialization failures appear in `/health`.** The endpoint reports `status: "degraded"` and lists inactive guardrails while keeping `agent_ready` tied to agent registration.
 
 ## 0.6.4 — 2026-09-22
 

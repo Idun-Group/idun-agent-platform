@@ -64,16 +64,23 @@ The engine exposes these endpoints:
 }
 ```
 
+When a guardrail fails to initialize, `status` is `"degraded"` and the response
+includes `failed_guardrails` (for example, `["DETECT_PII (input)"]`) and a
+`reason` describing the inactive guardrails. If a boot error was also recorded,
+both diagnostics appear in `reason`, separated by `"; "`. `agent_ready` remains
+`true` whenever an agent is registered, even if a guardrail is inactive.
+
 | Field | Type | Notes |
 |---|---|---|
-| `status` | `"ok"` or `"degraded"` | `degraded` whenever no agent is registered: pre-onboarding state, standalone admin-only mode after an assembly error, or engine boot that bailed on a bad config. |
+| `status` | `"ok"` or `"degraded"` | `degraded` when no agent is registered or one or more guardrails failed to initialize. |
 | `service` | string | Always `idun-agent-engine`. |
 | `version` | string | Engine semver, useful for catching stale rollouts behind a load balancer. |
-| `agent_ready` | bool | `true` only when `/agent/*` will accept requests. |
+| `agent_ready` | bool | `true` when an agent is registered; guardrail initialization failures do not change this field. |
 | `agent_name` | string or null | Pulled from the loaded agent's config; null when none is loaded. |
-| `reason` | string (optional) | Only present on `degraded` when the standalone's assembly handler captured a boot error; carries the short diagnostic. Field is absent (not `null`) on the happy path. |
+| `reason` | string (optional) | Present when a boot error or inactive guardrail is reported; includes both reasons, separated by `"; "`, when applicable. Absent (not `null`) on the healthy path. |
+| `failed_guardrails` | string array (optional) | Failed guardrail IDs with their position, formatted as `"<config_id> (<position>)"`. Absent when all guardrails initialized. |
 
-For probes, gate readiness on `status == "ok"` (or equivalently `agent_ready == true`). The endpoint is unauthenticated by design so external probes can reach it; this is intentional and called out in [Authentication](/auth/overview).
+For probes that require guardrails to be active, gate readiness on `status == "ok"`; `agent_ready` alone only indicates that an agent is registered. The endpoint is unauthenticated by design so external probes can reach it; this is intentional and called out in [Authentication](/auth/overview).
 
 #### Hot reload (engine-only)
 
