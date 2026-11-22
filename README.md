@@ -23,7 +23,7 @@ Self-hosted. Open source. No vendor lock-in.
 
 <br/>
 
-[Cloud](https://cloud.idunplatform.com) · [Try the demos](https://idun-group.com/demo) · [Quickstart](https://docs.idun-group.com/quickstart) · [Docs](https://docs.idun-group.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Book a demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
+[Cloud](https://cloud.idunplatform.com) · [Try the demos](https://idun-group.com/demo) · [Quickstart](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/) · [Docs](https://idun-group.github.io/idun-agent-platform/) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Book a demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
 
 ⭐ If you find this useful, please star the repo. It helps others discover the project.
 
@@ -142,7 +142,7 @@ A browser opens at [http://localhost:8000](http://localhost:8000) for the chat U
 >
 > The `idun` command on your `$PATH` (`setup`, `serve`, `init`, `hash-password`, `agent serve`) is provided by the bundled standalone — it is not a separately published package. You won't see `idun-agent-standalone` in the engine's declared PyPI dependencies because it ships co-installed inside the wheel, not as a transitive dep.
 >
-> See [docs.idun-group.com/architecture](https://docs.idun-group.com/architecture) for the full layering.
+> See the [architecture overview](https://idun-group.github.io/idun-agent-platform/architecture/overview/) for the full layering.
 
 ## What's inside
 
@@ -252,7 +252,7 @@ flowchart LR
 </p>
 
 > [!NOTE]
-> **Framework support** — LangGraph and Google ADK are first-class today, with full adapters in the engine. LangChain is supported via the LangGraph adapter; broader native LangChain compatibility is on the [roadmap](https://docs.idun-group.com/roadmap).
+> **Framework support** — LangGraph and Google ADK are first-class today, with full adapters in the engine. LangChain is supported via the LangGraph adapter; broader native LangChain compatibility is on the [roadmap](https://idun-group.github.io/idun-agent-platform/roadmap/roadmap/).
 
 ---
 
@@ -356,7 +356,7 @@ idun agent serve --source file --path config.yaml
 ```
 
 > [!IMPORTANT]
-> Full config reference: [docs.idun-group.com/configuration](https://docs.idun-group.com/configuration)
+> Full config reference: [configuration docs](https://idun-group.github.io/idun-agent-platform/concepts/configuration/)
 >
 > 9 runnable agent examples: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
 
