@@ -6,7 +6,7 @@ LangGraph dev copilot on Idun Engine. Combines four MCP servers, a managed syste
 
 | Feature | Source |
 | --- | --- |
-| MCP: `idun-docs` | `https://docs.idun-group.com/mcp` (streamable_http) |
+| MCP: `idun-docs` | `https://gitmcp.io/Idun-Group/idun-agent-platform` (streamable_http) |
 | MCP: `atlassian` | `mcp-atlassian` via `uvx` (stdio) — Jira + Confluence |
 | MCP: `github` | `ghcr.io/github/github-mcp-server` via `docker run` (stdio) |
 | MCP: `google-workspace` | Separate `workspace-mcp` HTTP process |

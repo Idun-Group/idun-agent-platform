@@ -12,7 +12,7 @@ agent:
 mcp_servers:
   - name: docs-idun
     transport: streamable_http
-    url: https://docs.idun-group.com/mcp
+    url: https://gitmcp.io/Idun-Group/idun-agent-platform
 
   - name: data-gouv
     transport: streamable_http

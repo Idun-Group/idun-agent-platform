@@ -13,7 +13,7 @@ agent:
 mcp_servers:
   - name: idun-docs
     transport: streamable_http
-    url: https://docs.idun-group.com/mcp
+    url: https://gitmcp.io/Idun-Group/idun-agent-platform
     headers: {}
     args: []
     env: {}
