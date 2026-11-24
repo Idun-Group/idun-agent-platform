@@ -4,7 +4,7 @@ A minimal LangGraph chatbot that gains its tools from two remote MCP servers dec
 
 MCP servers used here:
 
-- **`docs-idun`** at `https://docs.idun-group.com/mcp` — Idun documentation MCP, lets the agent search the Idun docs from inside the conversation.
+- **`docs-idun`** at `https://gitmcp.io/Idun-Group/idun-agent-platform` — Idun documentation MCP, lets the agent search the Idun docs from inside the conversation.
 - **`data-gouv`** at `https://mcp.data.gouv.fr/mcp` — the French government open-data MCP, exposes search and metadata tools over `data.gouv.fr` datasets.
 
 Both use the `streamable_http` transport, which is the default.

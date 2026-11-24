@@ -4,7 +4,7 @@ ADK agent that gains its tools from two remote MCP servers declared in `config.y
 
 MCP servers used here:
 
-- **`docs-idun`** at `https://docs.idun-group.com/mcp` — Idun documentation MCP.
+- **`docs-idun`** at `https://gitmcp.io/Idun-Group/idun-agent-platform` — Idun documentation MCP.
 - **`data-gouv`** at `https://mcp.data.gouv.fr/mcp` — `data.gouv.fr` open data MCP.
 
 Both use the `streamable_http` transport (default).

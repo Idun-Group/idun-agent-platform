@@ -29,11 +29,14 @@
 
 <br/>
 
-[云服务](https://cloud.idunplatform.com) · [快速开始](https://docs.idun-group.com/quickstart) · [文档](https://docs.idun-group.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [预约演示](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
+[快速开始](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/) · [文档](https://idun-group.github.io/idun-agent-platform/) · [Discord](https://discord.gg/KCZ6nW2jQe)
 
 ⭐ 如果您觉得这个项目有用，请给仓库点个星。这有助于其他人发现该项目。
 
 </div>
+
+> [!NOTE]
+> Idun Agent Platform 已不再维护。代码仍以 GPLv3 开源，[文档](https://idun-group.github.io/idun-agent-platform/) 保留在线供参考。
 
 <br/>
 
@@ -167,7 +170,7 @@ flowchart LR
 </p>
 
 > [!NOTE]
-> **框架支持** — LangGraph 和 Google ADK 目前是一等公民，引擎中提供完整适配器。LangChain 通过 LangGraph 适配器获得支持；更广泛的原生 LangChain 兼容性在[路线图](https://docs.idun-group.com/roadmap)中。
+> **框架支持** — LangGraph 和 Google ADK 目前是一等公民，引擎中提供完整适配器。LangChain 通过 LangGraph 适配器获得支持；更广泛的原生 LangChain 兼容性在[路线图](https://idun-group.github.io/idun-agent-platform/roadmap/roadmap/)中。
 
 ---
 
@@ -248,7 +251,7 @@ idun agent serve --source file --path config.yaml
 ```
 
 > [!IMPORTANT]
-> 完整配置参考：[docs.idun-group.com/configuration](https://docs.idun-group.com/configuration)
+> 完整配置参考：[配置](https://idun-group.github.io/idun-agent-platform/concepts/configuration/)
 >
 > 9 个可运行的智能体示例：[idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
 
@@ -264,9 +267,9 @@ idun agent serve --source file --path config.yaml
 | **贡献指南** | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 | **路线图** | [ROADMAP.md](../../ROADMAP.md) |
 
-## 商业支持
+## 由 Idun Group 打造
 
-由 [Idun Group](https://idun-group.com) 维护。我们提供平台架构、部署以及 IdP/合规集成方面的支持。[预约通话](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
+Idun Agent Platform 由 [Idun Group](https://idun-group.com/en?utm_source=github&utm_medium=referral&utm_campaign=github&utm_content=readme-zh) 打造。
 
 ## 遥测
 
@@ -275,3 +278,15 @@ idun agent serve --source file --path config.yaml
 ## 许可证
 
 [GPLv3](../../LICENSE)
+
+---
+
+<div align="center">
+
+**来自 Idun 团队：Idun Cockpit**
+
+Claude、Copilot、ChatGPT、内部智能体：您的企业已经在使用 AI，却没有人掌握全貌。Idun Group 将对团队的访谈与 Idun Cockpit 测量的真实使用情况相结合，揭示 AI 在哪里创造价值、成本几何，以及下一步该怎么做。我们分析的是使用情况，从不针对个人。
+
+[了解 Idun Group →](https://idun-group.com/en?utm_source=github&utm_medium=referral&utm_campaign=github&utm_content=readme-zh)
+
+</div>

@@ -29,11 +29,14 @@ Autoalojado. Código abierto. Sin dependencia de proveedores.
 
 <br/>
 
-[Cloud](https://cloud.idunplatform.com) · [Inicio rápido](https://docs.idun-group.com/quickstart) · [Documentación](https://docs.idun-group.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [Reservar una demo](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
+[Inicio rápido](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/) · [Documentación](https://idun-group.github.io/idun-agent-platform/) · [Discord](https://discord.gg/KCZ6nW2jQe)
 
 ⭐ Si lo encuentras útil, dale una estrella al repositorio. Ayuda a otros a descubrir el proyecto.
 
 </div>
+
+> [!NOTE]
+> Idun Agent Platform ya no recibe mantenimiento. El código sigue siendo open source bajo GPLv3 y la [documentación](https://idun-group.github.io/idun-agent-platform/) sigue en línea como referencia.
 
 <br/>
 
@@ -167,7 +170,7 @@ flowchart LR
 </p>
 
 > [!NOTE]
-> **Soporte de frameworks** — LangGraph y Google ADK son de primera clase hoy, con adaptadores completos en el motor. LangChain está soportado a través del adaptador de LangGraph; una compatibilidad nativa más amplia con LangChain está en el [roadmap](https://docs.idun-group.com/roadmap).
+> **Soporte de frameworks** — LangGraph y Google ADK son de primera clase hoy, con adaptadores completos en el motor. LangChain está soportado a través del adaptador de LangGraph; una compatibilidad nativa más amplia con LangChain está en el [roadmap](https://idun-group.github.io/idun-agent-platform/roadmap/roadmap/).
 
 ---
 
@@ -248,7 +251,7 @@ idun agent serve --source file --path config.yaml
 ```
 
 > [!IMPORTANT]
-> Referencia completa de configuración: [docs.idun-group.com/configuration](https://docs.idun-group.com/configuration)
+> Referencia completa de configuración: [Configuración](https://idun-group.github.io/idun-agent-platform/concepts/configuration/)
 >
 > 9 ejemplos de agentes ejecutables: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
 
@@ -264,9 +267,9 @@ idun agent serve --source file --path config.yaml
 | **Contribuir** | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 | **Roadmap** | [ROADMAP.md](../../ROADMAP.md) |
 
-## Soporte comercial
+## Creado por Idun Group
 
-Mantenido por [Idun Group](https://idun-group.com). Ayudamos con la arquitectura de la plataforma, el despliegue y la integración con IdP/cumplimiento normativo. [Reservar una llamada](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
+Idun Agent Platform fue creado por [Idun Group](https://idun-group.com/en?utm_source=github&utm_medium=referral&utm_campaign=github&utm_content=readme-es).
 
 ## Telemetría
 
@@ -275,3 +278,15 @@ Métricas de uso mínimas y anónimas + repetición de sesión enmascarada a tra
 ## Licencia
 
 [GPLv3](../../LICENSE)
+
+---
+
+<div align="center">
+
+**Del equipo detrás de Idun: Idun Cockpit**
+
+Claude, Copilot, ChatGPT, agentes internos: su empresa ya funciona con IA, pero nadie tiene la visión completa. Idun Group combina entrevistas con sus equipos y su uso real, medido por Idun Cockpit, para mostrar dónde la IA crea valor, cuánto le cuesta y qué hacer a continuación. Analizamos usos, nunca personas.
+
+[Descubrir Idun Group →](https://idun-group.com/en?utm_source=github&utm_medium=referral&utm_campaign=github&utm_content=readme-es)
+
+</div>

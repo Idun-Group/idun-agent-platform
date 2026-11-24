@@ -29,11 +29,14 @@
 
 <br/>
 
-[السحابة](https://cloud.idunplatform.com) · [البدء السريع](https://docs.idun-group.com/quickstart) · [التوثيق](https://docs.idun-group.com) · [Discord](https://discord.gg/KCZ6nW2jQe) · [حجز عرض توضيحي](https://calendar.app.google/RSzm7EM5VZY8xVnN9)
+[البدء السريع](https://idun-group.github.io/idun-agent-platform/getting-started/quickstart/) · [التوثيق](https://idun-group.github.io/idun-agent-platform/) · [Discord](https://discord.gg/KCZ6nW2jQe)
 
 ⭐ إذا وجدت هذا مفيداً، يرجى إضافة نجمة للمستودع. هذا يساعد الآخرين على اكتشاف المشروع.
 
 </div>
+
+> [!NOTE]
+> لم يعد Idun Agent Platform قيد الصيانة. تبقى الشيفرة مفتوحة المصدر بموجب رخصة GPLv3، وتبقى [الوثائق](https://idun-group.github.io/idun-agent-platform/) متاحة على الإنترنت للرجوع إليها.
 
 <br/>
 
@@ -167,7 +170,7 @@ flowchart LR
 </p>
 
 > [!NOTE]
-> **دعم أُطر العمل** — LangGraph و Google ADK مدعومان بشكل أساسي اليوم، مع محولات كاملة في المحرك. LangChain مدعوم عبر محول LangGraph؛ التوافق الأصلي الأوسع مع LangChain موجود في [خارطة الطريق](https://docs.idun-group.com/roadmap).
+> **دعم أُطر العمل** — LangGraph و Google ADK مدعومان بشكل أساسي اليوم، مع محولات كاملة في المحرك. LangChain مدعوم عبر محول LangGraph؛ التوافق الأصلي الأوسع مع LangChain موجود في [خارطة الطريق](https://idun-group.github.io/idun-agent-platform/roadmap/roadmap/).
 
 ---
 
@@ -248,7 +251,7 @@ idun agent serve --source file --path config.yaml
 ```
 
 > [!IMPORTANT]
-> مرجع التهيئة الكامل: [docs.idun-group.com/configuration](https://docs.idun-group.com/configuration)
+> مرجع التهيئة الكامل: [التهيئة](https://idun-group.github.io/idun-agent-platform/concepts/configuration/)
 >
 > 9 أمثلة عملاء قابلة للتشغيل: [idun-agent-template](https://github.com/Idun-Group/idun-agent-template)
 
@@ -264,9 +267,9 @@ idun agent serve --source file --path config.yaml
 | **المساهمة** | [CONTRIBUTING.md](../../CONTRIBUTING.md) |
 | **خارطة الطريق** | [ROADMAP.md](../../ROADMAP.md) |
 
-## الدعم التجاري
+## من تطوير Idun Group
 
-تتم صيانته من قبل [Idun Group](https://idun-group.com). نساعد في بنية المنصة، النشر، وتكامل IdP/الامتثال. [حجز مكالمة](https://calendar.app.google/RSzm7EM5VZY8xVnN9) · contact@idun-group.com
+طوّرت [Idun Group](https://idun-group.com/en?utm_source=github&utm_medium=referral&utm_campaign=github&utm_content=readme-ar) منصة Idun Agent Platform.
 
 ## القياس عن بُعد
 
@@ -275,3 +278,15 @@ idun agent serve --source file --path config.yaml
 ## الترخيص
 
 [GPLv3](../../LICENSE)
+
+---
+
+<div align="center">
+
+**من الفريق الذي يقف وراء Idun: ‏Idun Cockpit**
+
+Claude وCopilot وChatGPT والوكلاء الداخليون: شركتك تعمل بالذكاء الاصطناعي بالفعل، لكن لا أحد يملك الصورة الكاملة. تجمع Idun Group بين مقابلات مع فرقك والاستخدام الفعلي الذي يقيسه Idun Cockpit، لتُظهر أين يخلق الذكاء الاصطناعي قيمة، وكم يكلّفك، وما الخطوة التالية. نحلّل الاستخدامات، لا الأشخاص أبدًا.
+
+[اكتشف Idun Group ←](https://idun-group.com/en?utm_source=github&utm_medium=referral&utm_campaign=github&utm_content=readme-ar)
+
+</div>
